@@ -74,8 +74,8 @@ class Sale extends Model
                 MAX(IFnull(payments.sale_cash_refund, 0)) AS cash_refund,
                 ' . "
                 $sale_total AS amount_due,
-                MAX(IFnull(payments.sale_payment_amount, 0)) AS amount_tendered,
-                (MAX(payments.sale_payment_amount)) - ($sale_total) AS change_due,
+                CASE WHEN COALESCE(payments.payment_type, '') LIKE '%Dinheiro%' THEN MAX(IFnull(payments.sale_payment_amount, 0)) ELSE $sale_total END AS amount_tendered,
+                CASE WHEN COALESCE(payments.payment_type, '') LIKE '%Dinheiro%' THEN MAX(payments.sale_payment_amount) - $sale_total ELSE 0 END AS change_due,
                 " . '
                 MAX(payments.payment_type) AS payment_type';
 
@@ -103,7 +103,7 @@ class Sale extends Model
     /**
      * Get number of rows for the takings (sales/manage) view
      */
-    public function get_found_rows(?string $search, array $filters): int
+    public function get_found_rows(string $search, array $filters): int
     {
         return $this->search($search, $filters, 0, 0, 'sales.sale_time', 'desc', true);
     }
@@ -111,7 +111,7 @@ class Sale extends Model
     /**
      * Get the sales data for the takings (sales/manage) view
      */
-    public function search(?string $search, array $filters, ?int $rows = 0, ?int $limit_from = 0, ?string $sort = 'sales.sale_time', ?string $order = 'desc', ?bool $count_only = false)
+    public function search(string $search, array $filters, ?int $rows = 0, ?int $limit_from = 0, ?string $sort = 'sales.sale_time', ?string $order = 'desc', ?bool $count_only = false)
     {
         // Set default values
         if ($rows == null) $rows = 0;
@@ -169,8 +169,8 @@ class Sale extends Model
                 $sale_cost . ' AS cost',
                 '(' . $sale_total . ' - ' . $sale_cost . ') AS profit',
                 $sale_total . ' AS amount_due',
-                'MAX(`payments`.`sale_payment_amount`) AS amount_tendered',
-                '(MAX(`payments`.`sale_payment_amount`)) - (' . $sale_total . ') AS change_due',
+                'CASE WHEN COALESCE(`payments`.`payment_type`, \'\') LIKE \'%Dinheiro%\' THEN MAX(`payments`.`sale_payment_amount`) ELSE ' . $sale_total . ' END AS amount_tendered',
+                'CASE WHEN COALESCE(`payments`.`payment_type`, \'\') LIKE \'%Dinheiro%\' THEN (MAX(`payments`.`sale_payment_amount`)) - (' . $sale_total . ') ELSE 0 END AS change_due',
                 'MAX(`payments`.`payment_type`) AS payment_type'
             ], false);
         }
@@ -209,7 +209,7 @@ class Sale extends Model
     /**
      * Get the payment summary for the takings (sales/manage) view
      */
-    public function get_payments_summary(?string $search, array $filters): array
+    public function get_payments_summary(string $search, array $filters): array
     {
         $config = config(OSPOS::class)->settings;
 
@@ -261,20 +261,16 @@ class Sale extends Model
             $builder->like('payment_type', lang('Sales.cash'));
         }
 
-        if ($filters['only_due']) {
-            $builder->like('payment_type', lang('Sales.due'));
-        }
-
-        if ($filters['only_check']) {
-            $builder->like('payment_type', lang('Sales.check'));
-        }
-
         if ($filters['only_creditcard']) {
             $builder->like('payment_type', lang('Sales.credit'));
         }
 
-        if ($filters['only_debit']) {
-            $builder->like('payment_type', lang('Sales.debit'));
+        if ($filters['only_pix']) {
+            $builder->like('payment_type', lang('Sales.pix'));
+        }
+
+        if ($filters['only_account_receivable']) {
+            $builder->like('payment_type', lang('Sales.account_receivable'));
         }
 
         $builder->groupBy('payment_type');
@@ -315,7 +311,7 @@ class Sale extends Model
     /**
      * Gets search suggestions
      */
-    public function get_search_suggestions(?string $search, int $limit = 25): array    // TODO: $limit is never used.
+    public function get_search_suggestions(string $search, int $limit = 25): array    // TODO: $limit is never used.
     {
         $suggestions = [];
 
@@ -400,7 +396,7 @@ class Sale extends Model
     /**
      * Checks if valid receipt
      */
-    public function is_valid_receipt(string|null &$receipt_sale_id): bool    // TODO: like the others, maybe this should be an array rather than a delimited string... either that or the parameter name needs to be changed. $receipt_sale_id implies that it's an int.
+    public function is_valid_receipt(string &$receipt_sale_id): bool    // TODO: like the others, maybe this should be an array rather than a delimited string... either that or the parameter name needs to be changed. $receipt_sale_id implies that it's an int.
     {
         $config = config(OSPOS::class)->settings;
 
@@ -911,13 +907,6 @@ class Sale extends Model
     {
         $payments = get_payment_options();
 
-        if ($giftcard) {
-            $payments[lang('Sales.giftcard')] = lang('Sales.giftcard');
-        }
-
-        if ($reward_points) {
-            $payments[lang('Sales.rewards')] = lang('Sales.rewards');
-        }
         $sale_lib = new Sale_lib();
         if ($sale_lib->get_mode() == 'sale_work_order') {
             $payments[lang('Sales.cash_deposit')] = lang('Sales.cash_deposit');
@@ -925,6 +914,61 @@ class Sale extends Model
         }
 
         return $payments;
+    }
+
+    /**
+     * Validates if customer has sufficient credit limit for account receivable (Fiado) payment
+     */
+    public function validate_account_receivable(int $customer_id, float $amount): array
+    {
+        $customer = model(Customer::class);
+        $customer_info = $customer->get_info($customer_id);
+
+        $balance = $this->get_customer_balance($customer_id);
+        $new_balance = $balance + $amount;
+
+        if ($customer_info->credit_limit !== null && $customer_info->credit_limit > 0) {
+            if ($new_balance > $customer_info->credit_limit) {
+                return [
+                    'valid' => false,
+                    'message' => lang('Sales.exceeded_credit_limit', [
+                        to_currency($customer_info->credit_limit),
+                        to_currency($new_balance)
+                    ])
+                ];
+            }
+        }
+
+        return ['valid' => true];
+    }
+
+    /**
+     * Gets customer balance (outstanding account receivable)
+     */
+    public function get_customer_balance(int $customer_id): float
+    {
+        $builder = $this->db->table('sales_payments');
+        $builder->select('SUM(payment_amount) as total_payments');
+        $builder->where('payment_type', lang('Sales.account_receivable'));
+        $builder->whereIn('sale_id', function ($builder) use ($customer_id) {
+            $builder->select('sale_id')
+                ->from('sales')
+                ->where('customer_id', $customer_id)
+                ->where('sale_status', COMPLETED);
+        });
+        $result = $builder->get()->getRow();
+
+        $builder = $this->db->table('sales');
+        $builder->select('SUM(sales_items.item_unit_price * sales_items.quantity_purchased) as total_sales');
+        $builder->join('sales_items', 'sales.sale_id = sales_items.sale_id');
+        $builder->where('customer_id', $customer_id);
+        $builder->where('sale_status', COMPLETED);
+        $sales_result = $builder->get()->getRow();
+
+        $total_payments = $result->total_payments ?? 0;
+        $total_sales = $sales_result->total_sales ?? 0;
+
+        return (float)($total_sales - $total_payments);
     }
 
     /**
@@ -1453,7 +1497,7 @@ class Sale extends Model
      * @param BaseBuilder $builder
      * @return void
      */
-    private function add_filters_to_query(?string $search, array $filters, BaseBuilder $builder): void
+    private function add_filters_to_query(string $search, array $filters, BaseBuilder $builder): void
     {
         if (!empty($search)) {    // TODO: this is duplicated code.  We should think about refactoring out a method
             if ($filters['is_valid_receipt']) {
@@ -1498,16 +1542,12 @@ class Sale extends Model
             $builder->like('payments.payment_type', lang('Sales.credit'));
         }
 
-        if ($filters['only_debit']) {
-            $builder->like('payments.payment_type', lang('Sales.debit'));
+        if ($filters['only_pix']) {
+            $builder->like('payments.payment_type', lang('Sales.pix'));
         }
 
-        if ($filters['only_due']) {
-            $builder->like('payments.payment_type', lang('Sales.due'));
-        }
-
-        if ($filters['only_check']) {
-            $builder->like('payments.payment_type', lang('Sales.check'));
+        if ($filters['only_account_receivable']) {
+            $builder->like('payments.payment_type', lang('Sales.account_receivable'));
         }
     }
 }

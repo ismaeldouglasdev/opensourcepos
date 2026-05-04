@@ -3,7 +3,6 @@
 namespace Config;
 
 use CodeIgniter\Cache\CacheInterface;
-use CodeIgniter\Cache\Handlers\ApcuHandler;
 use CodeIgniter\Cache\Handlers\DummyHandler;
 use CodeIgniter\Cache\Handlers\FileHandler;
 use CodeIgniter\Cache\Handlers\MemcachedHandler;
@@ -79,7 +78,7 @@ class Cache extends BaseConfig
      * Your file storage preferences can be specified below, if you are using
      * the File driver.
      *
-     * @var array{storePath?: string, mode?: int}
+     * @var array<string, int|string|null>
      */
     public array $file = [
         'storePath' => WRITEPATH . 'cache/',
@@ -96,7 +95,7 @@ class Cache extends BaseConfig
      *
      * @see https://codeigniter.com/user_guide/libraries/caching.html#memcached
      *
-     * @var array{host?: string, port?: int, weight?: int, raw?: bool}
+     * @var array<string, bool|int|string>
      */
     public array $memcached = [
         'host'   => '127.0.0.1',
@@ -109,28 +108,17 @@ class Cache extends BaseConfig
      * -------------------------------------------------------------------------
      * Redis settings
      * -------------------------------------------------------------------------
-     *
      * Your Redis server can be specified below, if you are using
      * the Redis or Predis drivers.
      *
-     * @var array{
-     *     host?: string,
-     *     password?: string|null,
-     *     port?: int,
-     *     timeout?: int,
-     *     async?: bool,
-     *     persistent?: bool,
-     *     database?: int
-     * }
+     * @var array<string, int|string|null>
      */
     public array $redis = [
-        'host'       => '127.0.0.1',
-        'password'   => null,
-        'port'       => 6379,
-        'timeout'    => 0,
-        'async'      => false, // specific to Predis and ignored by the native Redis extension
-        'persistent' => false,
-        'database'   => 0,
+        'host'     => '127.0.0.1',
+        'password' => null,
+        'port'     => 6379,
+        'timeout'  => 0,
+        'database' => 0,
     ];
 
     /**
@@ -144,7 +132,6 @@ class Cache extends BaseConfig
      * @var array<string, class-string<CacheInterface>>
      */
     public array $validHandlers = [
-        'apcu'      => ApcuHandler::class,
         'dummy'     => DummyHandler::class,
         'file'      => FileHandler::class,
         'memcached' => MemcachedHandler::class,
@@ -171,28 +158,4 @@ class Cache extends BaseConfig
      * @var bool|list<string>
      */
     public $cacheQueryString = false;
-
-    /**
-     * --------------------------------------------------------------------------
-     * Web Page Caching: Cache Status Codes
-     * --------------------------------------------------------------------------
-     *
-     * HTTP status codes that are allowed to be cached. Only responses with
-     * these status codes will be cached by the PageCache filter.
-     *
-     * Default: [] - Cache all status codes (backward compatible)
-     *
-     * Recommended: [200] - Only cache successful responses
-     *
-     * You can also use status codes like:
-     *   [200, 404, 410] - Cache successful responses and specific error codes
-     *   [200, 201, 202, 203, 204] - All 2xx successful responses
-     *
-     * WARNING: Using [] may cache temporary error pages (404, 500, etc).
-     * Consider restricting to [200] for production applications to avoid
-     * caching errors that should be temporary.
-     *
-     * @var list<int>
-     */
-    public array $cacheStatusCodes = [];
 }

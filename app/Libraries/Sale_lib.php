@@ -88,13 +88,9 @@ class Sale_lib
         return $register_modes;
     }
 
-    private const ALLOWED_INVOICE_TYPES = [
-        'invoice',
-        'tax_invoice',
-        'custom_invoice',
-        'custom_tax_invoice'
-    ];
-
+    /**
+     * @return array
+     */
     public function get_invoice_type_options(): array
     {
         $invoice_types = [];
@@ -103,11 +99,6 @@ class Sale_lib
         $invoice_types['custom_invoice'] = lang('Sales.invoice_type_custom_invoice');
         $invoice_types['custom_tax_invoice'] = lang('Sales.invoice_type_custom_tax_invoice');
         return $invoice_types;
-    }
-
-    public static function isValidInvoiceType(string $invoice_type): bool
-    {
-        return in_array($invoice_type, self::ALLOWED_INVOICE_TYPES, true);
     }
 
     /**
@@ -1229,7 +1220,22 @@ class Sale_lib
     public function delete_item(int $line): void
     {
         $items = $this->get_cart();
-        $item_type = $items[$line]['item_type'];
+        
+        // Se o line é um ID de item (negativo para itens temp), encontrar pelo item_id
+        if ($line < 0) {
+            foreach ($items as $key => $item) {
+                if (isset($item['item_id']) && $item['item_id'] == $line) {
+                    $line = $key;
+                    break;
+                }
+            }
+        }
+        
+        if (!isset($items[$line])) {
+            return;
+        }
+        
+        $item_type = $items[$line]['item_type'] ?? ITEM;
 
         if ($item_type == ITEM_TEMP) {
             $item_id = $items[$line]['item_id'];

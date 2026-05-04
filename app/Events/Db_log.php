@@ -36,26 +36,21 @@ class Db_log
     private function generate_message(): string
     {
         $db = Database::connect();
-        $lastQuery = $db->getLastQuery();
-
-        if ($lastQuery === null) {
-            return '';
-        }
-
-        $affectedRows = $db->affectedRows();
-        $executionTime = $this->convert_time($lastQuery->getDuration());
+        $last_query = $db->getLastQuery();
+        $affected_rows = $db->affectedRows();
+        $execution_time = $this->convert_time($last_query->getDuration());
 
         $message = '*** Query: ' . date('Y-m-d H:i:s T') . ' *******************'
-            . "\n" . $lastQuery->getQuery()
-            . "\n Affected rows: $affectedRows"
-            . "\n Execution Time: " . $executionTime['time'] . ' ' . $executionTime['unit'];
+            . "\n" . $last_query->getQuery()
+            . "\n Affected rows: $affected_rows"
+            . "\n Execution Time: " . $execution_time['time'] . ' ' . $execution_time['unit'];
 
-        $longQuery = ($executionTime['unit'] === 's') && ($executionTime['time'] > 0.5);
-        if ($longQuery) {
+        $long_query = ($execution_time['unit'] === 's') && ($execution_time['time'] > 0.5);
+        if ($long_query) {
             $message .= ' [LONG RUNNING QUERY]';
         }
 
-        return $this->config->db_log_only_long && !$longQuery ? '' : $message;
+        return $this->config->db_log_only_long && !$long_query ? '' : $message;
     }
 
     /**

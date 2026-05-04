@@ -5,7 +5,6 @@ namespace App\Controllers;
 use App\Libraries\Sms_lib;
 
 use App\Models\Person;
-use CodeIgniter\HTTP\ResponseInterface;
 
 class Messages extends Secure_Controller
 {
@@ -19,18 +18,18 @@ class Messages extends Secure_Controller
     }
 
     /**
-     * @return string
+     * @return void
      */
-    public function getIndex(): string
+    public function getIndex(): void
     {
-        return view('messages/sms');
+        echo view('messages/sms');
     }
 
     /**
      * @param int $person_id
-     * @return string
+     * @return void
      */
-    public function getView(int $person_id = NEW_ENTRY): string
+    public function getView(int $person_id = NEW_ENTRY): void
     {
         $person = model(Person::class);
         $info = $person->get_info($person_id);
@@ -40,13 +39,13 @@ class Messages extends Secure_Controller
         }
         $data['person_info'] = $info;
 
-        return view('messages/form_sms', $data);
+        echo view('messages/form_sms', $data);
     }
 
     /**
-     * @return ResponseInterface
+     * @return void
      */
-    public function send(): ResponseInterface
+    public function send(): void
     {
         $phone   = $this->request->getPost('phone', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $message = $this->request->getPost('message', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -54,9 +53,9 @@ class Messages extends Secure_Controller
         $response = $this->sms_lib->sendSMS($phone, $message);
 
         if ($response) {
-            return $this->response->setJSON(['success' => true, 'message' => lang('Messages.successfully_sent') . ' ' . esc($phone)]);
+            echo json_encode(['success' => true, 'message' => lang('Messages.successfully_sent') . ' ' . esc($phone)]);
         } else {
-            return $this->response->setJSON(['success' => false, 'message' => lang('Messages.unsuccessfully_sent') . ' ' . esc($phone)]);
+            echo json_encode(['success' => false, 'message' => lang('Messages.unsuccessfully_sent') . ' ' . esc($phone)]);
         }
     }
 
@@ -64,10 +63,10 @@ class Messages extends Secure_Controller
      * Sends an SMS message to a user. Used in app/Views/messages/form_sms.php.
      *
      * @param int $person_id
-     * @return ResponseInterface
+     * @return void
      * @noinspection PhpUnused
      */
-    public function send_form(int $person_id = NEW_ENTRY): ResponseInterface
+    public function send_form(int $person_id = NEW_ENTRY): void
     {
         $phone   = $this->request->getPost('phone', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $message = $this->request->getPost('message', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -75,13 +74,13 @@ class Messages extends Secure_Controller
         $response = $this->sms_lib->sendSMS($phone, $message);
 
         if ($response) {
-            return $this->response->setJSON([
+            echo json_encode([
                 'success'   => true,
                 'message'   => lang('Messages.successfully_sent') . ' ' . esc($phone),
                 'person_id' => $person_id
             ]);
         } else {
-            return $this->response->setJSON([
+            echo json_encode([
                 'success'   => false,
                 'message'   => lang('Messages.unsuccessfully_sent') . ' ' . esc($phone),
                 'person_id' => NEW_ENTRY

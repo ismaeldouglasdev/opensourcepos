@@ -16,21 +16,6 @@ use stdClass;
  */
 class Item extends Model
 {
-
-    public const ALLOWED_SUGGESTIONS_COLUMNS = ['name', 'item_number', 'description', 'cost_price', 'unit_price'];
-    public const ALLOWED_SUGGESTIONS_COLUMNS_WITH_EMPTY = ['', 'name', 'item_number', 'description', 'cost_price', 'unit_price'];
-
-    public const ALLOWED_BULK_EDIT_FIELDS = [
-        'name',
-        'category',
-        'supplier_id',
-        'cost_price',
-        'unit_price',
-        'reorder_level',
-        'description',
-        'allow_alt_description',
-        'is_serialized'
-    ];
     protected $table = 'items';
     protected $primaryKey = 'item_id';
     protected $useAutoIncrement = true;
@@ -65,10 +50,8 @@ class Item extends Model
     public function exists(string $item_id, bool $ignore_deleted = false, bool $deleted = false): bool
     {
         $builder = $this->db->table('items');
-        $builder->groupStart();
         $builder->where('item_id', $item_id);
         $builder->orWhere('item_number', $item_id);
-        $builder->groupEnd();
 
         if (!$ignore_deleted) {
             $builder->where('deleted', $deleted);
@@ -216,9 +199,9 @@ class Item extends Model
 
         if (!empty($search)) {
             if ($attributes_enabled && $filters['search_custom']) {
-                $builder->havingLike('attribute_values', $search);
-                $builder->orHavingLike('attribute_dtvalues', $search);
-                $builder->orHavingLike('attribute_dvalues', $search);
+                $builder->having("attribute_values LIKE '%$search%'");
+                $builder->orHaving("attribute_dtvalues LIKE '%$search%'");
+                $builder->orHaving("attribute_dvalues LIKE '%$search%'");
             } else {
                 $builder->groupStart();
                 $builder->like('name', $search);
@@ -354,7 +337,7 @@ class Item extends Model
     /**
      * Gets information about a particular item by item id or number
      */
-    public function get_info_by_id_or_number(string $item_id, bool $include_deleted = true): stdClass|string
+    public function get_info_by_id_or_number(string $item_id, bool $include_deleted = true)
     {
         $builder = $this->db->table('items');
         $builder->groupStart();
@@ -391,10 +374,9 @@ class Item extends Model
     public function get_item_id(string $item_number, bool $ignore_deleted = false, bool $deleted = false): bool|int
     {
         $builder = $this->db->table('items');
-        $builder->groupStart();
+        $builder->join('suppliers', 'suppliers.person_id = items.supplier_id', 'left');
         $builder->where('item_number', $item_number);
         $builder->orWhere('item_id', $item_number);
-        $builder->groupEnd();
 
         if (!$ignore_deleted) {
             $builder->where('items.deleted', $deleted);
@@ -550,20 +532,14 @@ class Item extends Model
     public function get_search_suggestion_format(?string $seed = null): string
     {
         $config = config(OSPOS::class)->settings;
-
-        $suggestionsFirstColumn = $this->suggestionColumnIsAllowed($config['suggestions_first_column'])
-            ? $config['suggestions_first_column']
-            : 'name';
-        $seed .= ',' . $suggestionsFirstColumn;
-
-        if ($config['suggestions_second_column'] !== '' && $this->suggestionColumnIsAllowed($config['suggestions_second_column'])) {
+        $seed .= ',' . $config['suggestions_first_column'];
+        if ($config['suggestions_second_column'] !== '') {
             $seed .= ',' . $config['suggestions_second_column'];
         }
-
-        if ($config['suggestions_third_column'] !== '' && $this->suggestionColumnIsAllowed($config['suggestions_third_column'])) {
+        if ($config['suggestions_third_column'] !== '') {
             $seed .= ',' . $config['suggestions_third_column'];
         }
-
+        $seed .= ',unit_price';
         return $seed;
     }
 
@@ -576,15 +552,9 @@ class Item extends Model
         $config = config(OSPOS::class)->settings;
 
         $label = '';
-        $label1 = $this->suggestionColumnIsAllowed($config['suggestions_first_column'])
-            ? $config['suggestions_first_column']
-            : 'name';
-        $label2 = $this->suggestionColumnIsAllowed($config['suggestions_second_column'])
-            ? $config['suggestions_second_column']
-            : '';
-        $label3 = $this->suggestionColumnIsAllowed($config['suggestions_third_column'])
-            ? $config['suggestions_third_column']
-            : '';
+        $label1 = $config['suggestions_first_column'];
+        $label2 = $config['suggestions_second_column'];
+        $label3 = $config['suggestions_third_column'];
 
         $this->format_result_numbers($result_row);
 
@@ -605,18 +575,10 @@ class Item extends Model
             }
         }
 
+       if (isset($result_row->unit_price)) {
+            $label .= ' [R$ ' . $result_row->unit_price . ']';
+        }
         return $label;
-    }
-
-    /**
-     * Validates if a column name is in the allowed suggestions columns.
-     *
-     * @param string $columnName
-     * @return bool
-     */
-    private function suggestionColumnIsAllowed(string $columnName): bool
-    {
-        return in_array($columnName, self::ALLOWED_SUGGESTIONS_COLUMNS, true);
     }
 
     /**

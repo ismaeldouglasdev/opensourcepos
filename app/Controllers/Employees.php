@@ -3,7 +3,6 @@
 namespace App\Controllers;
 
 use App\Models\Module;
-use CodeIgniter\HTTP\ResponseInterface;
 use Config\Services;
 
 /**
@@ -26,7 +25,7 @@ class Employees extends Persons
      *
      * @return void
      */
-    public function getSearch(): ResponseInterface
+    public function getSearch(): void
     {
         $search = $this->request->getGet('search');
         $limit  = $this->request->getGet('limit', FILTER_SANITIZE_NUMBER_INT);
@@ -42,47 +41,39 @@ class Employees extends Persons
             $data_rows[] = get_person_data_row($person);
         }
 
-        return $this->response->setJSON(['total' => $total_rows, 'rows' => $data_rows]);
+        echo json_encode(['total' => $total_rows, 'rows' => $data_rows]);
     }
 
     /**
      * AJAX called function gives search suggestions based on what is being searched for.
      *
-     * @return ResponseInterface
+     * @return void
      */
-    public function getSuggest(): ResponseInterface
+    public function getSuggest(): void
     {
         $search = $this->request->getGet('term');
         $suggestions = $this->employee->get_search_suggestions($search, 25, true);
 
-        return $this->response->setJSON($suggestions);
+        echo json_encode($suggestions);
     }
 
     /**
-     * @return ResponseInterface
+     * @return void
      */
-    public function suggest_search(): ResponseInterface
+    public function suggest_search(): void
     {
         $search = $this->request->getPost('term');
         $suggestions = $this->employee->get_search_suggestions($search);
 
-        return $this->response->setJSON($suggestions);
+        echo json_encode($suggestions);
     }
 
     /**
      * Loads the employee edit form
-     * @return string
      */
-    public function getView(int $employee_id = NEW_ENTRY): string
+    public function getView(int $employee_id = NEW_ENTRY): void
     {
         $person_info = $this->employee->get_info($employee_id);
-        $current_user = $this->employee->get_logged_in_employee_info();
-
-        if ($employee_id != NEW_ENTRY && !$this->employee->canModifyEmployee($person_info->person_id, $current_user->person_id)) {
-            header('Location: ' . base_url('no_access/employees/employees'));
-            exit();
-        }
-
         foreach (get_object_vars($person_info) as $property => $value) {
             $person_info->$property = $value;
         }
@@ -107,28 +98,14 @@ class Employees extends Persons
         }
         $data['all_subpermissions'] = $permissions;
 
-        return view('employees/form', $data);
+        echo view('employees/form', $data);
     }
 
     /**
      * Inserts/updates an employee
-     * @return ResponseInterface
      */
-    public function postSave(int $employee_id = NEW_ENTRY): ResponseInterface
+    public function postSave(int $employee_id = NEW_ENTRY): void
     {
-        $current_user = $this->employee->get_logged_in_employee_info();
-
-        if ($employee_id != NEW_ENTRY) {
-            $target_employee = $this->employee->get_info($employee_id);
-            if (!$this->employee->canModifyEmployee($target_employee->person_id, $current_user->person_id)) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => lang('Employees.error_updating_admin'),
-                    'id'      => NEW_ENTRY
-                ]);
-            }
-        }
-
         $first_name = $this->request->getPost('first_name', FILTER_SANITIZE_FULL_SPECIAL_CHARS);    // TODO: duplicated code
         $last_name = $this->request->getPost('last_name', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $email = strtolower($this->request->getPost('email', FILTER_SANITIZE_EMAIL));
@@ -153,16 +130,11 @@ class Employees extends Persons
         ];
 
         $grants_array = [];
-        $isAdmin = $this->employee->isAdmin($current_user->person_id);
-
         foreach ($this->module->get_all_permissions()->getResult() as $permission) {
             $grants = [];
             $grant = $this->request->getPost('grant_' . $permission->permission_id) != null ? $this->request->getPost('grant_' . $permission->permission_id, FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
 
             if ($grant == $permission->permission_id) {
-                if (!$isAdmin && !$this->employee->has_grant($permission->permission_id, $current_user->person_id)) {
-                    continue;
-                }
                 $grants['permission_id'] = $permission->permission_id;
                 $grants['menu_group'] = $this->request->getPost('menu_group_' . $permission->permission_id) != null ? $this->request->getPost('menu_group_' . $permission->permission_id, FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '--';
                 $grants_array[] = $grants;
@@ -191,25 +163,20 @@ class Employees extends Persons
         if ($this->employee->save_employee($person_data, $employee_data, $grants_array, $employee_id)) {
             // New employee
             if ($employee_id == NEW_ENTRY) {
-                return $this->response->setJSON([
+                echo json_encode([
                     'success' => true,
                     'message' => lang('Employees.successful_adding') . ' ' . $first_name . ' ' . $last_name,
                     'id'      => $employee_data['person_id']
                 ]);
             } else { // Existing employee
-                $logged_in_employee_id = session()->get('person_id');
-                if ($employee_id == $logged_in_employee_id) {
-                    session()->set('language_code', $employee_data['language_code']);
-                    session()->set('language', $employee_data['language']);
-                }
-                return $this->response->setJSON([
+                echo json_encode([
                     'success' => true,
                     'message' => lang('Employees.successful_updating') . ' ' . $first_name . ' ' . $last_name,
                     'id'      => $employee_id
                 ]);
             }
         } else { // Failure
-            return $this->response->setJSON([
+            echo json_encode([
                 'success' => false,
                 'message' => lang('Employees.error_adding_updating') . ' ' . $first_name . ' ' . $last_name,
                 'id'      => NEW_ENTRY
@@ -219,28 +186,18 @@ class Employees extends Persons
 
     /**
      * This deletes employees from the employees table
-     * @return ResponseInterface
      */
-    public function postDelete(): ResponseInterface
+    public function postDelete(): void
     {
         $employees_to_delete = $this->request->getPost('ids', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $current_user = $this->employee->get_logged_in_employee_info();
-
-        if (!$this->employee->isAdmin($current_user->person_id)) {
-            foreach ($employees_to_delete as $emp_id) {
-                if ($this->employee->isAdmin((int)$emp_id)) {
-                    return $this->response->setJSON(['success' => false, 'message' => lang('Employees.error_deleting_admin')]);
-                }
-            }
-        }
 
         if ($this->employee->delete_list($employees_to_delete)) {    // TODO: this is passing a string, but delete_list expects an array
-            return $this->response->setJSON([
+            echo json_encode([
                 'success' => true,
                 'message' => lang('Employees.successful_deleted') . ' ' . count($employees_to_delete) . ' ' . lang('Employees.one_or_multiple')
             ]);
         } else {
-            return $this->response->setJSON(['success' => false, 'message' => lang('Employees.cannot_be_deleted')]);
+            echo json_encode(['success' => false, 'message' => lang('Employees.cannot_be_deleted')]);
         }
     }
 
@@ -248,12 +205,12 @@ class Employees extends Persons
      * Checks an employee username against the database. Used in app\Views\employees\form.php
      *
      * @param $employee_id
-     * @return ResponseInterface
+     * @return void
      * @noinspection PhpUnused
      */
-    public function getCheckUsername($employee_id): ResponseInterface
+    public function getCheckUsername($employee_id): void
     {
         $exists = $this->employee->username_exists($employee_id, $this->request->getGet('username'));
-        return $this->response->setJSON(!$exists ? 'true' : 'false');
+        echo !$exists ? 'true' : 'false';
     }
 }

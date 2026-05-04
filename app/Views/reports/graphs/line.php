@@ -63,26 +63,24 @@
             },
             // The label interpolation function enables you to modify the values
             // used for the labels on each axis.
-            <?php
-                $currency_symbol = esc($config['currency_symbol'], 'js');
-                $currency_prefix = '';
-                $currency_suffix = '';
-
+            labelInterpolationFnc: function(value) {
+                <?php
                 if ($show_currency) {
                     if (is_right_side_currency_symbol()) {
-                        $currency_suffix = $currency_symbol;
-                    } else {
-                        $currency_prefix = $currency_symbol;
+                ?>
+                        return value + '<?= esc($config['currency_symbol'], 'js') ?>';
+                    <?php } else { ?>
+                        return '<?= esc($config['currency_symbol'], 'js') ?>' + value;
+                    <?php
                     }
-                }
-            ?>
-
-            labelInterpolationFnc: function(value) {
-                return '<?= $currency_prefix ?>' + value + '<?= $currency_suffix ?>';
+                } else {
+                    ?>
+                    return value;
+                <?php } ?>
             }
         },
 
-        // Plugin configuration
+        // Plugins configuration
         plugins: [
             Chartist.plugins.ctAxisTitle({
                 axisX: {
@@ -106,45 +104,41 @@
                 }
             }),
 
-            <?php
-                $currency_symbol = esc($config['currency_symbol'], 'js');
-                $currency_prefix = '';
-                $currency_suffix = '';
-
-                if ($show_currency) {
-                    if (is_right_side_currency_symbol()) {
-                        $currency_suffix = $currency_symbol;
-                    } else {
-                        $currency_prefix = $currency_symbol;
-                    }
-                }
-            ?>
-
             Chartist.plugins.ctPointLabels({
                 textAnchor: 'middle',
                 labelInterpolationFnc: function(value) {
-                    return '<?= $currency_prefix ?>' + value + '<?= $currency_suffix ?>';
+                    <?php
+                    if ($show_currency) {
+                        if (is_right_side_currency_symbol()) {
+                    ?>
+                            return value + '<?= esc($config['currency_symbol'], 'js') ?>';
+                        <?php } else { ?>
+                            return '<?= esc($config['currency_symbol'], 'js') ?>' + value;
+                        <?php
+                        }
+                    } else {
+                        ?>
+                        return value;
+                    <?php } ?>
                 }
             }),
-
-            <?php
-                $currency_symbol = esc($config['currency_symbol'], 'js');
-                $currency_prefix = '';
-                $currency_suffix = '';
-
-                if ($show_currency) {
-                    if (is_right_side_currency_symbol()) {
-                        $currency_suffix = $currency_symbol;
-                    } else {
-                        $currency_prefix = $currency_symbol;
-                    }
-                }
-            ?>
 
             Chartist.plugins.tooltip({
                 pointClass: 'ct-tooltip-point',
                 transformTooltipTextFnc: function(value) {
-                    return '<?= $currency_prefix ?>' + value + '<?= $currency_suffix ?>';
+                    <?php
+                    if ($show_currency) {
+                        if (is_right_side_currency_symbol()) {
+                    ?>
+                            return value + '<?= esc($config['currency_symbol'], 'js') ?>';
+                        <?php } else { ?>
+                            return '<?= esc($config['currency_symbol'], 'js') ?>' + value;
+                        <?php
+                        }
+                    } else {
+                        ?>
+                        return value;
+                    <?php } ?>
                 }
             })
         ]

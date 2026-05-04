@@ -3,14 +3,12 @@
 use Config\Database;
 
 /**
- * Migration helper.
- * @param string $path Path to migration script.
- * @return bool Whether the migration executed successfully.
+ * Migration helper
  */
-function execute_script(string $path): bool
+function execute_script(string $path): void
 {
     $version = preg_replace("/(.*_)?(.*).sql/", "$2", $path);
-    log_message('info', "Migrating to $version (file: $path)");
+    error_log("Migrating to $version (file: $path)");
 
     $sql = file_get_contents($path);
     $sqls = explode(';', $sql);
@@ -18,73 +16,17 @@ function execute_script(string $path): bool
 
     $db = Database::connect();
 
-    $success = true; // whether *all* queries succeeded
     foreach ($sqls as $statement) {
         $statement = "$statement;";
-        $hadError = !$db->simpleQuery($statement);
 
-        if ($hadError) {
-            $success = false;
+        if (!$db->simpleQuery($statement)) {
             foreach ($db->error() as $error) {
-                log_message('error', "error: $error");
+                error_log("error: $error");
             }
         }
     }
 
-    if ($success) {
-        log_message('info', "Successfully migrated to $version");
-    }
-    else {
-        log_message('info', "Could not migrate to $version.");
-    }
-
-    return $success;
-}
-
-/**
- * Migration helper that uses a transaction.
- * @param string $path Path to migration script.
- * @return bool Whether the migration executed successfully.
- */
-function executeScriptWithTransaction(string $path): bool
-{
-    $version = preg_replace("/(.*_)?(.*).sql/", "$2", $path);
-    log_message('info', "Migrating to $version (file: $path) with transaction");
-
-    $sql = file_get_contents($path);
-    $sqls = explode(';', $sql);
-    array_pop($sqls);
-
-    $db = Database::connect();
-    $db->transStart();
-
-    $success = true;
-    try {
-        foreach ($sqls as $statement) {
-            $statement = "$statement;";
-            $hadError = !$db->query($statement);
-
-            if ($hadError) {
-                $success = false;
-                foreach ($db->error() as $error) {
-                    log_message('info', "error: $error");
-                }
-            }
-        }
-    } catch (Exception $e) {
-        log_message('info', "Could not migrate to $version: " . $e->getMessage());
-        $db->transRollback();
-        return false;
-    }
-
-    if ($success) {
-        log_message('info', "Successfully migrated to $version");
-    } else {
-        log_message('info', "Could not migrate to $version.");
-    }
-
-    $db->transComplete();
-    return $success;
+    error_log("Migrated to $version");
 }
 
 /**
@@ -268,36 +210,6 @@ function foreignKeyExists(string $constraintName, string $tableName): bool {
     overridePrefix($prefix);
 
     return $query->getNumRows() > 0;
-}
-
-/**
- * Drops a column from a table if it exists.
- *
- * @param string $table The name of the table.
- * @param string $column The name of the column to drop.
- * @return void
- */
-function dropColumnIfExists(string $table, string $column): void
-{
-    $prefix = overridePrefix();
-
-    $db = Database::connect();
-    $builder = $db->table('information_schema.COLUMNS');
-
-    // Check if the column exists in the table
-    $builder->select('COLUMN_NAME')
-        ->where('TABLE_SCHEMA', $db->database)
-        ->where('TABLE_NAME', $prefix . $table)
-        ->where('COLUMN_NAME', $column);
-
-    $query = $builder->get();
-
-    if ($query->getNumRows() > 0)
-    {
-        // Drop the column if it exists
-        $db->query("ALTER TABLE `" . $prefix . "$table` DROP COLUMN `$column`");
-    }
-    overridePrefix($prefix);
 }
 
 /**

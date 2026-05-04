@@ -1,4 +1,10 @@
-<!DOCTYPE html>
+<?php
+/**
+ * @var string $message
+ */
+?>
+
+<!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">

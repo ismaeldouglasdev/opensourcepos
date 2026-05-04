@@ -83,18 +83,24 @@
             $("input[name='jurisdiction_name[]']").each(function() {
                 value_count = $(this).val() == value ? value_count + 1 : value_count;
             });
-            return value_count <= 1;
-
+            if (value_count > 1) {
+                return false;
+            }
+            return true;
         }, "<?= lang('Taxes.tax_jurisdiction_duplicate') ?>");
 
         $.validator.addMethod('validateTaxJurisdictionCharacters', function(value, element) {
-            return (value.indexOf('_') == -1);
-
+            if ((value.indexOf('_') != -1)) {
+                return false;
+            }
+            return true;
         }, "<?= lang('Taxes.tax_jurisdiction_invalid_chars') ?>");
 
         $.validator.addMethod('requireTaxJurisdiction', function(value, element) {
-            return value.trim() != '';
-
+            if (value.trim() == '') {
+                return false;
+            }
+            return true;
         }, "<?= lang('Taxes.tax_jurisdiction_required') ?>");
 
         $('#tax_jurisdictions_form').validate($.extend(form_support.handler, {

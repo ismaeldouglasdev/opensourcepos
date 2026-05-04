@@ -8,7 +8,6 @@ use App\Models\Customer;
 use App\Models\Customer_rewards;
 use App\Models\Tax_code;
 use CodeIgniter\HTTP\DownloadResponse;
-use CodeIgniter\HTTP\ResponseInterface;
 use Config\OSPOS;
 use Config\Services;
 use stdClass;
@@ -41,20 +40,19 @@ class Customers extends Persons
     }
 
     /**
-     * @return string
+     * @return void
      */
-    public function getIndex(): string
+    public function getIndex(): void
     {
         $data['table_headers'] = get_customer_manage_table_headers();
 
-        return view('people/manage', $data);
+        echo view('people/manage', $data);
     }
 
     /**
      * Gets one row for a customer manage table. This is called using AJAX to update one row.
-     * @return ResponseInterface
      */
-    public function getRow(int $row_id): ResponseInterface
+    public function getRow(int $row_id): void
     {
         $person = $this->customer->get_info($row_id);
 
@@ -74,7 +72,7 @@ class Customers extends Persons
 
         $data_row = get_customer_data_row($person, $stats);
 
-        return $this->response->setJSON($data_row);
+        echo json_encode($data_row);
     }
 
 
@@ -83,7 +81,7 @@ class Customers extends Persons
      *
      * @return void
      */
-    public function getSearch(): ResponseInterface
+    public function getSearch(): void
     {
         $search = $this->request->getGet('search');
         $limit = $this->request->getGet('limit', FILTER_SANITIZE_NUMBER_INT);
@@ -113,37 +111,35 @@ class Customers extends Persons
             $data_rows[] = get_customer_data_row($person, $stats);
         }
 
-        return $this->response->setJSON(['total' => $total_rows, 'rows' => $data_rows]);
+        echo json_encode(['total' => $total_rows, 'rows' => $data_rows]);
     }
 
     /**
      * Gives search suggestions based on what is being searched for
-     * @return ResponseInterface
      */
-    public function getSuggest(): ResponseInterface
+    public function getSuggest(): void
     {
         $search = $this->request->getGet('term');
         $suggestions = $this->customer->get_search_suggestions($search);
 
-        return $this->response->setJSON($suggestions);
+        echo json_encode($suggestions);
     }
 
     /**
-     * @return ResponseInterface
+     * @return void
      */
-    public function suggest_search(): ResponseInterface
+    public function suggest_search(): void
     {
         $search = $this->request->getGet('term');
         $suggestions = $this->customer->get_search_suggestions($search, 25, false);
 
-        return $this->response->setJSON($suggestions);
+        echo json_encode($suggestions);
     }
 
     /**
      * Loads the customer edit form
-     * @return string
      */
-    public function getView(int $customer_id = NEW_ENTRY): string
+    public function getView(int $customer_id = NEW_ENTRY): void
     {
         // Set default values
         if ($customer_id == null) $customer_id = NEW_ENTRY;
@@ -231,14 +227,13 @@ class Customers extends Persons
             }
         }
 
-        return view("customers/form", $data);
+        echo view("customers/form", $data);
     }
 
     /**
      * Inserts/updates a customer
-     * @return ResponseInterface
      */
-    public function postSave(int $customer_id = NEW_ENTRY): ResponseInterface
+    public function postSave(int $customer_id = NEW_ENTRY): void
     {
         $first_name = $this->request->getPost('first_name');
         $last_name = $this->request->getPost('last_name');
@@ -293,20 +288,20 @@ class Customers extends Persons
 
             // New customer
             if ($customer_id == NEW_ENTRY) {
-                return $this->response->setJSON([
+                echo json_encode([
                     'success' => true,
                     'message' => lang('Customers.successful_adding') . ' ' . $first_name . ' ' . $last_name,
                     'id'      => $customer_data['person_id']
                 ]);
             } else { // Existing customer
-                return $this->response->setJSON([
+                echo json_encode([
                     'success' => true,
                     'message' => lang('Customers.successful_updating') . ' ' . $first_name . ' ' . $last_name,
                     'id'      => $customer_id
                 ]);
             }
         } else { // Failure
-            return $this->response->setJSON([
+            echo json_encode([
                 'success' => false,
                 'message' => lang('Customers.error_adding_updating') . ' ' . $first_name . ' ' . $last_name,
                 'id'      => NEW_ENTRY
@@ -317,37 +312,36 @@ class Customers extends Persons
     /**
      * Verifies if an email address already exists. Used in app/Views/customers/form.php
      *
-     * @return ResponseInterface
+     * @return void
      * @noinspection PhpUnused
      */
-    public function postCheckEmail(): ResponseInterface
+    public function postCheckEmail(): void
     {
         $email = strtolower($this->request->getPost('email', FILTER_SANITIZE_EMAIL));
         $person_id = $this->request->getPost('person_id', FILTER_SANITIZE_NUMBER_INT);
 
         $exists = $this->customer->check_email_exists($email, $person_id);
 
-        return $this->response->setJSON(!$exists ? 'true' : 'false');
+        echo !$exists ? 'true' : 'false';
     }
 
     /**
      * Verifies if an account number already exists. Used in app/Views/customers/form.php
      *
-     * @return ResponseInterface
+     * @return void
      * @noinspection PhpUnused
      */
-    public function postCheckAccountNumber(): ResponseInterface
+    public function postCheckAccountNumber(): void
     {
         $exists = $this->customer->check_account_number_exists($this->request->getPost('account_number'), $this->request->getPost('person_id', FILTER_SANITIZE_NUMBER_INT));
 
-        return $this->response->setJSON(!$exists ? 'true' : 'false');
+        echo !$exists ? 'true' : 'false';
     }
 
     /**
      * This deletes customers from the customers table
-     * @return ResponseInterface
      */
-    public function postDelete(): ResponseInterface
+    public function postDelete(): void
     {
         $customers_to_delete = $this->request->getPost('ids');
         $customers_info = $this->customer->get_multiple_info($customers_to_delete);
@@ -364,12 +358,12 @@ class Customers extends Persons
         }
 
         if ($count == count($customers_to_delete)) {
-            return $this->response->setJSON([
+            echo json_encode([
                 'success' => true,
                 'message' => lang('Customers.successful_deleted') . ' ' . $count . ' ' . lang('Customers.one_or_multiple')
             ]);
         } else {
-            return $this->response->setJSON(['success' => false, 'message' => lang('Customers.cannot_be_deleted')]);
+            echo json_encode(['success' => false, 'message' => lang('Customers.cannot_be_deleted')]);
         }
     }
 
@@ -389,24 +383,24 @@ class Customers extends Persons
     /**
      * Displays the customer CSV import modal. Used in app/Views/people/manage.php
      *
-     * @return string
+     * @return void
      * @noinspection PhpUnused
      */
-    public function getCsvImport(): string
+    public function getCsvImport(): void
     {
-        return view('customers/form_csv_import');
+        echo view('customers/form_csv_import');
     }
 
     /**
      * Imports a CSV file containing customers. Used in app/Views/customers/form_csv_import.php
      *
-     * @return ResponseInterface
+     * @return void
      * @noinspection PhpUnused
      */
-    public function postImportCsvFile(): ResponseInterface
+    public function postImportCsvFile(): void
     {
         if ($_FILES['file_path']['error'] != UPLOAD_ERR_OK) {
-            return $this->response->setJSON(['success' => false, 'message' => lang('Customers.csv_import_failed')]);
+            echo json_encode(['success' => false, 'message' => lang('Customers.csv_import_failed')]);
         } else {
             if (($handle = fopen($_FILES['file_path']['tmp_name'], 'r')) !== false) {
                 // Skip the first row as it's the table description
@@ -473,12 +467,12 @@ class Customers extends Persons
                 if (count($failCodes) > 0) {
                     $message = lang('Customers.csv_import_partially_failed', [count($failCodes), implode(', ', $failCodes)]);
 
-                    return $this->response->setJSON(['success' => false, 'message' => $message]);
+                    echo json_encode(['success' => false, 'message' => $message]);
                 } else {
-                    return $this->response->setJSON(['success' => true, 'message' => lang('Customers.csv_import_success')]);
+                    echo json_encode(['success' => true, 'message' => lang('Customers.csv_import_success')]);
                 }
             } else {
-                return $this->response->setJSON(['success' => false, 'message' => lang('Customers.csv_import_nodata_wrongformat')]);
+                echo json_encode(['success' => false, 'message' => lang('Customers.csv_import_nodata_wrongformat')]);
             }
         }
     }

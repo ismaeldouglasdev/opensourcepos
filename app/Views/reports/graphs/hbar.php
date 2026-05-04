@@ -44,32 +44,30 @@
             position: 'end',
             // The label interpolation function enables you to modify the values
             // used for the labels on each axis.
-            <?php
-                $currency_symbol = esc($config['currency_symbol'], 'js');
-                $currency_prefix = '';
-                $currency_suffix = '';
-
+            labelInterpolationFnc: function(value) {
+                <?php
                 if ($show_currency) {
                     if (is_right_side_currency_symbol()) {
-                        $currency_suffix = $currency_symbol;
-                    } else {
-                        $currency_prefix = $currency_symbol;
+                ?>
+                        return value + '<?= esc($config['currency_symbol'], 'js') ?>';
+                    <?php } else { ?>
+                        return '<?= esc($config['currency_symbol'], 'js') ?>' + value;
+                    <?php
                     }
-                }
-            ?>
-
-            labelInterpolationFnc: function(value) {
-                return '<?= $currency_prefix ?>' + value + '<?= $currency_suffix ?>';
+                } else {
+                    ?>
+                    return value;
+                <?php } ?>
             }
         },
 
         // Y-Axis specific configuration
         axisY: {
-            // Let's offset the chart a bit from the labels
+            // Lets offset the chart a bit from the labels
             offset: 120
         },
 
-        // Plugin configuration
+        // Plugins configuration
         plugins: [
             Chartist.plugins.ctAxisTitle({
                 axisX: {

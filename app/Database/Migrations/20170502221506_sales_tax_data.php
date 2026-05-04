@@ -34,7 +34,7 @@ class Migration_Sales_Tax_Data extends Migration
     public function up(): void
     {
         $number_of_unmigrated = $this->get_count_of_unmigrated();
-        log_message('info', "Migrating sales tax history. The number of sales that will be migrated is $number_of_unmigrated");
+        error_log("Migrating sales tax history. The number of sales that will be migrated is $number_of_unmigrated");
 
         if ($number_of_unmigrated > 0) {
             $unmigrated_invoices = $this->get_unmigrated($number_of_unmigrated)->getResultArray();
@@ -44,7 +44,7 @@ class Migration_Sales_Tax_Data extends Migration
             }
         }
 
-        log_message('info', 'Migrating sales tax history. The number of sales that will be migrated is finished.');
+        error_log('Migrating sales tax history. The number of sales that will be migrated is finished.');
     }
 
     /**
@@ -146,7 +146,7 @@ class Migration_Sales_Tax_Data extends Migration
             . ' ORDER BY SIT.sale_id) as US')->getResultArray();
 
         if (!$result) {
-            log_message('info', 'Database error in 20170502221506_sales_tax_data.php related to sales_taxes or sales_items_taxes.');
+            error_log('Database error in 20170502221506_sales_tax_data.php related to sales_taxes or sales_items_taxes.');
             return 0;
         }
 
@@ -267,8 +267,6 @@ class Migration_Sales_Tax_Data extends Migration
      */
     public function round_number(int $rounding_mode, string $amount, int $decimals): float
     {
-        $amount = (float)$amount;
-
         if ($rounding_mode == Migration_Sales_Tax_Data::ROUND_UP) {
             $fig = pow(10, $decimals);
             $rounded_total = (ceil($fig * $amount) + ceil($fig * $amount - ceil($fig * $amount))) / $fig;
@@ -378,7 +376,7 @@ class Migration_Sales_Tax_Data extends Migration
         $decimals = totals_decimals();
 
         foreach ($sales_taxes as $row_number => $sales_tax) {
-            $sale_tax_amount = (float)$sales_tax['sale_tax_amount'];
+            $sale_tax_amount = $sales_tax['sale_tax_amount'];
             $rounding_code = $sales_tax['rounding_code'];
             $rounded_sale_tax_amount = $sale_tax_amount;
 

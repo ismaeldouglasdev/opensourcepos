@@ -17,14 +17,6 @@
         document.getElementById('liveclock').innerHTML = moment().format("<?= dateformat_momentjs($config['dateformat'] . ' ' . $config['timeformat']) ?>");
     }
 
-    const notify = $.notify;
-
-    $.notify = function(content, options) {
-        const message = typeof content === "object" ? content.message : content;
-        const sanitizedMessage = DOMPurify.sanitize(message);
-        return notify(sanitizedMessage, options);
-    };
-
     $.notifyDefaults({
         placement: {
             align: "<?= esc($config['notify_horizontal_position'], 'js') ?>",
@@ -32,8 +24,10 @@
         }
     });
 
+    var cookie_name = "<?= esc(config('Cookie')->prefix, 'js') . esc(config('Security')->cookieName, 'js') ?>";
+
     var csrf_token = function() {
-        return "<?= csrf_hash() ?>";
+        return Cookies.get(cookie_name);
     };
 
     var csrf_form_base = function() {

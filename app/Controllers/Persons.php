@@ -3,7 +3,6 @@
 namespace App\Controllers;
 
 use App\Models\Person;
-use CodeIgniter\HTTP\ResponseInterface;
 use Config\Services;
 use function Tamtamchik\NameCase\str_name_case;
 
@@ -22,36 +21,34 @@ abstract class Persons extends Secure_Controller
     }
 
     /**
-     * @return string
+     * @return void
      */
-    public function getIndex(): string
+    public function getIndex(): void
     {
         $data['table_headers'] = get_people_manage_table_headers();
 
-        return view('people/manage', $data);
+        echo view('people/manage', $data);
     }
 
     /**
      * Gives search suggestions based on what is being searched for
-     * @return ResponseInterface
      */
-    public function getSuggest(): ResponseInterface
+    public function getSuggest(): void
     {
         $search = $this->request->getGet('term');
         $suggestions = $this->person->get_search_suggestions($search);
 
-        return $this->response->setJSON($suggestions);
+        echo json_encode($suggestions);
     }
 
     /**
      * Gets one row for a person manage table. This is called using AJAX to update one row.
-     * @return ResponseInterface
      */
-    public function getRow(int $row_id): ResponseInterface
+    public function getRow(int $row_id): void
     {
         $data_row = get_person_data_row($this->person->get_info($row_id));
 
-        return $this->response->setJSON($data_row);
+        echo json_encode($data_row);
     }
 
     /**

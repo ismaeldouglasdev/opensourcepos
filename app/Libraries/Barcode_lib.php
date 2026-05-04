@@ -147,7 +147,7 @@ class Barcode_lib
             $barcode = $this->generate_barcode($item, $barcode_config);
             $display_table = '<table>';
             $display_table .= '<tr><td style="text-align: center;">' . $this->manage_display_layout($barcode_config['barcode_first_row'], $item, $barcode_config) . '</td></tr>';
-            $display_table .= '<tr><td style="text-align: center;"><div class="barcode">'.$barcode.'</div></td></tr>';
+            $display_table .= '<tr><td style="text-align: center;"><div class="barcode">$barcode</div></td></tr>';
             $display_table .= '<tr><td style="text-align: center;">' . $this->manage_display_layout($barcode_config['barcode_second_row'], $item, $barcode_config) . '</td></tr>';
             $display_table .= '<tr><td style="text-align: center;">' . $this->manage_display_layout($barcode_config['barcode_third_row'], $item, $barcode_config) . '</td></tr>';
             $display_table .= '</table>';
@@ -155,7 +155,7 @@ class Barcode_lib
             return $display_table;
         }
 
-        return "Item number or Item ID not found in the item array.";    // TODO: this needs to be run through the translation engine.
+        return lang('Items.cannot_find_item');    // TODO: this needs to be run through the translation engine.
     }
 
     /**
@@ -172,7 +172,7 @@ class Barcode_lib
         if ($layout_type == 'name') {
             $result = $item['name'];
         } elseif ($layout_type == 'category' && isset($item['category'])) {
-            $result = lang('Items.category') . " " . esc($item['category']);
+            $result = lang('Items.category') . " " . $item['category'];
         } elseif ($layout_type == 'cost_price' && isset($item['cost_price'])) {
             $result = lang('Items.cost_price') . " " . to_currency($item['cost_price']);
         } elseif ($layout_type == 'unit_price' && isset($item['unit_price'])) {

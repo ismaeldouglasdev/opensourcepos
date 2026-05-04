@@ -25,7 +25,6 @@ use App\Models\Reports\Summary_sales;
 use App\Models\Reports\Summary_sales_taxes;
 use App\Models\Reports\Summary_suppliers;
 use App\Models\Reports\Summary_taxes;
-use CodeIgniter\HTTP\ResponseInterface;
 use Config\OSPOS;
 use Config\Services;
 
@@ -85,8 +84,7 @@ class Reports extends Secure_Controller
 
             // Check access to report submodule
             if (!$this->employee->has_grant('reports_' . $submodule_id, $this->employee->get_logged_in_employee_info()->person_id)) {
-                header('Location: ' . base_url('no_access/reports/reports_' . $submodule_id));
-                exit();
+                redirect('no_access/reports/reports_' . $submodule_id);
             }
         }
 
@@ -103,9 +101,8 @@ class Reports extends Secure_Controller
 
     /**
      * Initial Report listing screen
-     * @return string
      */
-    public function getIndex(): string
+    public function getIndex(): void
     {
         $person_id = $this->session->get('person_id');
         $grants = $this->employee->get_employee_grants($this->session->get('person_id'));
@@ -117,7 +114,7 @@ class Reports extends Secure_Controller
             'permission_ids' => $permissions_ids,
         ];
 
-        return view('reports/listing', $data);
+        echo view('reports/listing', $data);
     }
 
     /**
@@ -126,9 +123,9 @@ class Reports extends Secure_Controller
      * @param string $end_date
      * @param string $sale_type
      * @param string $location_id
-     * @return string
+     * @return void
      */
-    public function summary_sales(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): string    // TODO: Perhaps these need to be passed as an array?  Too many parameters in the signature.
+    public function summary_sales(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void    // TODO: Perhaps these need to be passed as an array?  Too many parameters in the signature.
     {   // TODO: Duplicated code
         $this->clearCache();
 
@@ -164,7 +161,7 @@ class Reports extends Secure_Controller
             'summary_data' => $summary
         ];
 
-        return view('reports/tabular', $data);
+        echo view('reports/tabular', $data);
     }
 
     /**
@@ -173,9 +170,9 @@ class Reports extends Secure_Controller
      * @param string $end_date
      * @param string $sale_type
      * @param string $location_id
-     * @return string
+     * @return void
      */
-    public function summary_categories(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): string
+    public function summary_categories(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {   // TODO: Duplicated code
         $this->clearCache();
 
@@ -210,7 +207,7 @@ class Reports extends Secure_Controller
             'summary_data' => $summary
         ];
 
-        return view('reports/tabular', $data);
+        echo view('reports/tabular', $data);
     }
 
     /**
@@ -218,9 +215,9 @@ class Reports extends Secure_Controller
      * @param string $start_date
      * @param string $end_date
      * @param string $sale_type
-     * @return string
+     * @return void
      */
-    public function summary_expenses_categories(string $start_date, string $end_date, string $sale_type): string
+    public function summary_expenses_categories(string $start_date, string $end_date, string $sale_type): void
     {
         $this->clearCache();
 
@@ -247,7 +244,7 @@ class Reports extends Secure_Controller
             'summary_data' => $summary
         ];
 
-        return view('reports/tabular', $data);
+        echo view('reports/tabular', $data);
     }
 
     /**
@@ -256,9 +253,9 @@ class Reports extends Secure_Controller
      * @param string $end_date
      * @param string $sale_type
      * @param string $location_id
-     * @return string
+     * @return void
      */
-    public function summary_customers(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): string
+    public function summary_customers(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {
         $this->clearCache();
 
@@ -295,7 +292,7 @@ class Reports extends Secure_Controller
             'summary_data' => $summary
         ];
 
-        return view('reports/tabular', $data);
+        echo view('reports/tabular', $data);
     }
 
     /**
@@ -304,9 +301,9 @@ class Reports extends Secure_Controller
      * @param string $end_date
      * @param string $sale_type
      * @param string $location_id
-     * @return string
+     * @return void
      */
-    public function summary_suppliers(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): string
+    public function summary_suppliers(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {   // TODO: Duplicated Code
         $this->clearCache();
 
@@ -341,7 +338,7 @@ class Reports extends Secure_Controller
             'summary_data' => $summary
         ];
 
-        return view('reports/tabular', $data);
+        echo view('reports/tabular', $data);
     }
 
     /**
@@ -350,9 +347,9 @@ class Reports extends Secure_Controller
      * @param string $end_date
      * @param string $sale_type
      * @param string $location_id
-     * @return string
+     * @return void
      */
-    public function summary_items(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): string
+    public function summary_items(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {
         $this->clearCache();
 
@@ -391,7 +388,7 @@ class Reports extends Secure_Controller
             'summary_data' => $summary
         ];
 
-        return view('reports/tabular', $data);
+        echo view('reports/tabular', $data);
     }
 
     /**
@@ -400,9 +397,9 @@ class Reports extends Secure_Controller
      * @param string $end_date
      * @param string $sale_type
      * @param string $location_id
-     * @return string
+     * @return void
      */
-    public function summary_employees(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): string
+    public function summary_employees(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {
         $this->clearCache();
 
@@ -439,7 +436,7 @@ class Reports extends Secure_Controller
             'summary_data' => $summary
         ];
 
-        return view('reports/tabular', $data);
+        echo view('reports/tabular', $data);
     }
 
     /**
@@ -448,9 +445,9 @@ class Reports extends Secure_Controller
      * @param string $end_date
      * @param string $sale_type
      * @param string $location_id
-     * @return string
+     * @return void
      */
-    public function summary_taxes(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): string
+    public function summary_taxes(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {   // TODO: Duplicate Code
         $this->clearCache();
 
@@ -485,14 +482,13 @@ class Reports extends Secure_Controller
             'summary_data' => $summary
         ];
 
-        return view('reports/tabular', $data);
+        echo view('reports/tabular', $data);
     }
 
     /**
      * Summary Sales Taxes report
-     * @return string
      */
-    public function summary_sales_taxes(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): string
+    public function summary_sales_taxes(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {   // TODO: Duplicated code
         $this->clearCache();
 
@@ -525,16 +521,16 @@ class Reports extends Secure_Controller
             'summary_data' => $summary
         ];
 
-        return view('reports/tabular', $data);
+        echo view('reports/tabular', $data);
     }
 
     /**
      * Summary Discounts report input. Used in app/Config/Routes.php
      *
-     * @return string
+     * @return void
      * @noinspection PhpUnused
      */
-    public function summary_discounts_input(): string
+    public function summary_discounts_input(): void
     {
         $this->clearCache();
 
@@ -545,14 +541,13 @@ class Reports extends Secure_Controller
         $data['discount_type_options'] = ['0' => lang('Reports.discount_percent'), '1' => lang('Reports.discount_fixed')];
         $data['sale_type_options'] = $this->get_sale_type_options();
 
-        return view('reports/date_input', $data);
+        echo view('reports/date_input', $data);
     }
 
     /**
      * Summary Discounts report
-     * @return string
      **/
-    public function summary_discounts(string $start_date, string $end_date, string $sale_type, string $location_id = 'all', int $discount_type = 0): string
+    public function summary_discounts(string $start_date, string $end_date, string $sale_type, string $location_id = 'all', int $discount_type = 0): void
     {   // TODO: Duplicated Code
         $this->clearCache();
 
@@ -584,14 +579,13 @@ class Reports extends Secure_Controller
             'summary_data' => $summary
         ];
 
-        return view('reports/tabular', $data);
+        echo view('reports/tabular', $data);
     }
 
     /**
      * Summary Payments report
-     * @return string
      */
-    public function summary_payments(string $start_date, string $end_date): string
+    public function summary_payments(string $start_date, string $end_date): void
     {
         $this->clearCache();
 
@@ -643,16 +637,16 @@ class Reports extends Secure_Controller
             'summary_data' => $summary
         ];
 
-        return view('reports/tabular', $data);
+        echo view('reports/tabular', $data);
     }
 
     /**
      * Input for reports that require only a date range. Used in app/Config/Routes.php
      *
-     * @return string
+     * @return void
      * @noinspection PhpUnused
      */
-    public function date_input(): string
+    public function date_input(): void
     {   // TODO: Duplicated Code
         $this->clearCache();
 
@@ -662,30 +656,30 @@ class Reports extends Secure_Controller
         $data['mode'] = 'sale';
         $data['sale_type_options'] = $this->get_sale_type_options();
 
-        return view('reports/date_input', $data);
+        echo view('reports/date_input', $data);
     }
 
     /**
      * Input for reports that require only a date range. Used in app/Config/Routes.php
      *
-     * @return string
+     * @return void
      * @noinspection PhpUnused
      */
-    public function date_input_only(): string
+    public function date_input_only(): void
     {
         $this->clearCache();
 
         $data = [];
-        return view('reports/date_input', $data);
+        echo view('reports/date_input', $data);
     }
 
     /**
      * Input for reports that require only a date range. Used in app/Config/Routes.php
      *
-     * @return string
+     * @return void
      * @noinspection PhpUnused
      */
-    public function date_input_sales(): string
+    public function date_input_sales(): void
     {   // TODO: Duplicated Code
         $this->clearCache();
 
@@ -695,23 +689,23 @@ class Reports extends Secure_Controller
         $data['mode'] = 'sale';
         $data['sale_type_options'] = $this->get_sale_type_options();
 
-        return view('reports/date_input', $data);
+        echo view('reports/date_input', $data);
     }
 
     /**
      * Receivings date input. Used in app/Config/Routes.php
      *
-     * @return string
+     * @return void
      * @noinspection PhpUnused
      */
-    public function date_input_recv(): string
+    public function date_input_recv(): void
     {
         $stock_locations = $data = $this->stock_location->get_allowed_locations('receivings');
         $stock_locations['all'] =  lang('Reports.all');
         $data['stock_locations'] = array_reverse($stock_locations, true);
         $data['mode'] = 'receiving';
 
-        return view('reports/date_input', $data);
+        echo view('reports/date_input', $data);
     }
 
     /**
@@ -720,10 +714,10 @@ class Reports extends Secure_Controller
      * @param string $start_date
      * @param string $end_date
      * @param string $sale_type
-     * @return string
+     * @return void
      * @noinspection PhpUnused
      */
-    public function graphical_summary_expenses_categories(string $start_date, string $end_date, string $sale_type): string
+    public function graphical_summary_expenses_categories(string $start_date, string $end_date, string $sale_type): void
     {
         $this->clearCache();
 
@@ -756,7 +750,7 @@ class Reports extends Secure_Controller
             'show_currency'  => true
         ];
 
-        return view('reports/graphical', $data);
+        echo view('reports/graphical', $data);
     }
 
     /**
@@ -766,9 +760,9 @@ class Reports extends Secure_Controller
      * @param string $end_date
      * @param string $sale_type
      * @param string $location_id
-     * @return string
+     * @return void
      */
-    public function graphical_summary_sales(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): string
+    public function graphical_summary_sales(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {
         $this->clearCache();
 
@@ -802,7 +796,7 @@ class Reports extends Secure_Controller
             'show_currency'  => true
         ];
 
-        return view('reports/graphical', $data);
+        echo view('reports/graphical', $data);
     }
 
     /**
@@ -812,9 +806,9 @@ class Reports extends Secure_Controller
      * @param string $end_date
      * @param string $sale_type
      * @param string $location_id
-     * @return string
+     * @return void
      */
-    public function graphical_summary_items(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): string
+    public function graphical_summary_items(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {
         $this->clearCache();
 
@@ -849,7 +843,7 @@ class Reports extends Secure_Controller
             'show_currency'  => true
         ];
 
-        return view('reports/graphical', $data);
+        echo view('reports/graphical', $data);
     }
 
     /**
@@ -859,9 +853,9 @@ class Reports extends Secure_Controller
      * @param string $end_date
      * @param string $sale_type
      * @param string $location_id
-     * @return string
+     * @return void
      */
-    public function graphical_summary_categories(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): string
+    public function graphical_summary_categories(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {   // TODO: Duplicated Code
         $this->clearCache();
 
@@ -892,7 +886,7 @@ class Reports extends Secure_Controller
             'show_currency'  => true
         ];
 
-        return view('reports/graphical', $data);
+        echo view('reports/graphical', $data);
     }
 
     /**
@@ -902,9 +896,9 @@ class Reports extends Secure_Controller
      * @param string $end_date
      * @param string $sale_type
      * @param string $location_id
-     * @return string
+     * @return void
      */
-    public function graphical_summary_suppliers(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): string
+    public function graphical_summary_suppliers(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {   // TODO: Duplicated Code
         $this->clearCache();
 
@@ -937,7 +931,7 @@ class Reports extends Secure_Controller
             'show_currency'  => true
         ];
 
-        return view('reports/graphical', $data);
+        echo view('reports/graphical', $data);
     }
 
     /**
@@ -947,9 +941,9 @@ class Reports extends Secure_Controller
      * @param string $end_date
      * @param string $sale_type
      * @param string $location_id
-     * @return string
+     * @return void
      */
-    public function graphical_summary_employees(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): string
+    public function graphical_summary_employees(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {
         $this->clearCache();
 
@@ -981,7 +975,7 @@ class Reports extends Secure_Controller
             'show_currency'  => true
         ];
 
-        return view('reports/graphical', $data);
+        echo view('reports/graphical', $data);
     }
 
     /**
@@ -991,9 +985,9 @@ class Reports extends Secure_Controller
      * @param string $end_date
      * @param string $sale_type
      * @param string $location_id
-     * @return string
+     * @return void
      */
-    public function graphical_summary_taxes(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): string
+    public function graphical_summary_taxes(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {   // TODO: Duplicated Code
         $this->clearCache();
 
@@ -1025,7 +1019,7 @@ class Reports extends Secure_Controller
             'show_currency'  => true
         ];
 
-        return view('reports/graphical', $data);
+        echo view('reports/graphical', $data);
     }
 
     /**
@@ -1035,9 +1029,9 @@ class Reports extends Secure_Controller
      * @param string $end_date
      * @param string $sale_type
      * @param string $location_id
-     * @return string
+     * @return void
      */
-    public function graphical_summary_sales_taxes(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): string
+    public function graphical_summary_sales_taxes(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {   // TODO: Duplicated Code
         $this->clearCache();
 
@@ -1069,7 +1063,7 @@ class Reports extends Secure_Controller
             'show_currency'  => true
         ];
 
-        return view('reports/graphical', $data);
+        echo view('reports/graphical', $data);
     }
 
     /**
@@ -1079,9 +1073,9 @@ class Reports extends Secure_Controller
      * @param string $end_date
      * @param string $sale_type
      * @param string $location_id
-     * @return string
+     * @return void
      */
-    public function graphical_summary_customers(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): string
+    public function graphical_summary_customers(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {   // TODO: Duplicated Code
         $this->clearCache();
 
@@ -1115,7 +1109,7 @@ class Reports extends Secure_Controller
             'show_currency'  => true
         ];
 
-        return view('reports/graphical', $data);
+        echo view('reports/graphical', $data);
     }
 
     /**
@@ -1126,10 +1120,9 @@ class Reports extends Secure_Controller
      * @param string $sale_type
      * @param string $location_id ID of the location to be reported or 'all' if none is specified
      * @param int $discount_type
-     * @return string
      * @noinspection PhpUnused
      */
-    public function graphical_summary_discounts(string $start_date, string $end_date, string $sale_type, string $location_id = 'all', int $discount_type = 0): string
+    public function graphical_summary_discounts(string $start_date, string $end_date, string $sale_type, string $location_id = 'all', int $discount_type = 0): void
     {   // TODO: Duplicated Code
         $this->clearCache();
 
@@ -1164,7 +1157,7 @@ class Reports extends Secure_Controller
             'show_currency'  => false
         ];
 
-        return view('reports/graphical', $data);
+        echo view('reports/graphical', $data);
     }
 
     /**
@@ -1174,9 +1167,9 @@ class Reports extends Secure_Controller
      * @param string $end_date
      * @param string $sale_type
      * @param string $location_id
-     * @return string
+     * @return void
      */
-    public function graphical_summary_payments(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): string
+    public function graphical_summary_payments(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {
         $this->clearCache();
 
@@ -1210,16 +1203,16 @@ class Reports extends Secure_Controller
             'show_currency'  => true
         ];
 
-        return view('reports/graphical', $data);
+        echo view('reports/graphical', $data);
     }
 
     /**
      * Gets the specific customer input view. Used in app/Config/Routes.php
      *
-     * @return string
+     * @return void
      * @noinspection PhpUnused
      */
-    public function specific_customer_input(): string
+    public function specific_customer_input(): void
     {
         $this->clearCache();
 
@@ -1237,7 +1230,7 @@ class Reports extends Secure_Controller
         $data['sale_type_options'] = $this->get_sale_type_options();
 
         $data['payment_type'] = $this->get_payment_type();
-        return view('reports/specific_customer_input', $data);
+        echo view('reports/specific_customer_input', $data);
     }
 
     /**
@@ -1264,10 +1257,10 @@ class Reports extends Secure_Controller
      * @param string $customer_id
      * @param string $sale_type
      * @param string $payment_type
-     * @return string
+     * @return void
      * @noinspection PhpUnused
      */
-    public function specific_customers(string $start_date, string $end_date, string $customer_id, string $sale_type, string $payment_type): string
+    public function specific_customers(string $start_date, string $end_date, string $customer_id, string $sale_type, string $payment_type): void
     {
         $this->clearCache();
 
@@ -1358,16 +1351,16 @@ class Reports extends Secure_Controller
             'overall_summary_data' => $specific_customer->getSummaryData($inputs)
         ];
 
-        return view('reports/tabular_details', $data);
+        echo view('reports/tabular_details', $data);
     }
 
     /**
      * Detailed employee report input form. Used in app/Config/Routes.php
      *
-     * @return string
+     * @return void
      * @noinspection PhpUnused
      */
-    public function specific_employee_input(): string
+    public function specific_employee_input(): void
     {
         $this->clearCache();
 
@@ -1381,7 +1374,7 @@ class Reports extends Secure_Controller
         $data['specific_input_data'] = $employees;
         $data['sale_type_options'] = $this->get_sale_type_options();
 
-        return view('reports/specific_input', $data);
+        echo view('reports/specific_input', $data);
     }
 
     /**
@@ -1391,10 +1384,10 @@ class Reports extends Secure_Controller
      * @param string $end_date
      * @param string $employee_id
      * @param string $sale_type
-     * @return string
+     * @return void
      * @noinspection PhpUnused
      */
-    public function specific_employees(string $start_date, string $end_date, string $employee_id, string $sale_type): string
+    public function specific_employees(string $start_date, string $end_date, string $employee_id, string $sale_type): void
     {
         $this->clearCache();
 
@@ -1481,16 +1474,16 @@ class Reports extends Secure_Controller
             'overall_summary_data' => $specific_employee->getSummaryData($inputs)
         ];
 
-        return view('reports/tabular_details', $data);
+        echo view('reports/tabular_details', $data);
     }
 
     /**
      * Detailed discount report. Used in app/Config/Routes.php
      *
-     * @return string
+     * @return void
      * @noinspection PhpUnused
      */
-    public function specific_discount_input(): string
+    public function specific_discount_input(): void
     {
         $this->clearCache();
 
@@ -1505,7 +1498,7 @@ class Reports extends Secure_Controller
         $data['discount_type_options'] = ['0' => lang('Reports.discount_percent'), '1' => lang('Reports.discount_fixed')];
         $data['sale_type_options'] = $this->get_sale_type_options();
 
-        return view('reports/specific_input', $data);
+        echo view('reports/specific_input', $data);
     }
 
     /**
@@ -1516,10 +1509,10 @@ class Reports extends Secure_Controller
      * @param string $discount
      * @param string $sale_type
      * @param string $discount_type
-     * @return string
+     * @return void
      * @noinspection PhpUnused
      */
-    public function specific_discounts(string $start_date, string $end_date, string $discount, string $sale_type, string $discount_type): string
+    public function specific_discounts(string $start_date, string $end_date, string $discount, string $sale_type, string $discount_type): void
     {
         $this->clearCache();
 
@@ -1612,17 +1605,17 @@ class Reports extends Secure_Controller
             'overall_summary_data' => $specific_discount->getSummaryData($inputs)
         ];
 
-        return view('reports/tabular_details', $data);
+        echo view('reports/tabular_details', $data);
     }
 
     /**
      * Gets the detailed sales data row for given sale_id. Used in app/Views/reports/tabular_details.php
      *
      * @param string $sale_id
-     * @return ResponseInterface
+     * @return void
      * @noinspection PhpUnused
      */
-    public function getGet_detailed_sales_row(string $sale_id): ResponseInterface
+    public function getGet_detailed_sales_row(string $sale_id): void
     {
         $this->clearCache();
 
@@ -1665,16 +1658,16 @@ class Reports extends Secure_Controller
             )
         ];
 
-        return $this->response->setJSON([$sale_id => $summary_data]);
+        echo json_encode([$sale_id => $summary_data]);
     }
 
     /**
      * Detailed Supplier report input form. Used in app/Config/Routes.php
      *
-     * @return string
+     * @return void
      * @noinspection PhpUnused
      */
-    public function specific_supplier_input(): string
+    public function specific_supplier_input(): void
     {
         $this->clearCache();
 
@@ -1688,7 +1681,7 @@ class Reports extends Secure_Controller
         $data['specific_input_data'] = $suppliers;
         $data['sale_type_options'] = $this->get_sale_type_options();
 
-        return view('reports/specific_input', $data);
+        echo view('reports/specific_input', $data);
     }
 
     /**
@@ -1698,9 +1691,9 @@ class Reports extends Secure_Controller
      * @param string $end_date
      * @param string $supplier_id
      * @param string $sale_type
-     * @return string
+     * @return void
      */
-    public function specific_suppliers(string $start_date, string $end_date, string $supplier_id, string $sale_type): string
+    public function specific_suppliers(string $start_date, string $end_date, string $supplier_id, string $sale_type): void
     {
         $inputs = [
             'start_date'  => $start_date,
@@ -1734,7 +1727,7 @@ class Reports extends Secure_Controller
             ];
         }
 
-        $supplier_info = $this->supplier->get_info((int) $supplier_id);
+        $supplier_info = $this->supplier->get_info($supplier_id);
         $data = [
             'title'        => $supplier_info->company_name . ' (' . $supplier_info->first_name . ' ' . $supplier_info->last_name . ') ' . lang('Reports.report'),
             'subtitle'     => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
@@ -1743,7 +1736,7 @@ class Reports extends Secure_Controller
             'summary_data' => $specific_supplier->getSummaryData($inputs)
         ];
 
-        return view('reports/tabular', $data);
+        echo view('reports/tabular', $data);
     }
 
     /**
@@ -1770,13 +1763,13 @@ class Reports extends Secure_Controller
      * @param string $end_date
      * @param string $sale_type
      * @param string $location_id
-     * @return string
+     * @return void
      */
-    public function detailed_sales(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): string
+    public function detailed_sales(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {
         $this->clearCache();
 
-        $definition_names = $this->attribute->get_definitions_by_flags(attribute::SHOW_IN_SALES, true);
+        $definition_names = $this->attribute->get_definitions_by_flags(attribute::SHOW_IN_SALES);
 
         $inputs = [
             'start_date'     => $start_date,
@@ -1789,12 +1782,7 @@ class Reports extends Secure_Controller
         $this->detailed_sales->create($inputs);
 
         $columns = $this->detailed_sales->getDataColumns();
-        // Extract just names for column headers
-        $definitionHeaders = [];
-        foreach ($definition_names as $definition_id => $definitionInfo) {
-            $definitionHeaders[$definition_id] = $definitionInfo['name'];
-        }
-        $columns['details'] = array_merge($columns['details'], $definitionHeaders);
+        $columns['details'] = array_merge($columns['details'], $definition_names);
 
         $headers = $columns;
 
@@ -1881,17 +1869,17 @@ class Reports extends Secure_Controller
             'details_data_rewards' => $details_data_rewards,
             'overall_summary_data' => $this->detailed_sales->getSummaryData($inputs)
         ];
-        return view('reports/tabular_details', $data);
+        echo view('reports/tabular_details', $data);
     }
 
     /**
      * Returns detailed receivings row for given receiving_id. Used in app/Views/reports/tabular_details.php
      *
      * @param string $receiving_id
-     * @return ResponseInterface
+     * @return void
      * @noinspection PhpUnused
      */
-    public function getGet_detailed_receivings_row(string $receiving_id): ResponseInterface
+    public function getGet_detailed_receivings_row(string $receiving_id): void
     {
         $inputs = ['receiving_id' => $receiving_id];
 
@@ -1921,7 +1909,7 @@ class Reports extends Secure_Controller
             )
         ];
 
-        return $this->response->setJSON([$receiving_id => $summary_data]);
+        echo json_encode([$receiving_id => $summary_data]);
     }
 
     /**
@@ -1929,25 +1917,20 @@ class Reports extends Secure_Controller
      * @param string $end_date
      * @param string $receiving_type
      * @param string $location_id
-     * @return string
+     * @return void
      */
-    public function detailed_receivings(string $start_date, string $end_date, string $receiving_type, string $location_id = 'all'): string
+    public function detailed_receivings(string $start_date, string $end_date, string $receiving_type, string $location_id = 'all'): void
     {
         $this->clearCache();
 
-        $definition_names = $this->attribute->get_definitions_by_flags(attribute::SHOW_IN_RECEIVINGS, true);
+        $definition_names = $this->attribute->get_definitions_by_flags(attribute::SHOW_IN_RECEIVINGS);
 
         $inputs = ['start_date' => $start_date, 'end_date' => $end_date, 'receiving_type' => $receiving_type, 'location_id' => $location_id, 'definition_ids' => array_keys($definition_names)];
 
         $this->detailed_receivings->create($inputs);
 
         $columns = $this->detailed_receivings->getDataColumns();
-        // Extract just names for column headers
-        $definitionHeaders = [];
-        foreach ($definition_names as $definition_id => $definitionInfo) {
-            $definitionHeaders[$definition_id] = $definitionInfo['name'];
-        }
-        $columns['details'] = array_merge($columns['details'], $definitionHeaders);
+        $columns['details'] = array_merge($columns['details'], $definition_names);
 
         $headers = $columns;
         $report_data = $this->detailed_receivings->getData($inputs);
@@ -2010,13 +1993,13 @@ class Reports extends Secure_Controller
             'overall_summary_data' => $this->detailed_receivings->getSummaryData($inputs)
         ];
 
-        return view('reports/tabular_details', $data);
+        echo view('reports/tabular_details', $data);
     }
 
     /**
-     * @return string
+     * @return void
      */
-    public function inventory_low(): string
+    public function inventory_low(): void
     {
         $this->clearCache();
 
@@ -2045,16 +2028,16 @@ class Reports extends Secure_Controller
             'summary_data' => $inventory_low->getSummaryData($inputs)
         ];
 
-        return view('reports/tabular', $data);
+        echo view('reports/tabular', $data);
     }
 
     /**
      * Gets the inventory summary input view. Used in app/Config/Routes.php
      *
-     * @return string
+     * @return void
      * @noinspection PhpUnused
      */
-    public function inventory_summary_input(): string
+    public function inventory_summary_input(): void
     {
         $this->clearCache();
 
@@ -2065,15 +2048,15 @@ class Reports extends Secure_Controller
         $stock_locations['all'] = lang('Reports.all');
         $data['stock_locations'] = array_reverse($stock_locations, true);
 
-        return view('reports/inventory_summary_input', $data);
+        echo view('reports/inventory_summary_input', $data);
     }
 
     /**
      * @param string $location_id
      * @param string $item_count
-     * @return string
+     * @return void
      */
-    public function inventory_summary(string $location_id = 'all', string $item_count = 'all'): string
+    public function inventory_summary(string $location_id = 'all', string $item_count = 'all'): void
     {
         $this->clearCache();
 
@@ -2105,7 +2088,7 @@ class Reports extends Secure_Controller
             'summary_data' => $this->inventory_summary->getSummaryData($report_data)
         ];
 
-        return view('reports/tabular', $data);
+        echo view('reports/tabular', $data);
     }
 
     /**

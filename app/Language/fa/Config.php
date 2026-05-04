@@ -282,7 +282,6 @@ return [
     "right"                                     => "درست",
     "sales_invoice_format"                      => "قالب فاکتور فروش",
     "sales_quote_format"                        => "قالب فروش قیمت",
-    "mailpath_invalid"                          => "",
     "saved_successfully"                        => "پیکربندی ذخیره موفقیت آمیز است.",
     "saved_unsuccessfully"                      => "ذخیره پیکربندی انجام نشد.",
     "security_issue"                            => "هشدار آسیب پذیری امنیتی",

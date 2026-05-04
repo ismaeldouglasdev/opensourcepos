@@ -3,7 +3,6 @@
 namespace App\Controllers;
 
 use App\Models\Giftcard;
-use CodeIgniter\HTTP\ResponseInterface;
 use Config\OSPOS;
 use Config\Services;
 
@@ -19,19 +18,19 @@ class Giftcards extends Secure_Controller
     }
 
     /**
-     * @return string
+     * @return void
      */
-    public function getIndex(): string
+    public function getIndex(): void
     {
         $data['table_headers'] = get_giftcards_manage_table_headers();
 
-        return view('giftcards/manage', $data);
+        echo view('giftcards/manage', $data);
     }
 
     /**
      * Returns Giftcards table data rows. This will be called with AJAX.
      */
-    public function getSearch(): ResponseInterface
+    public function getSearch(): void
     {
         $search = $this->request->getGet('search');
         $limit  = $this->request->getGet('limit', FILTER_SANITIZE_NUMBER_INT);
@@ -47,50 +46,50 @@ class Giftcards extends Secure_Controller
             $data_rows[] = get_giftcard_data_row($giftcard);
         }
 
-        return $this->response->setJSON(['total' => $total_rows, 'rows' => $data_rows]);
+        echo json_encode(['total' => $total_rows, 'rows' => $data_rows]);
     }
 
     /**
      * Gets search suggestions for giftcards. Used in app\Views\sales\register.php
      *
-     * @return ResponseInterface
+     * @return void
      * @noinspection PhpUnused
      */
-    public function getSuggest(): ResponseInterface
+    public function getSuggest(): void
     {
         $search = $this->request->getGet('term');
         $suggestions = $this->giftcard->get_search_suggestions($search, true);
 
-        return $this->response->setJSON($suggestions);
+        echo json_encode($suggestions);
     }
 
     /**
-     * @return ResponseInterface
+     * @return void
      */
-    public function suggest_search(): ResponseInterface
+    public function suggest_search(): void
     {
         $search = $this->request->getPost('term');
         $suggestions = $this->giftcard->get_search_suggestions($search);
 
-        return $this->response->setJSON($suggestions);
+        echo json_encode($suggestions);
     }
 
     /**
      * @param int $row_id
-     * @return ResponseInterface
+     * @return void
      */
-    public function getRow(int $row_id): ResponseInterface
+    public function getRow(int $row_id): void
     {
         $data_row = get_giftcard_data_row($this->giftcard->get_info($row_id));
 
-        return $this->response->setJSON($data_row);
+        echo json_encode($data_row);
     }
 
     /**
      * @param int $giftcard_id
-     * @return string
+     * @return void
      */
-    public function getView(int $giftcard_id = NEW_ENTRY): string
+    public function getView(int $giftcard_id = NEW_ENTRY): void
     {
         $config = config(OSPOS::class)->settings;
         $giftcard_info = $this->giftcard->get_info($giftcard_id);
@@ -107,14 +106,14 @@ class Giftcards extends Secure_Controller
         $data['giftcard_id'] = $giftcard_id;
         $data['giftcard_value'] = $giftcard_info->value;
 
-        return view("giftcards/form", $data);
+        echo view("giftcards/form", $data);
     }
 
     /**
      * @param int $giftcard_id
-     * @return ResponseInterface
+     * @return void
      */
-    public function postSave(int $giftcard_id = NEW_ENTRY): ResponseInterface
+    public function postSave(int $giftcard_id = NEW_ENTRY): void
     {
         $giftcard_number = $this->request->getPost('giftcard_number', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
@@ -126,26 +125,26 @@ class Giftcards extends Secure_Controller
             'record_time'     => date('Y-m-d H:i:s'),
             'giftcard_number' => $giftcard_number,
             'value'           => parse_decimals($this->request->getPost('giftcard_amount')),
-            'person_id'       => empty($this->request->getPost('person_id')) ? null : $this->request->getPost('person_id', FILTER_SANITIZE_NUMBER_INT)
+            'person_id'       => $this->request->getPost('person_id') == '' ? null : $this->request->getPost('person_id', FILTER_SANITIZE_NUMBER_INT)
         ];
 
         if ($this->giftcard->save_value($giftcard_data, $giftcard_id)) {
             // New giftcard
             if ($giftcard_id == NEW_ENTRY) {    // TODO: Constant needed
-                return $this->response->setJSON([
+                echo json_encode([
                     'success' => true,
                     'message' => lang('Giftcards.successful_adding') . ' ' . $giftcard_data['giftcard_number'],
                     'id'      => $giftcard_data['giftcard_id']
                 ]);
             } else { // Existing giftcard
-                return $this->response->setJSON([
+                echo json_encode([
                     'success' => true,
                     'message' => lang('Giftcards.successful_updating') . ' ' . $giftcard_data['giftcard_number'],
                     'id'      => $giftcard_id
                 ]);
             }
         } else { // Failure
-            return $this->response->setJSON([
+            echo json_encode([
                 'success' => false,
                 'message' => lang('Giftcards.error_adding_updating') . ' ' . $giftcard_data['giftcard_number'],
                 'id'      => NEW_ENTRY
@@ -159,30 +158,27 @@ class Giftcards extends Secure_Controller
      * @return void
      * @noinspection PhpUnused
      */
-    public function postCheckNumberGiftcard(): ResponseInterface
+    public function postCheckNumberGiftcard(): void
     {
-        $existing_id = $this->request->getPost('giftcard_id', FILTER_SANITIZE_NUMBER_INT);
-        $giftcard_number = $this->request->getPost('giftcard_number', FILTER_SANITIZE_NUMBER_INT);
-        $giftcard_id = $this->giftcard->get_giftcard_id($giftcard_number);
-        $success = ($giftcard_id == (int) $existing_id || !$giftcard_id );
-
-        return $this->response->setJSON($success ? 'true' : 'false');
+        $giftcard_amount = parse_decimals($this->request->getPost('giftcard_amount'));
+        $parsed_value = filter_var($giftcard_amount, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+        echo json_encode(['success' => $parsed_value !== false && $parsed_value > 0 && $giftcard_amount !== false, 'giftcard_amount' => to_currency_no_money($parsed_value)]);
     }
 
     /**
-     * @return ResponseInterface
+     * @return void
      */
-    public function postDelete(): ResponseInterface
+    public function postDelete(): void
     {
         $giftcards_to_delete = $this->request->getPost('ids', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
         if ($this->giftcard->delete_list($giftcards_to_delete)) {
-            return $this->response->setJSON([
+            echo json_encode([
                 'success' => true,
                 'message' => lang('Giftcards.successful_deleted') . ' ' . count($giftcards_to_delete) . ' ' . lang('Giftcards.one_or_multiple')
             ]);
         } else {
-            return $this->response->setJSON(['success' => false, 'message' => lang('Giftcards.cannot_be_deleted')]);
+            echo json_encode(['success' => false, 'message' => lang('Giftcards.cannot_be_deleted')]);
         }
     }
 }

@@ -26,7 +26,7 @@
         <?php } ?>
 
         <?php if ($config['receipt_show_company_name']) { ?>
-            <div id="company_name"><?= nl2br(esc($config['company'])) ?></div>
+            <div id="company_name"><?= $config['company'] ?></div>
         <?php } ?>
 
         <div id="company_address"><?= nl2br(esc($config['address'])) ?></div>
@@ -69,7 +69,7 @@
                     <td><?= to_quantity_decimals($item['quantity']) ?></td>
                     <td class="total-value"><?= to_currency($item[($config['receipt_show_total_discount'] ? 'total' : 'discounted_total')]) ?></td>
                     <?php if ($config['receipt_show_tax_ind']) { ?>
-                        <td><?= esc($item['taxed_flag']) ?></td>
+                        <td><?= $item['taxed_flag'] ?></td>
                     <?php } ?>
                 </tr>
                 <tr>
@@ -114,7 +114,7 @@
             </tr>
             <?php foreach ($taxes as $tax_group_index => $tax) { ?>
                 <tr>
-                    <td colspan="3" class="total-value"><?= (float)$tax['tax_rate'] . '% ' . esc($tax['tax_group']) ?>:</td>
+                    <td colspan="3" class="total-value"><?= (float)$tax['tax_rate'] . '% ' . $tax['tax_group'] ?>:</td>
                     <td class="total-value"><?= to_currency_tax($tax['sale_tax_amount']) ?></td>
                 </tr>
         <?php
@@ -143,7 +143,7 @@
             $show_giftcard_remainder |= $splitpayment[0] == lang('Sales.giftcard');
         ?>
             <tr>
-                <td colspan="3" style="text-align: right;"><?= esc($splitpayment[0]) ?> </td>
+                <td colspan="3" style="text-align: right;"><?= $splitpayment[0] ?> </td>
                 <td class="total-value"><?= to_currency($payment['payment_amount'] * -1) ?></td>
             </tr>
         <?php } ?>
@@ -165,7 +165,7 @@
     </table>
 
     <div id="sale_return_policy">
-        <?= nl2br(esc($config['return_policy'])) ?>
+        <?= nl2br($config['return_policy']) ?>
     </div>
 
     <div id="barcode">

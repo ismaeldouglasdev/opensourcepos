@@ -5,7 +5,6 @@ use App\Models\Employee;
 use App\Models\Item_taxes;
 use App\Models\Tax_category;
 use CodeIgniter\Database\ResultInterface;
-use CodeIgniter\HTTP\IncomingRequest;
 use CodeIgniter\Session\Session;
 use Config\OSPOS;
 use Config\Services;
@@ -49,7 +48,7 @@ function transform_headers(array $headers, bool $readonly = false, bool $editabl
             'field'      => key($element),
             'title'      => current($element),
             'switchable' => $element['switchable'] ?? !preg_match('(^$|&nbsp)', current($element)),
-            'escape'     => !preg_match("/(edit|email|messages|item_pic)/", key($element)) && !(isset($element['escape']) && !$element['escape']),
+            'escape'     => !preg_match("/(edit|phone_number|email|messages|item_pic|customer_name|note)/", key($element)) && !(isset($element['escape']) && !$element['escape']),
             'sortable'   => $element['sortable'] ?? current($element) != '',
             'checkbox'   => $element['checkbox'] ?? false,
             'class'      => isset($element['checkbox']) || preg_match('(^$|&nbsp)', current($element)) ? 'print_hide' : '',
@@ -67,8 +66,8 @@ function sales_headers(): array
         ['sale_id'         => lang('Common.id')],
         ['sale_time'       => lang('Sales.sale_time')],
         ['customer_name'   => lang('Customers.customer')],
-        ['amount_due'      => lang('Sales.amount_due')],
-        ['amount_tendered' => lang('Sales.amount_tendered')],
+        ['amount_due'      => lang('Sales.amount_tendered')],
+        ['amount_tendered' => lang('Sales.amount_due')],
         ['change_due'      => lang('Sales.change_due')],
         ['payment_type'    => lang('Sales.payment_type')]
     ];
@@ -171,16 +170,43 @@ function get_sale_data_last_row(ResultInterface $sales): array
  */
 function get_sales_manage_payments_summary(array $payments): string
 {
-    $table = '<div id="report_summary">';
+    $payment_icons = [
+        'Dinheiro' => '💵',
+        'Cartão Débito' => '💳',
+        'Cartão Crédito' => '💳',
+        'PIX' => '📱',
+        'Fiado' => '📝'
+    ];
+    
+    $payment_colors = [
+        'Dinheiro' => '#4CAF50',
+        'Cartão Débito' => '#2196F3',
+        'Cartão Crédito' => '#9C27B0',
+        'PIX' => '#00BCD4',
+        'Fiado' => '#FF9800'
+    ];
+    
+    $table = '<div id="report_summary" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; padding:15px 0;">';
     $total = 0;
 
     foreach ($payments as $key => $payment) {
         $amount = $payment['payment_amount'];
         $total = bcadd($total, $amount);
-        $table .= '<div class="summary_row">' . $payment['payment_type'] . ': ' . to_currency($amount) . '</div>';
+        $type = $payment['payment_type'];
+        $icon = $payment_icons[$type] ?? '💰';
+        $color = $payment_colors[$type] ?? '#666';
+        $table .= '<div class="summary_row" style="background:' . $color . '; color:white; padding:10px 18px; border-radius:8px; min-width:150px; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.2);">';
+        $table .= '<div style="font-size:24px;">' . $icon . '</div>';
+        $table .= '<div style="font-size:11px; opacity:0.9;">' . $type . '</div>';
+        $table .= '<div style="font-size:16px; font-weight:bold;">' . to_currency($amount) . '</div>';
+        $table .= '</div>';
     }
 
-    $table .= '<div class="summary_row">' . lang('Sales.total') . ': ' . to_currency($total) . '</div>';
+    $table .= '<div class="summary_row" style="background:#333; color:white; padding:10px 18px; border-radius:8px; min-width:150px; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.2);">';
+    $table .= '<div style="font-size:24px;">📊</div>';
+    $table .= '<div style="font-size:11px; opacity:0.9;">TOTAL</div>';
+    $table .= '<div style="font-size:16px; font-weight:bold;">' . to_currency($total) . '</div>';
+    $table .= '</div>';
     $table .= '</div>';
 
     return $table;
@@ -409,7 +435,7 @@ function get_items_manage_table_headers(): string
 {
     $attribute = model(Attribute::class);
     $config = config(OSPOS::class)->settings;
-    $definitionsWithTypes = $attribute->get_definitions_by_flags($attribute::SHOW_IN_ITEMS, true);
+    $definition_names = $attribute->get_definitions_by_flags($attribute::SHOW_IN_ITEMS);    // TODO: this should be made into a constant in constants.php
 
     $headers = item_headers();
 
@@ -421,8 +447,8 @@ function get_items_manage_table_headers(): string
 
     $headers[] = ['item_pic' => lang('Items.image'), 'sortable' => false];
 
-    foreach ($definitionsWithTypes as $definition_id => $definitionInfo) {
-        $headers[] = [$definition_id => $definitionInfo['name'], 'sortable' => false];
+    foreach ($definition_names as $definition_id => $definition_name) {
+        $headers[] = [$definition_id => $definition_name, 'sortable' => false];
     }
 
     $headers[] = ['inventory' => '', 'escape' => false];
@@ -471,8 +497,7 @@ function get_item_data_row(object $item): array
             : glob("./uploads/item_pics/$item->pic_filename");
 
         if (sizeof($images) > 0) {
-            $image_path = ltrim($images[0], './');
-            $image .= '<a class="rollover" href="' . base_url(implode('/', array_map('rawurlencode', explode('/', $image_path)))) . '"><img alt="Image thumbnail" src="' . site_url('items/PicThumb/' . rawurlencode(pathinfo($images[0], PATHINFO_BASENAME))) . '"></a>';
+            $image .= '<a class="rollover" href="' . base_url($images[0]) . '"><img alt="Image thumbnail" src="' . site_url('items/PicThumb/' . pathinfo($images[0], PATHINFO_BASENAME)) . '"></a>';
         }
     }
 
@@ -480,7 +505,7 @@ function get_item_data_row(object $item): array
         $item->name .= NAME_SEPARATOR . $item->pack_name;
     }
 
-    $definition_names = $attribute->get_definitions_by_flags($attribute::SHOW_IN_ITEMS, true);
+    $definition_names = $attribute->get_definitions_by_flags($attribute::SHOW_IN_ITEMS);
 
     $columns = [
         'items.item_id' => $item->item_id,
@@ -578,8 +603,8 @@ function item_kit_headers(): array
         ['item_kit_number'  => lang('Item_kits.item_kit_number')],
         ['name'             => lang('Item_kits.name')],
         ['description'      => lang('Item_kits.description')],
-        ['total_cost_price' => lang('Items.cost_price'), 'sortable' => false],
-        ['total_unit_price' => lang('Items.unit_price'), 'sortable' => false]
+        ['total_cost_price' => lang('Items.cost_price'), 'sortable' => FALSE],
+        ['total_unit_price' => lang('Items.unit_price'), 'sortable' => FALSE]
     ];
 }
 
@@ -635,7 +660,7 @@ function parse_attribute_values(array $columns, array $row): array
 }
 
 /**
- * @param array $definition_names Array of definition_id => ['name' => name, 'type' => type] or definition_id => name
+ * @param array $definition_names
  * @param array $row
  * @return array
  */
@@ -652,16 +677,10 @@ function expand_attribute_values(array $definition_names, array $row): array
     }
 
     $attribute_values = [];
-    foreach ($definition_names as $definition_id => $definitionInfo) {
+    foreach ($definition_names as $definition_id => $definition_name) {
         if (isset($indexed_values[$definition_id])) {
-            $raw_value = $indexed_values[$definition_id];
-
-            // Format DECIMAL attributes according to locale
-            if (is_array($definitionInfo) && isset($definitionInfo['type']) && $definitionInfo['type'] === DECIMAL) {
-                $attribute_values["$definition_id"] = to_decimals($raw_value);
-            } else {
-                $attribute_values["$definition_id"] = $raw_value;
-            }
+            $attribute_value = $indexed_values[$definition_id];
+            $attribute_values["$definition_id"] = $attribute_value;
         } else {
             $attribute_values["$definition_id"] = "";
         }
@@ -743,7 +762,7 @@ function get_expense_category_manage_table_headers(): string
 }
 
 /**
- * Gets the html data row for the expense category
+ * Gets the html data row for the expenses category
  */
 function get_expense_category_data_row(object $expense_category): array
 {
@@ -842,7 +861,7 @@ function get_expenses_data_last_row(object $expense): array
 }
 
 /**
- * Get the expense payments summary
+ * Get the expenses payments summary
  */
 function get_expenses_manage_payments_summary(array $payments, ResultInterface $expenses): string    // TODO: $expenses is passed but never used.
 {
@@ -931,25 +950,4 @@ function get_controller(): string
     $controller_name = strtolower($router->controllerName());
     $controller_name_parts = explode('\\', $controller_name);
     return end($controller_name_parts);
-}
-
-/**
- * Restores filter values from the URL query string.
- *
- * @param IncomingRequest $request The request object
- * @return array Array with 'start_date', 'end_date', and 'selected_filters' keys
- */
-function restoreTableFilters(IncomingRequest $request): array
-{
-    $startDate = $request->getGet('start_date', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    $endDate = $request->getGet('end_date', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    $urlFilters = $request->getGet('filters', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-
-    return array_filter([
-        'start_date' => $startDate ?: null,
-        'end_date' => $endDate ?: null,
-        'selected_filters' => $urlFilters ?? []
-    ], function ($value) {
-        return $value !== null && $value !== [];
-    });
 }

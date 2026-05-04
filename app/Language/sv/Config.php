@@ -282,7 +282,6 @@ return [
     "right"                                     => "Höger",
     "sales_invoice_format"                      => "Försäljningsfakturaformat",
     "sales_quote_format"                        => "Försäljningsquotaformat",
-    "mailpath_invalid"                          => "",
     "saved_successfully"                        => "Konfigurationen sparades.",
     "saved_unsuccessfully"                      => "Konfigurationsbesparingen misslyckades.",
     "security_issue"                            => "Varning för säkerhetsrisker",

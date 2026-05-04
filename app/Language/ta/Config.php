@@ -282,7 +282,6 @@ return [
     "right"                                     => "Right",
     "sales_invoice_format"                      => "Sales Invoice Format",
     "sales_quote_format"                        => "Sales Quote Format",
-    "mailpath_invalid"                          => "",
     "saved_successfully"                        => "Configuration save successful.",
     "saved_unsuccessfully"                      => "Configuration save failed.",
     "security_issue"                            => "Security Vulnerability Warning",

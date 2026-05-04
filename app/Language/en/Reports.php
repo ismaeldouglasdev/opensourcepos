@@ -146,5 +146,4 @@ return [
     "used"                                    => "Points Used",
     "work_orders"                             => "Work Orders",
     "zero_and_less"                           => "Zero and less",
-    "toggle_cost_and_profit"                  => "Toggle Cost & Profit",
 ];

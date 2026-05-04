@@ -3,12 +3,11 @@
 namespace App\Controllers;
 
 use App\Libraries\Tax_lib;
-use App\Models\Enums\Rounding_mode;
+use App\Models\enums\Rounding_mode;
 use App\Models\Tax;
 use App\Models\Tax_category;
 use App\Models\Tax_code;
 use App\Models\Tax_jurisdiction;
-use CodeIgniter\HTTP\ResponseInterface;
 use Config\OSPOS;
 use Config\Services;
 
@@ -37,9 +36,9 @@ class Taxes extends Secure_Controller
     }
 
     /**
-     * @return string
+     * @return void
      */
-    public function getIndex(): string
+    public function getIndex(): void
     {
         $data['tax_codes'] = $this->tax_code->get_all()->getResultArray();
         if (count($data['tax_codes']) == 0) {
@@ -68,7 +67,7 @@ class Taxes extends Secure_Controller
 
         $data['tax_type_options'] = $this->tax_lib->get_tax_type_options($data['default_tax_type']);
 
-        return view('taxes/manage', $data);
+        echo view('taxes/manage', $data);
     }
 
     /**
@@ -76,12 +75,12 @@ class Taxes extends Secure_Controller
      *
      * @return void
      */
-    public function getSearch(): ResponseInterface
+    public function getSearch(): void
     {
         $search = $this->request->getGet('search');
         $limit = $this->request->getGet('limit', FILTER_SANITIZE_NUMBER_INT);
         $offset = $this->request->getGet('offset', FILTER_SANITIZE_NUMBER_INT);
-        $sort = $this->sanitizeSortColumn(get_tax_rates_manage_table_headers(), $this->request->getGet('sort', FILTER_SANITIZE_FULL_SPECIAL_CHARS), 'tax_rate_id');
+        $sort = $this->request->getGet('sort', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $order = $this->request->getGet('order', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
         $tax_rates = $this->tax->search($search, $limit, $offset, $sort, $order);
@@ -93,50 +92,50 @@ class Taxes extends Secure_Controller
             $data_rows[] = get_tax_rates_data_row($tax_rate_row);
         }
 
-        return $this->response->setJSON(['total' => $total_rows, 'rows' => $data_rows]);
+        echo json_encode(['total' => $total_rows, 'rows' => $data_rows]);
     }
 
     /**
      * Gives search suggestions based on what is being searched for
-     * @return ResponseInterface
      */
-    public function suggest_search(): ResponseInterface
+    public function suggest_search(): void
     {
         $search = $this->request->getPost('term');
         $suggestions = $this->tax->get_search_suggestions($search);    // TODO: There is no get_search_suggestions function in the tax model
 
-        return $this->response->setJSON($suggestions);
+        echo json_encode($suggestions);
     }
 
     /**
      * Provides list of tax categories to select from
-     * @return ResponseInterface
+     *
+     * @return void
      */
-    public function suggest_tax_categories(): ResponseInterface
+    public function suggest_tax_categories(): void
     {
         $search = $this->request->getPost('term');
         $suggestions = $this->tax_category->get_tax_category_suggestions($search);
 
-        return $this->response->setJSON($suggestions);
+        echo json_encode($suggestions);
     }
 
 
     /**
      * @param int $row_id
-     * @return ResponseInterface
+     * @return void
      */
-    public function getRow(int $row_id): ResponseInterface
+    public function getRow(int $row_id): void
     {
         $data_row = get_tax_rates_data_row($this->tax->get_info($row_id));
 
-        return $this->response->setJSON($data_row);
+        echo json_encode($data_row);
     }
 
     /**
      * @param int $tax_code
-     * @return string
+     * @return void
      */
-    public function getView_tax_codes(int $tax_code = NEW_ENTRY): string
+    public function getView_tax_codes(int $tax_code = NEW_ENTRY): void
     {
         $tax_code_info = $this->tax->get_info($tax_code);
 
@@ -151,7 +150,7 @@ class Taxes extends Secure_Controller
             $data['default_tax_type'] = Tax_lib::TAX_TYPE_EXCLUDED;
         }
 
-        $data['rounding_options'] = Rounding_mode::get_rounding_options();
+        $data['rounding_options'] = rounding_mode::get_rounding_options();
         $data['html_rounding_options'] = $this->get_html_rounding_options();
 
         if ($tax_code == NEW_ENTRY) {   // TODO: Duplicated code
@@ -193,20 +192,20 @@ class Taxes extends Secure_Controller
 
         $data['tax_rates'] = $tax_rates;
 
-        return view('taxes/tax_code_form', $data);
+        echo view('taxes/tax_code_form', $data);
     }
 
 
     /**
      * @param int $tax_rate_id
-     * @return string
+     * @return void
      */
-    public function getView(int $tax_rate_id = NEW_ENTRY): string
+    public function getView(int $tax_rate_id = NEW_ENTRY): void
     {
         $tax_rate_info = $this->tax->get_info($tax_rate_id);
 
         $data['tax_rate_id'] = $tax_rate_id;
-        $data['rounding_options'] = Rounding_mode::get_rounding_options();
+        $data['rounding_options'] = rounding_mode::get_rounding_options();
 
         $data['tax_code_options'] = $this->tax_lib->get_tax_code_options();
         $data['tax_category_options'] = $this->tax_lib->get_tax_category_options();
@@ -216,7 +215,7 @@ class Taxes extends Secure_Controller
             $data['rate_tax_code_id'] = $this->config['default_tax_code'];
             $data['rate_tax_category_id'] = $this->config['default_tax_category'];
             $data['rate_jurisdiction_id'] = $this->config['default_tax_jurisdiction'];
-            $data['tax_rounding_code'] = Rounding_mode::HALF_UP;
+            $data['tax_rounding_code'] = rounding_mode::HALF_UP;
             $data['tax_rate'] = '0.0000';
         } else {
             $data['rate_tax_code_id'] = $tax_rate_info->rate_tax_code_id;
@@ -227,14 +226,14 @@ class Taxes extends Secure_Controller
             $data['tax_rate'] = $tax_rate_info->tax_rate;
         }
 
-        return view('taxes/tax_rates_form', $data);
+        echo view('taxes/tax_rates_form', $data);
     }
 
     /**
      * @param int $tax_code
-     * @return string
+     * @return void
      */
-    public function getView_tax_categories(int $tax_code = NEW_ENTRY): string    // TODO: This appears to be called no where in the code.
+    public function getView_tax_categories(int $tax_code = NEW_ENTRY): void    // TODO: This appears to be called no where in the code.
     {
         $tax_code_info = $this->tax->get_info($tax_code);    // TODO: Duplicated Code
 
@@ -243,7 +242,7 @@ class Taxes extends Secure_Controller
 
         $tax_rate_info = $this->tax->get_rate_info($tax_code, $default_tax_category_id);
 
-        $data['rounding_options'] = Rounding_mode::get_rounding_options();
+        $data['rounding_options'] = rounding_mode::get_rounding_options();
         $data['html_rounding_options'] = $this->get_html_rounding_options();
 
         if ($this->config['tax_included']) {
@@ -291,14 +290,14 @@ class Taxes extends Secure_Controller
 
         $data['tax_rates'] = $tax_rates;
 
-        return view('taxes/tax_category_form', $data);
+        echo view('taxes/tax_category_form', $data);
     }
 
     /**
      * @param int $tax_code
-     * @return string
+     * @return void
      */
-    public function getView_tax_jurisdictions(int $tax_code = NEW_ENTRY): string // TODO: This appears to be called no where in the code.
+    public function getView_tax_jurisdictions(int $tax_code = NEW_ENTRY): void // TODO: This appears to be called no where in the code.
     {
         $tax_code_info = $this->tax->get_info($tax_code);    // TODO: Duplicated code
 
@@ -307,7 +306,7 @@ class Taxes extends Secure_Controller
 
         $tax_rate_info = $this->tax->get_rate_info($tax_code, $default_tax_category_id);
 
-        $data['rounding_options'] = Rounding_mode::get_rounding_options();
+        $data['rounding_options'] = rounding_mode::get_rounding_options();
         $data['html_rounding_options'] = $this->get_html_rounding_options();
 
         if ($this->config['tax_included']) {
@@ -355,7 +354,7 @@ class Taxes extends Secure_Controller
 
         $data['tax_rates'] = $tax_rates;
 
-        return view('taxes/tax_jurisdiction_form', $data);
+        echo view('taxes/tax_jurisdiction_form', $data);
     }
 
     /**
@@ -363,14 +362,14 @@ class Taxes extends Secure_Controller
      */
     public static function get_html_rounding_options(): string
     {
-        return Rounding_mode::get_html_rounding_options();
+        return rounding_mode::get_html_rounding_options();
     }
 
     /**
      * @param int $tax_rate_id
-     * @return ResponseInterface
+     * @return void
      */
-    public function postSave(int $tax_rate_id = NEW_ENTRY): ResponseInterface
+    public function postSave(int $tax_rate_id = NEW_ENTRY): void
     {
         $tax_category_id = $this->request->getPost('rate_tax_category_id', FILTER_SANITIZE_NUMBER_INT);
         $tax_rate = parse_tax($this->request->getPost('tax_rate'));
@@ -389,50 +388,50 @@ class Taxes extends Secure_Controller
 
         if ($this->tax->save_value($tax_rate_data, $tax_rate_id)) {
             if ($tax_rate_id == NEW_ENTRY) {    // TODO: this needs to be replaced with ternary notation
-                return $this->response->setJSON(['success' => true, 'message' => lang('Taxes.tax_rate_successfully_added')]);
+                echo json_encode(['success' => true, 'message' => lang('Taxes.tax_rate_successfully_added')]);
             } else { // Existing tax_code
-                return $this->response->setJSON(['success' => true, 'message' => lang('Taxes.tax_rate_successful_updated')]);
+                echo json_encode(['success' => true, 'message' => lang('Taxes.tax_rate_successful_updated')]);
             }
         } else {
-            return $this->response->setJSON(['success' => false, 'message' => lang('Taxes.tax_rate_error_adding_updating')]);
+            echo json_encode(['success' => false, 'message' => lang('Taxes.tax_rate_error_adding_updating')]);
         }
     }
 
     /**
-     * @return ResponseInterface
+     * @return void
      */
-    public function postDelete(): ResponseInterface
+    public function postDelete(): void
     {
         $tax_codes_to_delete = $this->request->getPost('ids', FILTER_SANITIZE_NUMBER_INT);
 
         if ($this->tax->delete_list($tax_codes_to_delete)) {    // TODO: this needs to be replaced with ternary notation
-            return $this->response->setJSON(['success' => true, 'message' => lang('Taxes.tax_code_successful_deleted')]);
+            echo json_encode(['success' => true, 'message' => lang('Taxes.tax_code_successful_deleted')]);
         } else {
-            return $this->response->setJSON(['success' => false, 'message' => lang('Taxes.tax_code_cannot_be_deleted')]);
+            echo json_encode(['success' => false, 'message' => lang('Taxes.tax_code_cannot_be_deleted')]);
         }
     }
 
     /**
      * Get search suggestions for tax codes. Used in app/Views/customers/form.php
      *
-     * @return ResponseInterface
+     * @return void
      * @noinspection PhpUnused
      */
-    public function getSuggestTaxCodes(): ResponseInterface
+    public function getSuggestTaxCodes(): void
     {
         $search = $this->request->getPostGet('term');
         $suggestions = $this->tax_code->get_tax_codes_search_suggestions($search);
 
-        return $this->response->setJSON($suggestions);
+        echo json_encode($suggestions);
     }
 
     /**
      * Saves Tax Codes. Used in app/Views/taxes/tax_codes.php
      *
-     * @return ResponseInterface
+     * @return void
      * @noinspection PhpUnused
      */
-    public function postSave_tax_codes(): ResponseInterface
+    public function save_tax_codes(): void
     {
         $tax_code_id = $this->request->getPost('tax_code_id', FILTER_SANITIZE_NUMBER_INT);
         $tax_code = $this->request->getPost('tax_code', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -453,7 +452,7 @@ class Taxes extends Secure_Controller
 
         $success = $this->tax_code->save_tax_codes($array_save);
 
-        return $this->response->setJSON([
+        echo json_encode([
             'success' => $success,
             'message' => lang('Taxes.tax_codes_saved_' . ($success ? '' : 'un') . 'successfully')
         ]);
@@ -462,10 +461,10 @@ class Taxes extends Secure_Controller
     /**
      * Saves given tax jurisdiction. Used in app/Views/taxes/tax_jurisdictions.php.
      *
-     * @return ResponseInterface
+     * @return void
      * @noinspection PhpUnused
      */
-    public function postSave_tax_jurisdictions(): ResponseInterface
+    public function save_tax_jurisdictions(): void
     {
         $jurisdiction_id = $this->request->getPost('jurisdiction_id', FILTER_SANITIZE_NUMBER_INT);
         $jurisdiction_name = $this->request->getPost('jurisdiction_name', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -490,10 +489,11 @@ class Taxes extends Secure_Controller
             ];
 
             if (in_array($tax_group[$key], $unique_tax_groups)) {    // TODO: This can be replaced with `in_array($tax_group[$key], $unique_tax_groups)`
-                return $this->response->setJSON([
+                echo json_encode([
                     'success' => false,
                     'message' => lang('Taxes.tax_group_not_unique', [$tax_group[$key]])
                 ]);
+                return;
             } else {
                 $unique_tax_groups[] = $tax_group[$key];
             }
@@ -501,7 +501,7 @@ class Taxes extends Secure_Controller
 
         $success = $this->tax_jurisdiction->save_jurisdictions($array_save);
 
-        return $this->response->setJSON([
+        echo json_encode([
             'success' => $success,
             'message' => lang('Taxes.tax_jurisdictions_saved_' . ($success ? '' : 'un') . 'successfully')
         ]);
@@ -510,10 +510,10 @@ class Taxes extends Secure_Controller
     /**
      * Saves tax categories. Used in app/Views/taxes/tax_categories.php
      *
-     * @return ResponseInterface
+     * @return void
      * @noinspection PhpUnused
      */
-    public function postSave_tax_categories(): ResponseInterface
+    public function save_tax_categories(): void
     {
         $tax_category_id = $this->request->getPost('tax_category_id', FILTER_SANITIZE_NUMBER_INT);
         $tax_category = $this->request->getPost('tax_category', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -531,7 +531,7 @@ class Taxes extends Secure_Controller
 
         $success = $this->tax_category->save_categories($array_save);
 
-        return $this->response->setJSON([
+        echo json_encode([
             'success' => $success,
             'message' => lang('Taxes.tax_categories_saved_' . ($success ? '' : 'un') . 'successfully')
         ]);
@@ -540,36 +540,36 @@ class Taxes extends Secure_Controller
     /**
      * Gets tax codes partial view. Used in app/Views/taxes/tax_codes.php.
      *
-     * @return string
+     * @return void
      * @noinspection PhpUnused
      */
-    public function getAjax_tax_codes(): string
+    public function ajax_tax_codes(): void
     {
         $tax_codes = $this->tax_code->get_all()->getResultArray();
 
-        return view('partial/tax_codes', ['tax_codes' => $tax_codes]);
+        echo view('partial/tax_codes', ['tax_codes' => $tax_codes]);
     }
 
     /**
      * Gets current tax categories. Used in app/Views/taxes/tax_categories.php
      *
-     * @return string
+     * @return void
      * @noinspection PhpUnused
      */
-    public function getAjax_tax_categories(): string
+    public function ajax_tax_categories(): void
     {
         $tax_categories = $this->tax_category->get_all()->getResultArray();
 
-        return view('partial/tax_categories', ['tax_categories' => $tax_categories]);
+        echo view('partial/tax_categories', ['tax_categories' => $tax_categories]);
     }
 
     /**
      * Gets the tax jurisdiction partial view.  Used in app/Views/taxes/tax_jurisdictions.php.
      *
-     * @return string
+     * @return void
      * @noinspection PhpUnused
      */
-    public function getAjax_tax_jurisdictions(): string
+    public function ajax_tax_jurisdictions(): void
     {
         $tax_jurisdictions = $this->tax_jurisdiction->get_all()->getResultArray();
 
@@ -581,7 +581,7 @@ class Taxes extends Secure_Controller
 
         $tax_types = $this->tax_lib->get_tax_types();
 
-        return view('partial/tax_jurisdictions', [
+        echo view('partial/tax_jurisdictions', [
             'tax_jurisdictions' => $tax_jurisdictions,
             'tax_types'         => $tax_types,
             'default_tax_type'  => $default_tax_type

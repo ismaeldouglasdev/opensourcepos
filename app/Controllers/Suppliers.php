@@ -3,7 +3,6 @@
 namespace App\Controllers;
 
 use App\Models\Supplier;
-use CodeIgniter\HTTP\ResponseInterface;
 use Config\Services;
 
 class Suppliers extends Persons
@@ -18,33 +17,33 @@ class Suppliers extends Persons
     }
 
     /**
-     * @return string
+     * @return void
      */
-    public function getIndex(): string
+    public function getIndex(): void
     {
         $data['table_headers'] = get_suppliers_manage_table_headers();
 
-        return view('people/manage', $data);
+        echo view('people/manage', $data);
     }
 
     /**
      * Gets one row for a supplier manage table. This is called using AJAX to update one row.
      * @param $row_id
-     * @return ResponseInterface
+     * @return void
      */
-    public function getRow($row_id): ResponseInterface
+    public function getRow($row_id): void
     {
         $data_row = get_supplier_data_row($this->supplier->get_info($row_id));
         $data_row['category'] = $this->supplier->get_category_name($data_row['category']);
 
-        return $this->response->setJSON($data_row);
+        echo json_encode($data_row);
     }
 
     /**
      * Returns Supplier table data rows. This will be called with AJAX.
      * @return void
      **/
-    public function getSearch(): ResponseInterface
+    public function getSearch(): void
     {
         $search = $this->request->getGet('search');
         $limit = $this->request->getGet('limit', FILTER_SANITIZE_NUMBER_INT);
@@ -63,39 +62,38 @@ class Suppliers extends Persons
             $data_rows[] = $row;
         }
 
-        return $this->response->setJSON(['total' => $total_rows, 'rows' => $data_rows]);
+        echo json_encode(['total' => $total_rows, 'rows' => $data_rows]);
     }
 
     /**
      * Gives search suggestions based on what is being searched for
-     * @return ResponseInterface
      **/
-    public function getSuggest(): ResponseInterface
+    public function getSuggest(): void
     {
         $search = $this->request->getGet('term');
         $suggestions = $this->supplier->get_search_suggestions($search, true);
 
-        return $this->response->setJSON($suggestions);
+        echo json_encode($suggestions);
     }
 
     /**
-     * @return ResponseInterface
+     * @return void
      */
-    public function suggest_search(): ResponseInterface
+    public function suggest_search(): void
     {
         $search = $this->request->getPost('term');
         $suggestions = $this->supplier->get_search_suggestions($search, false);
 
-        return $this->response->setJSON($suggestions);
+        echo json_encode($suggestions);
     }
 
     /**
      * Loads the supplier edit form
      *
      * @param int $supplier_id
-     * @return string
+     * @return void
      */
-    public function getView(int $supplier_id = NEW_ENTRY): string
+    public function getView(int $supplier_id = NEW_ENTRY): void
     {
         $info = $this->supplier->get_info($supplier_id);
         foreach (get_object_vars($info) as $property => $value) {
@@ -104,16 +102,16 @@ class Suppliers extends Persons
         $data['person_info'] = $info;
         $data['categories'] = $this->supplier->get_categories();
 
-        return view("suppliers/form", $data);
+        echo view("suppliers/form", $data);
     }
 
     /**
      * Inserts/updates a supplier
      *
      * @param int $supplier_id
-     * @return ResponseInterface
+     * @return void
      */
-    public function postSave(int $supplier_id = NEW_ENTRY): ResponseInterface
+    public function postSave(int $supplier_id = NEW_ENTRY): void
     {
         $first_name = $this->request->getPost('first_name', FILTER_SANITIZE_FULL_SPECIAL_CHARS);    // TODO: Duplicate code
         $last_name = $this->request->getPost('last_name', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -149,21 +147,21 @@ class Suppliers extends Persons
         if ($this->supplier->save_supplier($person_data, $supplier_data, $supplier_id)) {
             // New supplier
             if ($supplier_id == NEW_ENTRY) {
-                return $this->response->setJSON([
+                echo json_encode([
                     'success' => true,
                     'message' => lang('Suppliers.successful_adding') . ' ' . $supplier_data['company_name'],
                     'id'      => $supplier_data['person_id']
                 ]);
             } else { // Existing supplier
 
-                return $this->response->setJSON([
+                echo json_encode([
                     'success' => true,
                     'message' => lang('Suppliers.successful_updating') . ' ' . $supplier_data['company_name'],
                     'id'      => $supplier_id
                 ]);
             }
         } else { // Failure
-            return $this->response->setJSON([
+            echo json_encode([
                 'success' => false,
                 'message' => lang('Suppliers.error_adding_updating') . ' ' .     $supplier_data['company_name'],
                 'id'      => NEW_ENTRY
@@ -174,19 +172,19 @@ class Suppliers extends Persons
     /**
      * This deletes suppliers from the suppliers table
      *
-     * @return ResponseInterface
+     * @return void
      */
-    public function postDelete(): ResponseInterface
+    public function postDelete(): void
     {
         $suppliers_to_delete = $this->request->getPost('ids', FILTER_SANITIZE_NUMBER_INT);
 
         if ($this->supplier->delete_list($suppliers_to_delete)) {
-            return $this->response->setJSON([
+            echo json_encode([
                 'success' => true,
                 'message' => lang('Suppliers.successful_deleted') . ' ' . count($suppliers_to_delete) . ' ' . lang('Suppliers.one_or_multiple')
             ]);
         } else {
-            return $this->response->setJSON(['success' => false, 'message' => lang('Suppliers.cannot_be_deleted')]);
+            echo json_encode(['success' => false, 'message' => lang('Suppliers.cannot_be_deleted')]);
         }
     }
 }

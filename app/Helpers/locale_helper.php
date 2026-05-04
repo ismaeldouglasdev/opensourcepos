@@ -22,7 +22,9 @@ function current_language_code(bool $load_system_language = false): string
         }
     }
 
-    return $config['language_code'] ?? DEFAULT_LANGUAGE_CODE;
+    $language_code = $config['language_code'];
+
+    return empty($language_code) ? DEFAULT_LANGUAGE_CODE : $language_code;
 }
 
 /**
@@ -43,7 +45,9 @@ function current_language(bool $load_system_language = false): string
         }
     }
 
-    return $config['language'] ?? DEFAULT_LANGUAGE;
+    $language = $config['language'];
+
+    return empty($language) ? DEFAULT_LANGUAGE : $language;
 }
 
 /**
@@ -85,8 +89,6 @@ function get_languages(): array
         'pt-BR:portuguese'            => 'Portuguese (Brazil)',
         'ro:romanian'                 => 'Romanian',
         'ru:russian'                  => 'Russian',
-        'sw-KE:swahili'               => 'Swahili (Kenya)',
-        'sw-TZ:swahili'               => 'Swahili (Tanzania)',
         'sv:swedish'                  => 'Swedish',
         'ta:tamil'                    => 'Tamil',
         'th:thai'                     => 'Thai',
@@ -238,40 +240,42 @@ function get_timeformats(): array
  */
 function get_payment_options(): array
 {
-    $payments = [];
     $config = config(OSPOS::class)->settings;
-
-    // TODO: This needs to be switched to a switch statement
-    if ($config['payment_options_order'] == 'debitcreditcash') {    // TODO: ===
-        $payments[lang('Sales.debit')] = lang('Sales.debit');
-        $payments[lang('Sales.credit')] = lang('Sales.credit');
-        $payments[lang('Sales.cash')] = lang('Sales.cash');
-    } elseif ($config['payment_options_order'] == 'debitcashcredit') {    // TODO: ===
-        $payments[lang('Sales.debit')] = lang('Sales.debit');
-        $payments[lang('Sales.cash')] = lang('Sales.cash');
-        $payments[lang('Sales.credit')] = lang('Sales.credit');
-    } elseif ($config['payment_options_order'] == 'creditdebitcash') {    // TODO: ===
-        $payments[lang('Sales.credit')] = lang('Sales.credit');
-        $payments[lang('Sales.debit')] = lang('Sales.debit');
-        $payments[lang('Sales.cash')] = lang('Sales.cash');
-    } elseif ($config['payment_options_order'] == 'creditcashdebit') {    // TODO: ===
-        $payments[lang('Sales.credit')] = lang('Sales.credit');
-        $payments[lang('Sales.cash')] = lang('Sales.cash');
-        $payments[lang('Sales.debit')] = lang('Sales.debit');
-    } else { // Default: if ($config['payment_options_order == 'cashdebitcredit')
-        $payments[lang('Sales.cash')] = lang('Sales.cash');
-        $payments[lang('Sales.debit')] = lang('Sales.debit');
-        $payments[lang('Sales.credit')] = lang('Sales.credit');
+    $payments = [];
+    $payment_map = [
+        'cash'   => lang('Sales.cash'),
+        'debit'  => lang('Sales.debit'),
+        'credit' => lang('Sales.credit'),
+        'pix'    => lang('Sales.pix'),
+        'fiado'  => lang('Sales.account_receivable'),
+        'upi'    => lang('Sales.upi')
+    ];
+    $payment_order = $config['payment_options_order'] ?? 'cash';
+    if (strpos($payment_order, "\n") !== false) {
+        $types = array_filter(array_map('trim', explode("\n", $payment_order)));
+        foreach ($types as $type) {
+            if (isset($payment_map[$type])) {
+                $payments[$payment_map[$type]] = $payment_map[$type];
+            }
+        }
+    } else {
+        if ($payment_order == 'debitcreditcash') {
+            $types = ['debit', 'credit', 'cash'];
+        } elseif ($payment_order == 'debitcashcredit') {
+            $types = ['debit', 'cash', 'credit'];
+        } elseif ($payment_order == 'creditdebitcash') {
+            $types = ['credit', 'debit', 'cash'];
+        } elseif ($payment_order == 'creditcashdebit') {
+            $types = ['credit', 'cash', 'debit'];
+        } else {
+            $types = ['cash', 'debit', 'credit'];
+        }
+        foreach ($types as $type) {
+            if (isset($payment_map[$type])) {
+                $payments[$payment_map[$type]] = $payment_map[$type];
+            }
+        }
     }
-
-    $payments[lang('Sales.due')] = lang('Sales.due');
-    $payments[lang('Sales.check')] = lang('Sales.check');
-
-    // If India (list of country codes include India) then include Unified Payment Interface
-    if (stripos($config['country_codes'], 'IN') !== false) {
-        $payments[lang('Sales.upi')] = lang('Sales.upi');
-    }
-
     return $payments;
 }
 

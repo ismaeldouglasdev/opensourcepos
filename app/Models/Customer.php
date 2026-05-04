@@ -4,7 +4,6 @@ namespace App\Models;
 
 use CodeIgniter\Database\ResultInterface;
 use Config\OSPOS;
-use stdClass;
 
 /**
  * Customer class
@@ -129,7 +128,7 @@ class Customer extends Person
     /**
      * Gets stats about a particular customer
      */
-    public function get_stats(int $customer_id): ?stdClass
+    public function get_stats(int $customer_id)
     {
         $db_prefix = $this->db->getPrefix();
         $totals_decimals = totals_decimals();

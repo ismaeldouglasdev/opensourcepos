@@ -5,7 +5,6 @@ namespace app\Libraries;
 use CodeIgniter\Email\Email;
 use CodeIgniter\Encryption\Encryption;
 use CodeIgniter\Encryption\EncrypterInterface;
-use CodeIgniter\Encryption\Exceptions\EncryptionException;
 use Config\OSPOS;
 use Config\Services;
 
@@ -29,15 +28,8 @@ class Email_lib
         $encrypter = Services::encrypter();
 
         $smtp_pass = $this->config['smtp_pass'];
-        if (!empty($smtp_pass) && check_encryption()) {
-            try {
-                $smtp_pass = $encrypter->decrypt($smtp_pass);
-            } catch (\EncryptionException $e) {
-                // Decryption failed, use the original value
-                log_message('error', 'SMTP password decryption failed: ' . $e->getMessage());
-                $smtp_pass = '';
-            }
-
+        if (!empty($smtp_pass)) {
+            $smtp_pass = $encrypter->decrypt($smtp_pass);
         }
 
         $email_config = [
@@ -71,51 +63,14 @@ class Email_lib
 
         if (!empty($attachment)) {
             $email->attach($attachment);
-            $email->setAttachmentCID($attachment);
         }
 
         $result = $email->send();
 
         if (!$result) {
-            log_message('error', $email->printDebugger());
+            error_log($email->printDebugger());
         }
 
         return $result;
-    }
-
-    /**
-     * Gets the mime type of the company logo file.
-     *
-     * @return string Mime type or empty string if logo doesn't exist
-     */
-    public function getLogoMimeType(): string
-    {
-        $logo_path = FCPATH . 'uploads/' . $this->config['company_logo'];
-
-        if (!empty($this->config['company_logo']) && file_exists($logo_path)) {
-            $mimeType = mime_content_type($logo_path);
-            return $mimeType !== false ? $mimeType : '';
-        }
-
-        return '';
-    }
-
-    /**
-     * Builds an img tag for the company logo to use in email templates.
-     *
-     * @return string HTML img tag with base64-encoded logo, or empty string if no logo
-     */
-    public function buildLogoImgTag(): string
-    {
-        $mimeType = $this->getLogoMimeType();
-
-        if ($mimeType === '') {
-            return '';
-        }
-
-        $logo_path = FCPATH . 'uploads/' . $this->config['company_logo'];
-        $logo_data = base64_encode(file_get_contents($logo_path));
-
-        return '<img id="image" src="data:' . $mimeType . ';base64,' . $logo_data . '" alt="company_logo">';
     }
 }

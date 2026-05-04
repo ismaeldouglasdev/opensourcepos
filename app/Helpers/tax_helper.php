@@ -143,7 +143,8 @@ function get_tax_rates_manage_table_headers(): string
  */
 function get_tax_rates_data_row($tax_rates_row): array
 {
-    $controller_name = 'taxes';
+    $router = service('router');
+    $controller_name = strtolower($router->controllerName());
 
     return [
         'tax_rate_id'        => $tax_rates_row->tax_rate_id,

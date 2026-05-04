@@ -16,11 +16,11 @@ class Migration_database_optimizations extends Migration
      */
     public function up(): void
     {
-        log_message('info', 'Migrating database optimizations.');
+        error_log('Migrating database_optimizations');
 
         $attribute = model(Attribute::class);
 
-        $attribute->deleteOrphanedValues();
+        $attribute->delete_orphaned_values();
 
         $this->migrate_duplicate_attribute_values(DECIMAL);
         $this->migrate_duplicate_attribute_values(DATE);
@@ -82,7 +82,7 @@ class Migration_database_optimizations extends Migration
 
         helper('migration');
         execute_script(APPPATH . 'Database/Migrations/sqlscripts/3.4.0_database_optimizations.sql');
-        log_message('info', 'Finished migrating database optimizations.');
+        error_log('Migrating database_optimizations completed');
     }
 
     /**

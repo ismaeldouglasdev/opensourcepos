@@ -3,7 +3,6 @@
 namespace App\Controllers;
 
 use App\Models\Employee;
-use CodeIgniter\HTTP\ResponseInterface;
 
 /**
  * @property Employee employee
@@ -18,11 +17,11 @@ class Office extends Secure_Controller
     }
 
     /**
-     * @return string
+     * @return void
      */
-    public function getIndex(): string
+    public function getIndex(): void
     {
-        return view('home/office');
+        echo view('home/office');
     }
 
     /**

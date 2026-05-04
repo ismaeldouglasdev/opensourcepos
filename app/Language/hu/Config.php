@@ -282,7 +282,6 @@ return [
     "right"                                     => "Jobb",
     "sales_invoice_format"                      => "Eladási számla formátum",
     "sales_quote_format"                        => "",
-    "mailpath_invalid"                          => "",
     "saved_successfully"                        => "Beállítások sikeresen elmentve",
     "saved_unsuccessfully"                      => "Beállítások mentése sikertelen",
     "security_issue"                            => "Security Vulnerability Warning",

@@ -25,9 +25,11 @@ use Config\OSPOS;
     <div class="container">
         <div class="row">
             <div class="col-sm-2" style="text-align: left;"><br>
-                <p style="min-height: 14.7em; font-weight: bold;">General Info</p>
-                <p style="min-height: 10.5em; font-weight: bold;">User Setup</p><br>
-                <p style="font-weight: bold;">Permissions</p>
+                <strong>
+                    <p style="min-height: 14.7em;">General Info</p>
+                    <p style="min-height: 10.5em;">User Setup</p><br>
+                    <p>Permissions</p>
+                </strong>
             </div>
             <div class="col-sm-8" id="issuetemplate" style="text-align: left;"><br>
                 <?= lang('Config.ospos_info') . ':' ?>
@@ -36,14 +38,14 @@ use Config\OSPOS;
                 <div id="TimeError"></div>
                 Extensions & Modules:<br>
                 <?php
-                    echo "&#187; GD: ", extension_loaded('gd') ? '<span style="color: green;">Enabled &#x2713</span>' : '<span style="color: red;">Disabled &#x2717</span>', '<br>';
-                    echo "&#187; BC Math: ", extension_loaded('bcmath') ? '<span style="color: green;">Enabled &#x2713</span>' : '<span style="color: red;">Disabled &#x2717</span>', '<br>';
-                    echo "&#187; INTL: ", extension_loaded('intl') ? '<span style="color: green;">Enabled &#x2713</span>' : '<span style="color: red;">Disabled &#x2717</span>', '<br>';
-                    echo "&#187; OpenSSL: ", extension_loaded('openssl') ? '<span style="color: green;">Enabled &#x2713</span>' : '<span style="color: red;">Disabled &#x2717</span>', '<br>';
-                    echo "&#187; MBString: ", extension_loaded('mbstring') ? '<span style="color: green;">Enabled &#x2713</span>' : '<span style="color: red;">Disabled &#x2717</span>', '<br>';
-                    echo "&#187; Curl: ", extension_loaded('curl') ? '<span style="color: green;">Enabled &#x2713</span>' : '<span style="color: red;">Disabled &#x2717</span>', '<br>';
-                    echo "&#187; Json: ", extension_loaded('json') ? '<span style="color: green;">Enabled &#x2713</span>' : '<span style="color: red;">Disabled &#x2717</span>', '<br><br>';
-                    echo "&#187; Xml: ", extension_loaded('xml') ? '<span style="color: green;">Enabled &#x2713</span>' : '<span style="color: red;">Disabled &#x2717</span>', '<br><br>';
+                echo "&#187; GD: ", extension_loaded('gd') ? '<span style="color: green;">Enabled &#x2713</span>' : '<span style="color: red;">Disabled &#x2717</span>', '<br>';
+                echo "&#187; BC Math: ", extension_loaded('bcmath') ? '<span style="color: green;">Enabled &#x2713</span>' : '<span style="color: red">Disabled &#x2717</span>', '<br>';
+                echo "&#187; INTL: ", extension_loaded('intl') ? '<span style="color: green;">Enabled &#x2713</span>' : '<span style="color: red">Disabled &#x2717</span>', '<br>';
+                echo "&#187; OpenSSL: ", extension_loaded('openssl') ? '<span style="color: green;">Enabled &#x2713</span>' : '<span style="color: red">Disabled &#x2717</span>', '<br>';
+                echo "&#187; MBString: ", extension_loaded('mbstring') ? '<span style="color: green;">Enabled &#x2713</span>' : '<span style="color: red">Disabled &#x2717</span>', '<br>';
+                echo "&#187; Curl: ", extension_loaded('curl') ? '<span style="color: green;">Enabled &#x2713</span>' : '<span style="color: red">Disabled &#x2717</span>', '<br>';
+                echo "&#187; Json: ", extension_loaded('json') ? '<span style="color: green;">Enabled &#x2713</span>' : '<span style="color: red">Disabled &#x2717</span>', '<br><br>';
+                echo "&#187; Xml: ", extension_loaded('xml') ? '<span style="color: green;">Enabled &#x2713</span>' : '<span style="color: red">Disabled &#x2717</span>', '<br><br>';
                 ?>
                 User Configuration:<br>
                 .Browser:
@@ -86,10 +88,10 @@ use Config\OSPOS;
                 <br><br>
 
                 File Permissions:<br>
-                &#187; [writable/logs:]
+                &#187; [writeable/logs:]
                 <?php $logs = WRITEPATH . 'logs/';
-                $uploads = FCPATH. 'uploads/';
-                $images = FCPATH. 'uploads/item_pics/';
+                $uploads = FCPATH . 'uploads/';
+                $images = FCPATH . 'uploads/item_pics/';
                 $importCustomers = WRITEPATH . '/uploads/importCustomers.csv';    // TODO: This variable does not follow naming conventions for the project.
 
                 if (is_writable($logs)) {
@@ -107,7 +109,7 @@ use Config\OSPOS;
                 clearstatcache();
                 ?>
                 <br>
-                &#187; [public/uploads:]
+                &#187; [writable/uploads:]
                 <?php
                 if (is_writable($uploads)) {
                     echo ' -  ' . substr(sprintf("%o", fileperms($uploads)), -4) . ' |  ' . '<span style="color: green;">     Writable &#x2713 </span>';
@@ -126,7 +128,7 @@ use Config\OSPOS;
                 clearstatcache();
                 ?>
                 <br>
-                &#187; [public/uploads/item_pics:]
+                &#187; [writable/uploads/item_pics:]
                 <?php
                 if (is_writable($images)) {
                     echo ' -  ' . substr(sprintf("%o", fileperms($images)), -4) . ' |     ' . '<span style="color: green;"> Writable &#x2713 </span>';
@@ -174,7 +176,7 @@ use Config\OSPOS;
                 }
 
                 if (substr(decoct(fileperms($logs)), -4) != 750) {
-                    echo '<br><span style="color: red;"> &#187; [writable/logs:] ' . lang('Config.is_writable') . '</span>';
+                    echo '<br><span style="color: red;"> &#187; [writeable/logs:] ' . lang('Config.is_writable') . '</span>';
                 }
 
                 if (substr(decoct(fileperms($uploads)), -4) != 750) {

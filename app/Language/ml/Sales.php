@@ -73,12 +73,6 @@ return [
     "employee"                         => "",
     "entry"                            => "",
     "error_editing_item"               => "",
-    "negative_price_invalid"           => "",
-    "negative_quantity_invalid"        => "",
-    "negative_discount_invalid"        => "",
-    "discount_percent_exceeds_100"     => "",
-    "discount_exceeds_item_total"      => "",
-    "negative_total_invalid"           => "",
     "find_or_scan_item"                => "",
     "find_or_scan_item_or_receipt"     => "",
     "giftcard"                         => "",
@@ -228,5 +222,4 @@ return [
     "work_order_number_duplicate"      => "",
     "work_order_sent"                  => "",
     "work_order_unsent"                => "",
-    "sale_not_found"                   => "",
 ];

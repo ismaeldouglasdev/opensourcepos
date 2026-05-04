@@ -146,5 +146,4 @@ return [
     "used"                                    => "Points utilisés",
     "work_orders"                             => "Ordre Du Travail",
     "zero_and_less"                           => "Zéro ou moin",
-    "toggle_cost_and_profit"                  => "Basculer Coût & Bénéfice",
 ];

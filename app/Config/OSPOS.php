@@ -14,7 +14,7 @@ use CodeIgniter\Config\BaseConfig;
 class OSPOS extends BaseConfig
 {
     public array $settings;
-    public string $commit_sha1 = 'dev';    // TODO: Travis scripts need to be updated to replace this with the commit hash on build
+    public string $commit_sha1 = '5f395d';    // TODO: Travis scripts need to be updated to replace this with the commit hash on build
     private CacheInterface $cache;
 
     public function __construct()
@@ -34,23 +34,11 @@ class OSPOS extends BaseConfig
         if ($cache) {
             $this->settings = decode_array($cache);
         } else {
-            try {
-                $appconfig = model(Appconfig::class);
-                foreach ($appconfig->get_all()->getResult() as $app_config) {
-                    $this->settings[$app_config->key] = $app_config->value;
-                }
-                $this->cache->save('settings', encode_array($this->settings));
-            } catch (\Exception $e) {
-                // Database table doesn't exist yet (migrations haven't run)
-                // or database connection failed. Return empty settings to
-                // allow migration page to display. Catches mysqli_sql_exception
-                // which is not a subclass of DatabaseException.
-                $this->settings = [
-                    'language' => 'english',
-                    'language_code' => 'en',
-                    'company' => 'Home'
-                ];
+            $appconfig = model(Appconfig::class);
+            foreach ($appconfig->get_all()->getResult() as $app_config) {
+                $this->settings[$app_config->key] = $app_config->value;
             }
+            $this->cache->save('settings', encode_array($this->settings));
         }
     }
 
