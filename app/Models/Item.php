@@ -50,8 +50,10 @@ class Item extends Model
     public function exists(string $item_id, bool $ignore_deleted = false, bool $deleted = false): bool
     {
         $builder = $this->db->table('items');
+        $builder->groupStart();
         $builder->where('item_id', $item_id);
         $builder->orWhere('item_number', $item_id);
+        $builder->groupEnd();
 
         if (!$ignore_deleted) {
             $builder->where('deleted', $deleted);

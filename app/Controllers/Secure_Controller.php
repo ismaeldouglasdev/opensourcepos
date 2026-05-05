@@ -105,9 +105,8 @@ class Secure_Controller extends BaseController
      */
     public function getConfig($key)
     {
-        if (isset($config[$key])) {
-            return $config[$key];
-        }
+        $config = config(OSPOS::class)->settings;
+        return $config[$key] ?? null;
     }
 
     /**

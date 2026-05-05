@@ -49,7 +49,7 @@ class Config extends Secure_Controller
 
         $this->barcode_lib = new Barcode_lib();
         $this->sale_lib = new Sale_lib();
-        $this->receiving_lib = new receiving_lib();
+        $this->receiving_lib = new Receiving_lib();
         $this->tax_lib = new Tax_lib();
         $this->appconfig = model(Appconfig::class);
         $this->attribute = model(Attribute::class);
@@ -233,7 +233,22 @@ class Config extends Secure_Controller
         $data['tax_jurisdiction_options'] = $this->tax_lib->get_tax_jurisdiction_options();
         $data['show_office_group'] = $this->module->get_show_office_group();
         $data['currency_code'] = $this->config['currency_code'] ?? '';
-        $data['dbVersion'] = mysqli_get_server_info($this->db->getConnection());
+        // Get database version in a driver-agnostic way
+        $dbVersion = 'Unknown';
+        try {
+            if ($this->db->getConnection() instanceof mysqli) {
+                $dbVersion = mysqli_get_server_info($this->db->getConnection());
+            } else {
+                // For non-mysqli drivers (e.g., PDO), query the version
+                $query = $this->db->query('SELECT VERSION() as version');
+                if ($query && $row = $query->getRow()) {
+                    $dbVersion = $row->version;
+                }
+            }
+        } catch (Exception $e) {
+            log_message('error', 'Failed to get database version: ' . $e->getMessage());
+        }
+        $data['dbVersion'] = $dbVersion;
 
         // Load all the license statements, they are already XSS cleaned in the private function
         $data['licenses'] = $this->_licenses();

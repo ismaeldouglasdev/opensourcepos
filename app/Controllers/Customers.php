@@ -399,54 +399,120 @@ class Customers extends Persons
      */
     public function postImportCsvFile(): void
     {
-        if ($_FILES['file_path']['error'] != UPLOAD_ERR_OK) {
+        // Validate file upload
+        if (!isset($_FILES['file_path']) || $_FILES['file_path']['error'] != UPLOAD_ERR_OK) {
             echo json_encode(['success' => false, 'message' => lang('Customers.csv_import_failed')]);
+            return;
+        }
+
+        // Validate file type (must be CSV)
+        $allowed_mime_types = ['text/csv', 'application/vnd.ms-excel', 'text/plain'];
+        $file_mime_type = mime_content_type($_FILES['file_path']['tmp_name']);
+        
+        if (!in_array($file_mime_type, $allowed_mime_types)) {
+            echo json_encode(['success' => false, 'message' => lang('Customers.csv_import_wrongformat')]);
+            return;
+        }
+
+        // Validate file size (max 5MB)
+        $max_file_size = 5 * 1024 * 1024; // 5MB
+        if ($_FILES['file_path']['size'] > $max_file_size) {
+            echo json_encode(['success' => false, 'message' => lang('Customers.csv_import_file_too_large')]);
+            return;
+        }
+
+        if (($handle = fopen($_FILES['file_path']['tmp_name'], 'r')) !== false) {
+            // Skip the first row as it's the table description
+            fgetcsv($handle);
+            $i = 1;
+
+            $failCodes = [];
+
+            while (($data = fgetcsv($handle)) !== false) {
+                // Validate row has enough columns
+                if (count($data) < 18) {
+                    $failCodes[] = $i;
+                    log_message('error', "Row $i was not imported: Insufficient columns.");
+                    ++$i;
+                    continue;
+                }
+
+                $consent = isset($data[3]) && $data[3] !== '' ? 1 : 0;
+
+                if (sizeof($data) >= 16 && $consent) {
+                    $email = strtolower(filter_var($data[4], FILTER_SANITIZE_EMAIL));
+                    
+                    // Validate email
+                    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                        $failCodes[] = $i;
+                        log_message('error', "Row $i was not imported: Invalid email address.");
+                        ++$i;
+                        continue;
+                    }
+
+                    $person_data = [
+                        'first_name'   => htmlspecialchars($data[0], ENT_QUOTES, 'UTF-8'),
+                        'last_name'    => htmlspecialchars($data[1], ENT_QUOTES, 'UTF-8'),
+                        'gender'       => (int)$data[2],
+                        'email'        => $email,
+                        'phone_number' => htmlspecialchars($data[5], ENT_QUOTES, 'UTF-8'),
+                        'address_1'    => htmlspecialchars($data[6], ENT_QUOTES, 'UTF-8'),
+                        'address_2'    => htmlspecialchars($data[7], ENT_QUOTES, 'UTF-8'),
+                        'city'         => htmlspecialchars($data[8], ENT_QUOTES, 'UTF-8'),
+                        'state'        => htmlspecialchars($data[9], ENT_QUOTES, 'UTF-8'),
+                        'zip'          => htmlspecialchars($data[10], ENT_QUOTES, 'UTF-8'),
+                        'country'      => htmlspecialchars($data[11], ENT_QUOTES, 'UTF-8'),
+                        'comments'     => htmlspecialchars($data[12], ENT_QUOTES, 'UTF-8')
+                    ];
+
+                    $customer_data = [
+                        'consent'       => $consent,
+                        'company_name'  => isset($data[13]) ? htmlspecialchars($data[13], ENT_QUOTES, 'UTF-8') : null,
+                        'discount'      => isset($data[15]) ? (float)$data[15] : 0.00,
+                        'discount_type' => isset($data[16]) ? (int)$data[16] : PERCENT,
+                        'taxable'       => isset($data[17]) && $data[17] != '' ? 1 : 0,
+                        'date'          => date('Y-m-d H:i:s'),
+                        'employee_id'   => $this->employee->get_logged_in_employee_info()->person_id
+                    ];
+                    $account_number = isset($data[14]) ? $data[14] : '';
+
+                    // Don't duplicate people with same email
+                    $invalidated = $this->customer->check_email_exists($email);
+
+                    if ($account_number != '') {
+                        $customer_data['account_number'] = $account_number;
+                        $invalidated &= $this->customer->check_account_number_exists($account_number);
+                    }
+                } else {
+                    $invalidated = true;
+                }
+
+                if ($invalidated) {
+                    $failCodes[] = $i;
+                    log_message('error', "Row $i was not imported: Either email or account number already exist or data was invalid.");
+                } elseif ($this->customer->save_customer($person_data, $customer_data)) {
+                    // Save customer to Mailchimp selected list
+                    $this->mailchimp_lib->addOrUpdateMember($this->_list_id, $person_data['email'], $person_data['first_name'], $person_data['last_name']);
+                } else {
+                    $failCodes[] = $i;
+                }
+
+                ++$i;
+            }
+
+            fclose($handle);
+
+            if (count($failCodes) > 0) {
+                $message = lang('Customers.csv_import_partially_failed', [count($failCodes), implode(', ', $failCodes)]);
+
+                echo json_encode(['success' => false, 'message' => $message]);
+            } else {
+                echo json_encode(['success' => true, 'message' => lang('Customers.csv_import_success')]);
+            }
         } else {
-            if (($handle = fopen($_FILES['file_path']['tmp_name'], 'r')) !== false) {
-                // Skip the first row as it's the table description
-                fgetcsv($handle);
-                $i = 1;
-
-                $failCodes = [];
-
-                while (($data = fgetcsv($handle)) !== false) {
-                    $consent = $data[3] == '' ? 0 : 1;
-
-                    if (sizeof($data) >= 16 && $consent) {
-                        $email = strtolower($data[4]);
-                        $person_data = [
-                            'first_name'   => $data[0],
-                            'last_name'    => $data[1],
-                            'gender'       => $data[2],
-                            'email'        => $email,
-                            'phone_number' => $data[5],
-                            'address_1'    => $data[6],
-                            'address_2'    => $data[7],
-                            'city'         => $data[8],
-                            'state'        => $data[9],
-                            'zip'          => $data[10],
-                            'country'      => $data[11],
-                            'comments'     => $data[12]
-                        ];
-
-                        $customer_data = [
-                            'consent'       => $consent,
-                            'company_name'  => $data[13],
-                            'discount'      => $data[15],
-                            'discount_type' => $data[16],
-                            'taxable'       => $data[17] == '' ? 0 : 1,
-                            'date'          => date('Y-m-d H:i:s'),
-                            'employee_id'   => $this->employee->get_logged_in_employee_info()->person_id
-                        ];
-                        $account_number = $data[14];
-
-                        // Don't duplicate people with same email
-                        $invalidated = $this->customer->check_email_exists($email);
-
-                        if ($account_number != '') {
-                            $customer_data['account_number'] = $account_number;
-                            $invalidated &= $this->customer->check_account_number_exists($account_number);
-                        }
+            echo json_encode(['success' => false, 'message' => lang('Customers.csv_import_nodata_wrongformat')]);
+        }
+    }
                     } else {
                         $invalidated = true;
                     }
