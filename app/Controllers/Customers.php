@@ -513,33 +513,4 @@ class Customers extends Persons
             echo json_encode(['success' => false, 'message' => lang('Customers.csv_import_nodata_wrongformat')]);
         }
     }
-                    } else {
-                        $invalidated = true;
-                    }
-
-                    if ($invalidated) {
-                        $failCodes[] = $i;
-                        log_message('error', "Row $i was not imported: Either email or account number already exist or data was invalid.");
-                    } elseif ($this->customer->save_customer($person_data, $customer_data)) {
-                        // Save customer to Mailchimp selected list
-                        $this->mailchimp_lib->addOrUpdateMember($this->_list_id, $person_data['email'], $person_data['first_name'], '', $person_data['last_name']);
-                    } else {
-                        $failCodes[] = $i;
-                    }
-
-                    ++$i;
-                }
-
-                if (count($failCodes) > 0) {
-                    $message = lang('Customers.csv_import_partially_failed', [count($failCodes), implode(', ', $failCodes)]);
-
-                    echo json_encode(['success' => false, 'message' => $message]);
-                } else {
-                    echo json_encode(['success' => true, 'message' => lang('Customers.csv_import_success')]);
-                }
-            } else {
-                echo json_encode(['success' => false, 'message' => lang('Customers.csv_import_nodata_wrongformat')]);
-            }
-        }
-    }
 }
