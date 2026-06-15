@@ -323,6 +323,165 @@
                 </div>
             </div>
 
+            <hr style="border-top: 2px solid #ccc;">
+            <h4>Impressora Térmica (ESC/POS)</h4>
+
+            <div class="form-group form-group-sm">
+                <div class="col-xs-2">
+                    <label class="control-label"><?= lang('Config.escpos_enable') ?></label>
+                </div>
+                <div class="col-xs-1">
+                    <?= form_checkbox([
+                        'name'    => 'escpos_enabled',
+                        'value'   => 'escpos_enabled',
+                        'id'      => 'escpos_enabled',
+                        'checked' => $config['escpos_enabled'] == 1
+                    ]) ?>
+                </div>
+            </div>
+
+            <div id="escpos_settings">
+                <div class="form-group form-group-sm">
+                    <?= form_label('Nome da Impressora (CUPS)', 'escpos_printer', ['class' => 'control-label col-xs-2']) ?>
+                    <div class="col-xs-3">
+                        <?= form_input([
+                            'name'  => 'escpos_printer',
+                            'id'    => 'escpos_printer',
+                            'class' => 'form-control input-sm',
+                            'value' => $config['escpos_printer'] ?? 'TM-T20'
+                        ]) ?>
+                    </div>
+                </div>
+
+                <div class="form-group form-group-sm">
+                    <?= form_label('Largura do Papel', 'escpos_paper_width', ['class' => 'control-label col-xs-2']) ?>
+                    <div class="col-xs-2">
+                        <?= form_dropdown(
+                            'escpos_paper_width',
+                            [
+                                '80' => '80mm (48 colunas)',
+                                '58' => '58mm (32 colunas)'
+                            ],
+                            $config['escpos_paper_width'] ?? '80',
+                            'class="form-control input-sm"'
+                        ) ?>
+                    </div>
+                </div>
+
+                <div class="form-group form-group-sm">
+                    <?= form_label('Tipo de Conexão', 'escpos_connection', ['class' => 'control-label col-xs-2']) ?>
+                    <div class="col-xs-2">
+                        <?= form_dropdown(
+                            'escpos_connection',
+                            [
+                                'cups'    => 'CUPS (recomendado)',
+                                'file'    => 'Arquivo Dispositivo (/dev/usb/lp0)',
+                                'network' => 'Rede (TCP/IP)'
+                            ],
+                            $config['escpos_connection'] ?? 'cups',
+                            'class="form-control input-sm" id="escpos_connection"'
+                        ) ?>
+                    </div>
+                </div>
+
+                <div class="form-group form-group-sm" id="escpos_device_group">
+                    <?= form_label('Dispositivo USB', 'escpos_device', ['class' => 'control-label col-xs-2']) ?>
+                    <div class="col-xs-3">
+                        <?= form_input([
+                            'name'  => 'escpos_device',
+                            'id'    => 'escpos_device',
+                            'class' => 'form-control input-sm',
+                            'value' => $config['escpos_device'] ?? '/dev/usb/lp0'
+                        ]) ?>
+                    </div>
+                </div>
+
+                <div class="form-group form-group-sm" id="escpos_host_group">
+                    <?= form_label('Endereço/IP', 'escpos_host', ['class' => 'control-label col-xs-2']) ?>
+                    <div class="col-xs-2">
+                        <?= form_input([
+                            'name'  => 'escpos_host',
+                            'id'    => 'escpos_host',
+                            'class' => 'form-control input-sm',
+                            'value' => $config['escpos_host'] ?? '192.168.1.100'
+                        ]) ?>
+                    </div>
+                </div>
+
+                <div class="form-group form-group-sm" id="escpos_port_group">
+                    <?= form_label('Porta', 'escpos_port', ['class' => 'control-label col-xs-2']) ?>
+                    <div class="col-xs-1">
+                        <?= form_input([
+                            'name'  => 'escpos_port',
+                            'id'    => 'escpos_port',
+                            'class' => 'form-control input-sm',
+                            'value' => $config['escpos_port'] ?? '9100'
+                        ]) ?>
+                    </div>
+                </div>
+
+                <div class="form-group form-group-sm">
+                    <?= form_label('Mostrar Logo', 'escpos_show_logo', ['class' => 'control-label col-xs-2']) ?>
+                    <div class="col-xs-1">
+                        <?= form_checkbox([
+                            'name'    => 'escpos_show_logo',
+                            'value'   => 'escpos_show_logo',
+                            'id'      => 'escpos_show_logo',
+                            'checked' => !empty($config['escpos_show_logo'])
+                        ]) ?>
+                    </div>
+                </div>
+
+                <div class="form-group form-group-sm">
+                    <div class="col-xs-offset-2 col-xs-3">
+                        <button type="button" class="btn btn-default btn-sm" id="escpos_test_btn">
+                            <span class="glyphicon glyphicon-print"></span> Imprimir Teste
+                        </button>
+                        <span id="escpos_test_result" style="margin-left: 10px;"></span>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                $(document).ready(function() {
+                    function toggleEscposSettings() {
+                        var enabled = $('#escpos_enabled').is(':checked');
+                        $('#escpos_settings input, #escpos_settings select, #escpos_test_btn').prop('disabled', !enabled);
+                    }
+
+                    function toggleConnectionType() {
+                        var connection = $('#escpos_connection').val();
+                        $('#escpos_device_group').toggle(connection === 'file');
+                        $('#escpos_host_group, #escpos_port_group').toggle(connection === 'network');
+                    }
+
+                    $('#escpos_enabled').change(toggleEscposSettings);
+                    $('#escpos_connection').change(toggleConnectionType);
+
+                    toggleEscposSettings();
+                    toggleConnectionType();
+
+                    // Test print button
+                    $('#escpos_test_btn').click(function() {
+                        var btn = $(this);
+                        var result = $('#escpos_test_result');
+                        btn.prop('disabled', true);
+                        result.text('Enviando...').css('color', '#999');
+
+                        $.get('<?= site_url('printer/test') ?>', {
+                            printer: $('#escpos_printer').val() || 'TM-T20'
+                        }, function(response) {
+                            result.text(response.success ? 'OK!' : 'Falhou: ' + response.message)
+                                  .css('color', response.success ? 'green' : 'red');
+                        }, 'json').fail(function() {
+                            result.text('Erro de conexão').css('color', 'red');
+                        }).always(function() {
+                            btn.prop('disabled', false);
+                        });
+                    });
+                });
+            </script>
+
             <?= form_submit([
                 'name'  => 'submit_receipt',
                 'id'    => 'submit_receipt',

@@ -328,4 +328,6 @@ return [
     "wholesale_markup"                          => "",
     "work_order_enable"                         => "Suporte para Ordem de Serviço",
     "work_order_format"                         => "Formato Ordem de Serviço",
+    // ESC/POS Thermal Printer
+    "escpos_enable"                             => "Impressora Térmica (ESC/POS)",
 ];
