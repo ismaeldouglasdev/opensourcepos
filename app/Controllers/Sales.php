@@ -631,6 +631,20 @@ class Sales extends Secure_Controller
             } else {
                 $data['barcode'] = $this->barcode_lib->generate_receipt_barcode($data['sale_id']);
                 echo view('sales/receipt', $data);
+
+                // Thermal ESC/POS printing (if enabled in config)
+                if (!empty($this->config['escpos_enabled'])) {
+                    try {
+                        $printer = new \App\Libraries\ThermalPrinter($this->config);
+                        $printerName = $this->config['escpos_printer'] ?? 'TM-T20';
+                        $printer->connect($printerName);
+                        $printer->printReceipt($data);
+                    } catch (\Exception $e) {
+                        log_message('error', 'ESC/POS print failed: ' . $e->getMessage());
+                        // Don't block the sale if printing fails
+                    }
+                }
+
                 $this->sale_lib->clear_all();
             }
         }

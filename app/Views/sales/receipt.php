@@ -48,6 +48,26 @@ if (isset($error_message)) {
     <a href="javascript:printdoc();">
         <div class="btn btn-info btn-sm" id="show_print_button"><?= '<span class="glyphicon glyphicon-print">&nbsp;</span>' . lang('Common.print') ?></div>
     </a>
+    <?php if (!empty($config['escpos_enabled'])): ?>
+        <a href="javascript:void(0);" id="thermal_print_btn">
+            <div class="btn btn-primary btn-sm"><?= '<span class="glyphicon glyphicon-print">&nbsp;</span> Impressora Térmica' ?></div>
+        </a>
+        <script>
+            $(document).ready(function() {
+                $('#thermal_print_btn').click(function() {
+                    $.post('<?= site_url('printer/quickPrint') ?>', {
+                        sale_id: <?= $sale_id_num ?>
+                    }, function(response) {
+                        $.notify({
+                            message: response.message
+                        }, {
+                            type: response.success ? 'success' : 'danger'
+                        });
+                    }, 'json');
+                });
+            });
+        </script>
+    <?php endif; ?>
     <?php if (!empty($customer_email)): ?>
         <a href="javascript:void(0);">
             <div class="btn btn-info btn-sm" id="show_email_button"><?= '<span class="glyphicon glyphicon-envelope">&nbsp;</span>' . lang('Sales.send_receipt') ?></div>
