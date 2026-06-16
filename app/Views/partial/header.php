@@ -103,12 +103,22 @@ $request = Services::request();
             overflow: auto;
         }
     </style>
-    
+
     <!-- CSS Acessível para Idosos -->
     <link rel="stylesheet" href="<?= base_url('resources/css/accessible.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/custom.css') ?>">
 </head>
 
 <body>
+    <?php if (ENVIRONMENT === 'development'): ?>
+    <style>
+    .test-banner {
+        background: #28a745; color: white; text-align: center; padding: 6px; font-weight: bold; position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+    }
+    .topbar {   padding-top: 32px;    }
+    </style>
+    <div class="test-banner">AMBIENTE DE TESTE</div>
+    <?php endif; ?>
     <div class="wrapper">
         <div class="topbar">
             <div class="container">

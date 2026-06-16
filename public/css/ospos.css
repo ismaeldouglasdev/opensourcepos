@@ -14,7 +14,7 @@ a.none {
 
 .topbar {
     color: #eee;
-    font-size: 12px;
+    font-size: 14px;
     background: #182735;
     padding: 0.2em;
 }
@@ -47,7 +47,7 @@ a.none {
 
 .navbar .menu-icon {
     text-align: center;
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .navbar .menu-icon img {
@@ -55,7 +55,7 @@ a.none {
 }
 
 .wrapper {
-    font-size: 13px;
+    font-size: 15px;
 }
 
 #title_bar {
@@ -118,7 +118,7 @@ a.none {
     margin-top: 5em;
     position: relative;
     text-align: center;
-    font-size: 11px;
+    font-size: 15px;
     color: #777777;
     clear: both;
 }
@@ -138,7 +138,7 @@ button.btn.dropdown-toggle.btn-sm {
 }
 
 .dropdown-menu {
-    font-size: 13px;
+    font-size: 15px;
 }
 
 .bootstrap-tagsinput {
