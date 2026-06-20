@@ -57,3 +57,10 @@ $routes->post('sales/add', 'Sales::postAdd');
 $routes->add('sales/itemSearch', 'Sales::itemSearch');
 $routes->add('sales/suggest', 'Sales::suggest');
 $routes->add('sales', 'Sales::getIndex');
+$routes->get('sales/getPaymentSummary/(:num)', 'Sales::getPaymentSummary/$1');
+$routes->post('sales/addDiversos', 'Sales::addDiversos');
+$routes->get('printer/test', 'Printer::test');
+$routes->get('printer/printReceipt/(:num)', 'Printer::printReceipt/$1');
+$routes->get('printer/quickPrint/(:num)', 'Printer::quickPrint/$1');
+
+

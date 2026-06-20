@@ -29,6 +29,39 @@
     .expand-btn:hover {
         color: #23527c;
     }
+    #report_summary {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+        justify-content: center !important;
+        padding: 15px 0 !important;
+    }
+    .summary_row {
+        flex: 1 1 140px !important;
+        max-width: 200px !important;
+        min-width: 120px !important;
+    }
+    @media (max-width: 768px) {
+        .summary_row {
+            flex: 1 1 45% !important;
+            max-width: none !important;
+            min-width: 100px !important;
+            padding: 8px 12px !important;
+        }
+        #report_summary {
+            gap: 8px !important;
+            padding: 10px 5px !important;
+        }
+    }
+    @media (max-width: 480px) {
+        .summary_row {
+            flex: 1 1 100% !important;
+            max-width: 100% !important;
+        }
+        #payment_summary {
+            font-size: 22px !important;
+        }
+    }
 </style>
 
 <script type="text/javascript">
@@ -41,8 +74,37 @@
             start_date = picker.startDate.format("YYYY-MM-DD");
             end_date = picker.endDate.format("YYYY-MM-DD");
             table_support.refresh();
+            updatePaymentSummary();
         });
+        
+        function updatePaymentSummary() {
+            var filters = $("#filters").val() || [];
+            $.ajax({
+                url: "<?= site_url('sales/getPaymentSummary') ?>",
+                type: "GET",
+                data: {
+                    start_date: start_date,
+                    end_date: end_date,
+                    filters: filters
+                },
+                dataType: 'json',
+                success: function(response) {
+                    $("#payment_summary").html(response.payment_summary);
+                },
+                error: function(xhr, status, error) {
+                    console.log("Erro ao atualizar resumo:", error);
+                }
+            });
+        }
         <?= view("partial/bootstrap_tables_locale") ?>
+        
+        table_support.query_params = function() {
+            return {
+                "start_date": start_date,
+                "end_date": end_date,
+                "filters": $("#filters").val() || []
+            }
+        };
         
         $(document).on('click', '.expand-btn', function() {
             var btn = $(this);
@@ -64,6 +126,9 @@
             headers: <?= $table_headers ?>,
             pageSize: <?= $config["lines_per_page"] ?>,
             uniqueId: "sale_id",
+            showCheckbox: true,
+            clickToSelect: true,
+            singleSelect: true,
             queryParamsType: "normal",
             onLoadSuccess: function(response) {
                 if ($("#table tbody tr").length > 1) {
@@ -77,6 +142,9 @@
                         firstCell.prepend('<span class="expand-btn glyphicon glyphicon-plus" data-sale_id="' + sale_id + '"></span> ');
                     }
                 });
+                if (response.payment_summary) {
+                    $("#payment_summary").html(response.payment_summary);
+                }
             },
             queryParams: function(params) {
                 params.start_date = start_date;
@@ -130,6 +198,18 @@
     function printTakingsReport() {
         window.print();
     }
+
+    function reprintThermal() {
+        var rows = $('#table').bootstrapTable('getSelections');
+        if (rows.length === 0) {
+            $.notify({message: 'Selecione uma venda primeiro'}, {type: 'warning'});
+            return;
+        }
+        var sale_id = rows[0].sale_id;
+        $.post('<?= site_url('printer/quickPrint') ?>', {sale_id: sale_id}, function(response) {
+            $.notify({message: response.message}, {type: response.success ? 'success' : 'danger'});
+        }, 'json');
+    }
 </script>
 
 <?= view("partial/print_receipt", ["print_after_sale" => false, "selected_printer" => "takings_printer"]) ?>
@@ -152,6 +232,9 @@
     <div class="pull-left form-inline" role="toolbar">
         <button id="delete" class="btn btn-default btn-sm print_hide">
             <span class="glyphicon glyphicon-trash">&nbsp;</span><?= lang("Common.delete") ?>
+        </button>
+        <button id="reprint_thermal" class="btn btn-primary btn-sm print_hide" onclick="reprintThermal()">
+            <span class="glyphicon glyphicon-print">&nbsp;</span>Reimprimir Térmica
         </button>
 
         <?= form_input(["name" => "daterangepicker", "class" => "form-control input-sm", "id" => "daterangepicker"]) ?>

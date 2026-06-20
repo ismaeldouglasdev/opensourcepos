@@ -142,25 +142,67 @@ $request = Services::request();
             <div class="container">
                 <div class="navbar-header">
                     <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-collapse">
-                        <span class="sr-only">Toggle navigation</span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
+                        <span class="sr-only">Menu</span>
+                        <span style="font-size: 20px;">☰</span>
                     </button>
-
-                    <a class="navbar-brand hidden-sm" href="<?= site_url() ?>">OSPOS</a>
                 </div>
 
                 <div class="navbar-collapse collapse">
+                    <ul class="nav navbar-nav">
+                        <?php
+                        $current = $request->getUri()->getSegment(1);
+                        $current_url = current_url();
+                        $is_home = ($current == 'home');
+                        $is_resumo = ($current == 'sales' && strpos($current_url, 'sales/manage') !== false);
+                        $is_vendas = ($current == 'sales' && (strpos($current_url, 'sales/add')!==false || strpos($current_url, 'sales/register')!==false));
+                        $is_itens = ($current == 'items');
+                        $is_clientes = ($current == 'customers');
+                        ?>
+                        <li class="<?=$is_home ? 'active': ' ' ?>">
+                            <a href="<?=base_url('home') ?>" style="font-size: 16px;">
+                                🏠 HOME
+                            </a>
+                        </li>
+                        <li class="<?=$is_resumo ? 'active' : ' ' ?>">
+                            <a href="<?=base_url('sales/manage') ?>" style="font-size: 16px;">
+                            📊 RESUMO
+                            </a>
+                        </li>
+                        <li class="<?=$is_vendas ? 'active' : ' ' ?>">
+                            <a href="<?=base_url('sales/add') ?>" style="font-size: 16px;">
+                            💰 VENDAS
+                            </a>
+                        </li>
+                        <li class="<?=$is_itens ? 'active' : ' ' ?> ">
+                            <a href="<?=base_url('items') ?>" style="font-size: 16px;">
+                                📦 ITENS
+                            </a>
+                        </li>
+                        <li class="<?= $is_clientes ? 'active' : ' ' ?>">
+                            <a href="<?=base_url('customers')?>" style="font-size: 16px;">
+                                👥 CLIENTES
+                            </a>
+                        </li>
+                    </ul>
+
+                    <!-- Menu Hamburguer-->
                     <ul class="nav navbar-nav navbar-right">
-                        <?php foreach ($allowed_modules as $module): ?>
-                            <li class="<?= $module->module_id == $request->getUri()->getSegment(1) ? 'active' : '' ?>">
-                                <a href="<?= base_url($module->module_id) ?>" title="<?= lang("Module.$module->module_id") ?>" class="menu-icon">
-                                    <img src="<?= base_url("images/menubar/$module->module_id.svg") ?>" style="border: none;" alt="Module Icon"><br>
-                                    <?= lang('Module.' . $module->module_id) ?>
-                                </a>
-                            </li>
-                        <?php endforeach; ?>
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" style="font-size: 20px; padding: 10px;">
+                            ☰ <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a href="<?=site_url('items')?>"><span class="glyphicon glyphicon-tag"></span> Produtos </a></li>
+                                <li><a href="<?=site_url('customers')?>"><span class="glyphicon glyphicon-user"></span> Clientes</a></li>
+                                <li><a href="<?=site_url('employees')?>"><span class="glyphicon glyphicon-user"></span> Funcionários</a></li>
+                                <li class="divider"></li>
+                                <li><a href="<?=site_url('sales/manage') ?>"><span class="glyphicon glyphicon-list-alt"></span> Vendas</a></li>
+                                <li><a href="<?=site_url('reports')?>"><span class="glyphicon glyphicon-stats"></span> Relatórios</a></li>
+                                <li class="divider"></li>
+                                <li><a href="<?=site_url('config') ?>"><span class="glyphicon glyphicon-cog"></span> Configurações</a></li>
+                                <li><a href="<?=site_url('sales/suspended') ?>"><span class="glyphicon glyphicon-pause"></span> Vendas Suspensas</a></li>
+                            </ul>
+                        </li>
                     </ul>
                 </div>
             </div>
