@@ -1629,4 +1629,48 @@ class Sales extends Secure_Controller
 
         echo json_encode(['total' => $total_rows, 'rows' => $data_rows]);
     }
+
+    public function getPaymentSummary(): void
+    {
+        $start_date = $this->request->getGet('start_date', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $end_date = $this->request->getGet('end_date', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $filters = $this->request->getGet('filters', FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?? [];
+
+        $inputs = [
+            'start_date' => $start_date,
+            'end_date' => $end_date,
+            'sale_type' => 'sales',
+            'only_cash' => false,
+            'only_creditcard' => false,
+            'only_pix' => false,
+            'only_account_receivable' => false,
+            'only_invoices' => false,
+            'selected_customer' => false
+        ];
+
+        if (!empty($filters)) {
+            $filter_array = is_array($filters) ? $filters : [$filters];
+            foreach ($filter_array as $filter) {
+                switch ($filter) {
+                    case 'only_cash':
+                        $inputs['only_cash'] = true;
+                        break;
+                    case 'only_creditcard':
+                        $inputs['only_creditcard'] = true;
+                        break;
+                    case 'only_pix':
+                        $inputs['only_pix'] = true;
+                        break;
+                    case 'only_account_receivable':
+                        $inputs['only_account_receivable'] = true;
+                        break;
+                }
+            }
+        }
+
+        $payments = $this->sale->get_payments_summary('', $inputs);
+        $payment_summary = get_sales_manage_payments_summary($payments);
+
+        echo json_encode(['payment_summary' => $payment_summary]);
+    }
 }
