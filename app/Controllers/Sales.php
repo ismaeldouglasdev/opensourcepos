@@ -1023,6 +1023,18 @@ class Sales extends Secure_Controller
     {
         $data = $this->_load_sale_data($sale_id);
         echo view('sales/receipt', $data);
+
+        if (!empty($this->config['escpos_enabled']) && !empty($this->session->get('sales_print_after_sale'))) {
+            try {
+                $printer = new \App\Libraries\ThermalPrinter($this->config);
+                $printerName = $this->config['escpos_printer'] ?? 'TM-T20';
+                $printer->connect($printerName);
+                $printer->printReceipt($data);
+            } catch (\Exception $e) {
+                log_message('error', 'ESC/POS print failed: ' . $e->getMessage());
+            }
+        }
+
         $this->sale_lib->clear_all();
     }
 
@@ -1267,6 +1279,28 @@ class Sales extends Secure_Controller
 
         $this->sale_lib->clear_all();
         $this->_reload();    // TODO: Hungarian notation
+    }
+
+    /**
+     * Set a given customer. Used in app/Views/sales/register.php.
+     *
+     * @return void
+     * @noinspection PhpUnused
+     */
+    public function postSelectCustomer(): void
+    {
+        $customer_id = (int)$this->request->getPost('customer', FILTER_SANITIZE_NUMBER_INT);
+        if ($this->customer->exists($customer_id)) {
+            $this->sale_lib->set_customer($customer_id);
+            $discount = $this->customer->get_info($customer_id)->discount;
+            $discount_type = $this->customer->get_info($customer_id)->discount_type;
+
+            if ($discount != '') {
+                $this->sale_lib->apply_customer_discount($discount, $discount_type);
+            }
+        }
+
+        $this->_reload();
     }
 
     /**

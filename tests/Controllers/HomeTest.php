@@ -20,7 +20,7 @@ class HomeTest extends CIUnitTestCase
     use DatabaseTestTrait;
     use FeatureTestTrait;
 
-    protected $migrate     = true;
+    protected $migrate     = false;
     protected $migrateOnce = true;
     protected $refresh     = false;
     protected $namespace   = null;

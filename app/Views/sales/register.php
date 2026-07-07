@@ -171,7 +171,7 @@ if (!empty($editing_sale_id)) {
                     <span class="ui-helper-hidden-accessible" role="status"></span>
                 </li>
                 <li class="pull-right">
-                    <button id="new_item_button" class="btn btn-info btn-sm pull-right modal-dlg" data-btn-new="<?= lang('Common.new') ?>" data-btn-submit="<?= lang('Common.submit') ?>" data-href="<?= "items/view" ?>" title="<?= lang(ucfirst($controller_name) . ".new_item") ?>">
+                    <button type="button" id="new_item_button" class="btn btn-info btn-sm pull-right modal-dlg" data-btn-new="<?= lang('Common.new') ?>" data-btn-submit="<?= lang('Common.submit') ?>" data-href="<?= "items/view" ?>" title="<?= lang(ucfirst($controller_name) . ".new_item") ?>">
                         <span class="glyphicon glyphicon-tag">&nbsp;</span><?= lang(ucfirst($controller_name) . ".new_item") ?>
                     </button>
                 </li>
@@ -226,7 +226,7 @@ if (!empty($editing_sale_id)) {
                                 <td style="align: center;">
                                     <?= esc($item['name'] ?? '') . ' ' . implode(' ', [$item['attribute_values'] ?? '', $item['attribute_dtvalues'] ?? '']) ?>
                                     <br>
-                                    <?php if (($item['stock_type'] ?? '') == '0'): echo '[' . to_quantity_decimals($item['in_stock'] ?? 0) . ' in ' . ($item['stock_name'] ?? '') . ']';
+                                    <?php if (($item['stock_type'] ?? '') == '0'): echo '[' . to_quantity_decimals($item['in_stock'] ?? 0) . ' ' . lang('Items.stock') . ' ' . ($item['stock_name'] ?? '') . ']';
                                     endif; ?>
                                 </td>
                             <?php } ?>
@@ -685,11 +685,7 @@ if (!empty($editing_sale_id)) {
 
         $('#item').focus();
 
-        $('#item').blur(function() {
-            $(this).val("<?= lang(ucfirst($controller_name) . '.start_typing_item_name') ?>");
-        });
-
-        // Autocomplete simples com opção "Diversos"
+        // Autocomplete com opção "Diversos"
         $('#item').autocomplete({
             source: function(request, response) {
                 var term = request.term.trim().toLowerCase();
@@ -699,7 +695,6 @@ if (!empty($editing_sale_id)) {
                     dataType: "json",
                     data: { term: term },
                     success: function(data) {
-                        // Adiciona "Diversos" se digitou "1" ou "diversos"
                         if (term === '1' || term === 'diversos') {
                             data.unshift({
                                 label: '💰 DIVERSOS',
@@ -716,34 +711,26 @@ if (!empty($editing_sale_id)) {
             delay: 200,
             select: function(a, ui) {
                 if (ui.item.item_id === 'DIVERSOS') {
-                    addDiversos();
+                    showDiversosModal();
                     $(this).val('');
                     return false;
                 }
                 $(this).val(ui.item.value);
-                $('#add_item_form').submit();
+                document.getElementById('add_item_form').submit();
                 return false;
             }
         });
 
-        // Ao digitar "1" e dar Enter, adiciona Diversos
-        $('#item').keypress(function(e) {
+        $('#item').on('keydown', function(e) {
             if (e.which == 13) {
                 var valor = $(this).val().trim().toLowerCase();
                 if (valor === '1' || valor === 'diversos') {
                     e.preventDefault();
-                    addDiversos();
+                    showDiversosModal();
                     $(this).val('');
                     return false;
                 }
-                $('#add_item_form').submit();
-                return false;
-            }
-        });
-
-        $('#item').keypress(function(e) {
-            if (e.which == 13) {
-                $('#add_item_form').submit();
+                document.getElementById('add_item_form').submit();
                 return false;
             }
         });
@@ -836,13 +823,13 @@ if (!empty($editing_sale_id)) {
 
         $('#suspend_sale_button').click(function() {
             $('#buttons_form').attr('action', "<?= site_url("$controller_name/suspend") ?>");
-            $('#buttons_form').submit();
+            document.getElementById('buttons_form').submit();
         });
 
         $('#cancel_sale_button').click(function() {
             if (confirm("<?= lang(ucfirst($controller_name) . '.confirm_cancel_sale') ?>")) {
                 $('#buttons_form').attr('action', "<?= site_url("$controller_name/cancel") ?>");
-                $('#buttons_form').submit();
+                document.getElementById('buttons_form').submit();
             }
         });
 
@@ -1018,11 +1005,11 @@ if (!empty($editing_sale_id)) {
                 </h4>
             </div>
             <div class="modal-body">
-                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                    <div class="checkout-total" style="flex: 1; background: #e8f5e9; padding: 10px; border-radius: 6px; text-align: center;">
+                <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: stretch;">
+                    <div class="checkout-total" style="flex: 1; min-width: 0; min-height: 80px; background: #e8f5e9; padding: 10px; border-radius: 6px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
                         <strong>TOTAL:</strong><br><span id="checkout_total" style="font-size: 24px; color: #2e7d32; font-weight: bold;">R$ 0,00</span>
                     </div>
-                    <div class="checkout-restante" style="flex: 1; background: #ffebee; padding: 10px; border-radius: 6px; text-align: center;">
+                    <div class="checkout-restante" style="flex: 1; min-width: 0; min-height: 80px; background: #ffebee; padding: 10px; border-radius: 6px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
                         <strong>RESTANTE:</strong><br><span id="checkout_restante" style="font-size: 24px; color: #c62828; font-weight: bold;">R$ 0,00</span>
                     </div>
                 </div>
@@ -1094,8 +1081,9 @@ function showDiversosModal() {
     $('#diversos_valor').val('');
     $('#diversos_qtd').val('1');
     $('#diversos_desc').val('');
-    $('#diversosModal').modal('show');
-    setTimeout(function() { $('#diversos_valor').focus(); }, 300);
+    $('#diversosModal').off('shown.bs.modal').on('shown.bs.modal', function() {
+        $('#diversos_valor').focus();
+    }).modal('show');
 }
 
 function addDiversos() {
@@ -1114,7 +1102,7 @@ function addDiversos() {
             price: valor,
             quantity: quantidade,
             description: $('#diversos_desc').val() || 'Diversos',
-            csrf_ospos: $('input[name="csrf_ospos"]').val()
+            <?= csrf_token() ?>: $('input[name="<?= csrf_token() ?>"]').val()
         },
         dataType: 'json',
         success: function(response) {
@@ -1131,11 +1119,11 @@ function addDiversos() {
     });
 }
 
-// Enter no campo de valor do modal
+// Enter no campo de valor avança para quantidade
 $('#diversos_valor').keypress(function(e) {
     if (e.which == 13) {
         e.preventDefault();
-        addDiversos();
+        $('#diversos_qtd').focus();
     }
 });
 
@@ -1147,6 +1135,14 @@ $('#diversos_qtd').keypress(function(e) {
 });
 
 $('#diversos_desc').keypress(function(e) {
+    if (e.which == 13) {
+        e.preventDefault();
+        $('#diversosModal .btn-warning').focus();
+    }
+});
+
+// Enter no botão "Adicionar" do modal
+$('#diversosModal .btn-warning').keypress(function(e) {
     if (e.which == 13) {
         e.preventDefault();
         addDiversos();
@@ -1268,18 +1264,25 @@ function checkIfCanFinish() {
     btn.disabled = (restante > 0.01 || payments_list.length === 0);
 }
 
+var finishingCheckout = false;
+
 function finishCheckout() {
+    if (finishingCheckout) return;
     if (payments_list.length === 0) { alert('Adicione pelo menos um pagamento'); return; }
     
     var restante = getRestante();
     if (restante > 0.01) { alert('Valor insuficiente'); return; }
     
+    finishingCheckout = true;
+    var btn = document.getElementById('finish_checkout_btn');
+    btn.disabled = true;
+    btn.textContent = 'FINALIZANDO...';
+    
     jQuery('#checkoutModal').modal('hide');
     
     var csrfData = {};
-    csrfData['<?= csrf_token() ?>'] = '<?= csrf_hash() ?>';
+    csrfData['<?= csrf_token() ?>'] = $('input[name="<?= csrf_token() ?>"]').val();
     
-    // Enviar múltiplos pagamentos
     var paymentsData = JSON.stringify(payments_list);
     
     jQuery.ajax({
@@ -1314,8 +1317,42 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Enter em campos de edição inline no carrinho (preço, qtd, desconto)
+    document.querySelectorAll('#cart_contents input.form-control').forEach(function(el) {
+        el.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                var form = el.closest('form');
+                if (form) form.submit();
+            }
+        });
+    });
+
+    // Enter no campo de observação
+    var commentField = document.getElementById('comment');
+    if (commentField) {
+        commentField.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                commentField.blur();
+            }
+        });
+    }
+
+    // Foco automático no campo "Valor" ao selecionar forma de pagamento
+    document.querySelectorAll('.payment-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            setTimeout(function() {
+                var amt = document.getElementById('checkout_amount');
+                if (amt) amt.focus();
+            }, 200);
+        });
+    });
+
     document.addEventListener('keydown', function(e) {
         if (e.key === 'F2') { e.preventDefault(); openCheckoutModal(); }
+        if (e.key === 'F8') { e.preventDefault(); showDiversosModal(); }
     });
 });
 </script>

@@ -123,7 +123,10 @@ $request = Services::request();
         <div class="topbar">
             <div class="container">
                 <div class="navbar-left">
-                    <div id="liveclock"><?= date($config['dateformat'] . ' ' . $config['timeformat']) ?></div>
+                    <div id="liveclock"><?php
+                    $dias = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+                    echo $dias[(int)date('w')] . ', ';
+                    ?><?= date($config['dateformat'] . ' ' . $config['timeformat']) ?></div>
                 </div>
 
                 <div class="navbar-right" style="margin: 0;">

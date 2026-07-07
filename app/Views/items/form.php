@@ -111,13 +111,13 @@
 
         <div class="form-group form-group-sm">
             <?= form_label(lang('Items.type'), 'item_type', !empty($basic_version) ? ['class' => 'required control-label col-xs-3'] : ['class' => 'control-label col-xs-3']) ?>
-            <div class="col-xs-8">
-                <label class="radio-inline">
+            <div class="col-xs-12" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+                <label class="radio-inline" style="margin: 0; display: flex; align-items: center;">
                     <?php
                     $radio_button = [
                         'name'    => 'item_type',
                         'type'    => 'radio',
-                        'id'      => 'item_type',
+                        'id'      => 'item_type_0',
                         'value'   => 0,
                         'checked' => $item_info->item_type == ITEM
                     ];
@@ -127,12 +127,12 @@
                     }
                     echo form_radio($radio_button) ?> <?= lang('Items.standard') ?>
                 </label>
-                <label class="radio-inline">
+                <label class="radio-inline" style="margin: 0; display: flex; align-items: center;">
                     <?php
                     $radio_button = [
                         'name'    => 'item_type',
                         'type'    => 'radio',
-                        'id'      => 'item_type',
+                        'id'      => 'item_type_1',
                         'value'   => 1,
                         'checked' => $item_info->item_type == ITEM_KIT
                     ];
@@ -143,22 +143,22 @@
                     echo form_radio($radio_button) ?> <?= lang('Items.kit') ?>
                 </label>
                 <?php if ($config['derive_sale_quantity'] == '1') { ?>
-                    <label class="radio-inline">
+                    <label class="radio-inline" style="margin: 0; display: flex; align-items: center;">
                         <?= form_radio([
                             'name'    => 'item_type',
                             'type'    => 'radio',
-                            'id'      => 'item_type',
+                            'id'      => 'item_type_2',
                             'value'   => 2,
                             'checked' => $item_info->item_type == ITEM_AMOUNT_ENTRY
                         ]) ?><?= lang('Items.amount_entry') ?>
                     </label>
                 <?php } ?>
                 <?php if ($allow_temp_item == 1) { ?>
-                    <label class="radio-inline">
+                    <label class="radio-inline" style="margin: 0; display: flex; align-items: center;">
                         <?= form_radio([
                             'name'    => 'item_type',
                             'type'    => 'radio',
-                            'id'      => 'item_type',
+                            'id'      => 'item_type_3',
                             'value'   => 3,
                             'checked' => $item_info->item_type == ITEM_TEMP
                         ]) ?> <?= lang('Items.temp') ?>

@@ -51,15 +51,16 @@
         <!-- Directory containing the front controller (index.php) -->
         <const name="PUBLICPATH" value="./public/"/>
         <!-- Database configuration for testing -->
-        <env name="database.tests.hostname" value="127.0.0.1" force="true"/>
-        <env name="database.tests.database" value="ospos" force="true"/>
+        <env name="database.tests.hostname" value="localhost" force="true"/>
+        <env name="database.tests.database" value="ospos_test" force="true"/>
         <env name="database.tests.username" value="admin" force="true"/>
-        <env name="database.tests.password" value="pointofsale" force="true"/>
+        <env name="database.tests.password" value="Arroz123@" force="true"/>
         <env name="database.tests.DBDriver" value="MySQLi" force="true"/>
         <env name="database.tests.DBPrefix" value="ospos_" force="true"/>
-        <env name="MYSQL_HOST_NAME" value="127.0.0.1" force="true"/>
+        <env name="CI_ENVIRONMENT" value="testing" force="true"/>
+        <env name="MYSQL_HOST_NAME" value="localhost" force="true"/>
         <env name="MYSQL_USERNAME" value="admin" force="true"/>
-        <env name="MYSQL_PASSWORD" value="pointofsale" force="true"/>
-        <env name="MYSQL_DB_NAME" value="ospos" force="true"/>
+        <env name="MYSQL_PASSWORD" value="Arroz123@" force="true"/>
+        <env name="MYSQL_DB_NAME" value="ospos_test" force="true"/>
     </php>
 </phpunit>

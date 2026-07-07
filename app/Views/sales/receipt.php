@@ -45,13 +45,16 @@ if (isset($error_message)) {
 <?= view('partial/print_receipt', ['print_after_sale' => $print_after_sale, 'selected_printer' => 'receipt_printer']) ?>
 
 <div class="print_hide" id="control_buttons" style="text-align: right;">
-    <a href="javascript:printdoc();">
-        <div class="btn btn-info btn-sm" id="show_print_button"><?= '<span class="glyphicon glyphicon-print">&nbsp;</span>' . lang('Common.print') ?></div>
-    </a>
     <?php if (!empty($config['escpos_enabled'])): ?>
         <a href="javascript:void(0);" id="thermal_print_btn">
-            <div class="btn btn-primary btn-sm"><?= '<span class="glyphicon glyphicon-print">&nbsp;</span> Impressora Térmica' ?></div>
+            <div class="btn btn-primary btn-sm"><?= '<span class="glyphicon glyphicon-print">&nbsp;</span> Imprimir Nota' ?></div>
         </a>
+    <?php else: ?>
+        <a href="javascript:printdoc();">
+            <div class="btn btn-primary btn-sm"><?= '<span class="glyphicon glyphicon-print">&nbsp;</span> Imprimir Nota' ?></div>
+        </a>
+    <?php endif; ?>
+    <?php if (!empty($config['escpos_enabled'])): ?>
         <script>
             $(document).ready(function() {
                 $('#thermal_print_btn').click(function() {

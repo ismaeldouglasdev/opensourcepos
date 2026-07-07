@@ -283,9 +283,48 @@ class App extends BaseConfig
     public function __construct()
     {
         parent::__construct();
+
+        // Parse allowedHostnames from environment variable
+        $envHostnames = getenv('app.allowedHostnames');
+        if ($envHostnames !== false && $envHostnames !== '') {
+            $parts = explode(',', $envHostnames);
+            $trimmed = array_map('trim', $parts);
+            $filtered = array_filter($trimmed, fn($v) => $v !== '');
+            $this->allowedHostnames = array_values($filtered);
+        }
+
         $this->https_on = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') || (isset($_ENV['FORCE_HTTPS']) && $_ENV['FORCE_HTTPS'] == 'true');
+
+        try {
+            $host = $this->getValidHost();
+        } catch (\RuntimeException) {
+            $host = 'localhost';
+        }
         $this->baseURL = $this->https_on ? 'https' : 'http';
-        $this->baseURL .= '://' . ((isset($_SERVER['HTTP_HOST'])) ? $_SERVER['HTTP_HOST'] : 'localhost') . '/';
+        $this->baseURL .= '://' . $host . '/';
         $this->baseURL .= str_replace(basename($_SERVER['SCRIPT_NAME']), '', $_SERVER['SCRIPT_NAME']);
+    }
+
+    /**
+     * Validate HTTP_HOST against allowedHostnames.
+     * Falls back to first allowed hostname, or localhost in development.
+     */
+    private function getValidHost(): string
+    {
+        $host = $_SERVER['HTTP_HOST'] ?? '';
+
+        if (!empty($this->allowedHostnames)) {
+            if (in_array($host, $this->allowedHostnames, true)) {
+                return $host;
+            }
+            return $this->allowedHostnames[0];
+        }
+
+        $env = getenv('CI_ENVIRONMENT') ?: 'production';
+        if ($env === 'development') {
+            return 'localhost';
+        }
+
+        throw new \RuntimeException('allowedHostnames is not configured');
     }
 }

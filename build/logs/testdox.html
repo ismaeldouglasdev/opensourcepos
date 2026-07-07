@@ -51,37 +51,19 @@
         </style>
     </head>
     <body>
-        <h2>Token_lib (Tests\Libraries\Token_lib)</h2>
+        <h2>Employee (Tests\Models\Employee)</h2>
         <ul>
-            <li class="success">Render returns input string when no tokens</li>
-            <li class="success">Render handles string with percent not in date format</li>
-            <li class="success">Render handles invalid date format percent dash percent</li>
-            <li class="success">Render handles invalid date format percent y percent q percent bad</li>
-            <li class="success">Render handles string with percent a percent</li>
-            <li class="success">Render handles extremely long string</li>
-            <li class="success">Render handles string with multiple percent symbols</li>
-            <li class="success">Render handles string with only percent symbol</li>
-            <li class="success">Render preserves text with valid date tokens and no other tokens</li>
-            <li class="success">Render handles empty string</li>
-            <li class="success">Scan extracts tokens</li>
-            <li class="success">Scan extracts tokens with length</li>
-            <li class="success">Scan returns empty array for no tokens</li>
-            <li class="success">Render handles consecutive percent signs</li>
-            <li class="success">Render handles escaped percent signs</li>
-            <li class="success">Render handles unclosed braces</li>
-            <li class="success">Render handles unopened braces</li>
-            <li class="success">Render handles very long string with date</li>
-            <li class="success">Render handles multiple dates</li>
-            <li class="success">Render handles valid year format</li>
-            <li class="success">Render handles valid month format</li>
-            <li class="success">Render handles valid day format</li>
-            <li class="success">Render handles full date format</li>
-            <li class="success">Render handles percent b</li>
-            <li class="success">Render handles percent a</li>
-            <li class="success">Render handles complex percent format</li>
-            <li class="success">Render does not replace invalid format specifiers</li>
-            <li class="success">Render replaces timezone format</li>
-            <li class="success">Scan works with mixed content</li>
+            <li class="defect">Is admin returns true for person id 1</li>
+            <li class="defect">Is admin returns true for employee with all permissions</li>
+            <li class="defect">Is admin returns false when missing permissions</li>
+            <li class="defect">Can modify employee returns true for own account</li>
+            <li class="defect">Can modify employee returns true for own admin account</li>
+            <li class="defect">Can modify employee returns false when non admin modifies admin</li>
+            <li class="defect">Can modify employee returns true when admin modifies non admin</li>
+            <li class="defect">Can modify employee returns true when non admin modifies non admin</li>
+            <li class="defect">Can modify employee returns false for non admin editing admin</li>
+            <li class="success">Has grant returns true for actual grant</li>
+            <li class="success">Has grant returns false for missing grant</li>
         </ul>
     </body>
 </html>

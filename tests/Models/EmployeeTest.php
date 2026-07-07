@@ -10,7 +10,7 @@ class EmployeeTest extends CIUnitTestCase
 {
     use DatabaseTestTrait;
 
-    protected $migrate     = true;
+    protected $migrate     = false;
     protected $migrateOnce = true;
     protected $refresh     = true;
     protected $namespace    = null;

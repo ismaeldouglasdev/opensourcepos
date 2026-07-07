@@ -14,7 +14,9 @@
     clock_tick();
 
     var update_clock = function update_clock() {
-        document.getElementById('liveclock').innerHTML = moment().format("<?= dateformat_momentjs($config['dateformat'] . ' ' . $config['timeformat']) ?>");
+        var dias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        var agora = new Date();
+        document.getElementById('liveclock').innerHTML = dias[agora.getDay()] + ', ' + moment().format("<?= dateformat_momentjs($config['dateformat'] . ' ' . $config['timeformat']) ?>");
     }
 
     $.notifyDefaults({
@@ -58,6 +60,14 @@
     };
 
     $(document).ajaxComplete(setup_csrf_token);
+
+    $(document).ajaxError(function(event, jqxhr, settings, thrownError) {
+        if (settings.dataType === 'json' && jqxhr.responseJSON === undefined) {
+            try { JSON.parse(jqxhr.responseText); } catch(e) {
+                console.warn('JSON.parse error suppressed for:', settings.url);
+            }
+        }
+    });
     $(document).ready(function() {
         $("#logout").click(function(event) {
             event.preventDefault();
@@ -80,4 +90,14 @@
         setup_csrf_token();
         submit.apply(this, arguments);
     };
+
+    // Foco automático no campo de busca em páginas de listagem (Bootstrap-Table)
+    $(document).ready(function() {
+        setTimeout(function() {
+            var searchInput = $('.bootstrap-table .search input, .fixed-table-toolbar .search input');
+            if (searchInput.length) {
+                searchInput.first().focus();
+            }
+        }, 500);
+    });
 </script>

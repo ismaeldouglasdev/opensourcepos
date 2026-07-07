@@ -14,6 +14,20 @@ use DateTime;
  */
 class Token_lib
 {
+    private IntlDateFormatter $dateFormatter;
+
+    public function __construct()
+    {
+        $this->dateFormatter = new IntlDateFormatter(
+            'en_US',
+            IntlDateFormatter::MEDIUM,
+            IntlDateFormatter::MEDIUM,
+            date_default_timezone_get(),
+            IntlDateFormatter::GREGORIAN,
+            'yyyy-MM-dd HH:mm:ss'
+        );
+    }
+
     /**
      * Expands all the tokens found in a given text string and returns the results.
      */
@@ -21,7 +35,7 @@ class Token_lib
     {
         // Apply the transformation for the "%" tokens if any are used
         if (strpos($tokened_text, '%') !== false) {
-            $tokened_text = strftime($tokened_text);    // TODO: these need to be converted to IntlDateFormatter::format()
+            $tokened_text = $this->formatDateTokens($tokened_text);
         }
 
         // Call scan to build an array of all of the tokens used in the text to be transformed
@@ -29,7 +43,7 @@ class Token_lib
 
         if (empty($token_tree)) {
             if (strpos($tokened_text, '%') !== false) {
-                return strftime($tokened_text);
+                return $this->formatDateTokens($tokened_text);
             } else {
                 return $tokened_text;
             }
@@ -40,6 +54,52 @@ class Token_lib
         $this->generate($token_tree, $tokens_to_replace, $token_values, $tokens, $save);
 
         return str_replace($tokens_to_replace, $token_values, $tokened_text);
+    }
+
+    /**
+     * Replace strftime %-format tokens with IntlDateFormatter equivalents.
+     */
+    private function formatDateTokens(string $text): string
+    {
+        $now = new DateTime();
+
+        $replacements = [
+            '%Y' => $now->format('Y'),
+            '%y' => $now->format('y'),
+            '%m' => $now->format('m'),
+            '%d' => $now->format('d'),
+            '%H' => $now->format('H'),
+            '%M' => $now->format('i'),
+            '%S' => $now->format('s'),
+            '%B' => $now->format('F'),
+            '%b' => $now->format('M'),
+            '%A' => $now->format('l'),
+            '%a' => $now->format('D'),
+            '%p' => $now->format('A'),
+            '%Z' => $now->format('T'),
+            '%z' => $now->format('O'),
+            '%c' => $this->dateFormatter->format($now),
+            '%x' => $now->format('Y-m-d'),
+            '%X' => $now->format('H:i:s'),
+            '%j' => $now->format('z'),
+            '%U' => $now->format('W'),
+            '%W' => $now->format('W'),
+            '%w' => $now->format('w'),
+            '%C' => floor($now->format('Y') / 100),
+            '%F' => $now->format('Y-m-d'),
+            '%D' => $now->format('m/d/y'),
+            '%T' => $now->format('H:i:s'),
+            '%R' => $now->format('H:i'),
+            '%e' => $now->format('j'),
+            '%h' => $now->format('M'),
+            '%i' => $now->format('i'),
+            '%s' => $now->format('U'),
+            '%n' => "\n",
+            '%t' => "\t",
+            '%%' => '%',
+        ];
+
+        return str_replace(array_keys($replacements), array_values($replacements), $text);
     }
 
     /**

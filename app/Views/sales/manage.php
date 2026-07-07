@@ -53,6 +53,20 @@
             padding: 10px 5px !important;
         }
     }
+    @media print {
+        #report_summary {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 15px !important;
+            justify-content: flex-start !important;
+        }
+        .summary_row {
+            flex: 0 0 auto !important;
+            padding: 5px 15px !important;
+            border: 1px solid #ddd !important;
+            margin: 3px !important;
+        }
+    }
     @media (max-width: 480px) {
         .summary_row {
             flex: 1 1 100% !important;

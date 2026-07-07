@@ -52,15 +52,18 @@ $routes->add('sales/manage', 'Sales::getManage');
 $routes->post('sales/delete', 'Sales::delete');
 $routes->add('sales/receipt/(:num)', 'Sales::getReceipt/$1');
 $routes->add('sales/search', 'Sales::getSearch');
-$routes->add('sales/add', 'Sales::getIndex');
 $routes->post('sales/add', 'Sales::postAdd');
+$routes->get('sales/add', 'Sales::getIndex');
 $routes->add('sales/itemSearch', 'Sales::itemSearch');
 $routes->add('sales/suggest', 'Sales::suggest');
 $routes->add('sales', 'Sales::getIndex');
-$routes->get('sales/getPaymentSummary/(:num)', 'Sales::getPaymentSummary/$1');
+$routes->get('sales/getPaymentSummary', 'Sales::getPaymentSummary');
 $routes->post('sales/addDiversos', 'Sales::addDiversos');
-$routes->get('printer/test', 'Printer::test');
-$routes->get('printer/printReceipt/(:num)', 'Printer::printReceipt/$1');
-$routes->get('printer/quickPrint/(:num)', 'Printer::quickPrint/$1');
+$routes->get('printer/test', 'Printer::getTest');
+$routes->get('printer/printReceipt/(:num)', 'Printer::getPrintReceipt/$1');
+$routes->post('printer/quickPrint', 'Printer::postQuickPrint');
+$routes->add('sales/suspend', 'Sales::postSuspend');
+$routes->add('sales/cancel', 'Sales::postCancel');
+$routes->add('sales/selectCustomer', 'Sales::postSelectCustomer');
 
 

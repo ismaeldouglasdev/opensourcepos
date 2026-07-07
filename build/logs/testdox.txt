@@ -1,31 +1,13 @@
-Token_lib (Tests\Libraries\Token_lib)
- [x] Render returns input string when no tokens
- [x] Render handles string with percent not in date format
- [x] Render handles invalid date format percent dash percent
- [x] Render handles invalid date format percent y percent q percent bad
- [x] Render handles string with percent a percent
- [x] Render handles extremely long string
- [x] Render handles string with multiple percent symbols
- [x] Render handles string with only percent symbol
- [x] Render preserves text with valid date tokens and no other tokens
- [x] Render handles empty string
- [x] Scan extracts tokens
- [x] Scan extracts tokens with length
- [x] Scan returns empty array for no tokens
- [x] Render handles consecutive percent signs
- [x] Render handles escaped percent signs
- [x] Render handles unclosed braces
- [x] Render handles unopened braces
- [x] Render handles very long string with date
- [x] Render handles multiple dates
- [x] Render handles valid year format
- [x] Render handles valid month format
- [x] Render handles valid day format
- [x] Render handles full date format
- [x] Render handles percent b
- [x] Render handles percent a
- [x] Render handles complex percent format
- [x] Render does not replace invalid format specifiers
- [x] Render replaces timezone format
- [x] Scan works with mixed content
+Employee (Tests\Models\Employee)
+ [ ] Is admin returns true for person id 1
+ [ ] Is admin returns true for employee with all permissions
+ [ ] Is admin returns false when missing permissions
+ [ ] Can modify employee returns true for own account
+ [ ] Can modify employee returns true for own admin account
+ [ ] Can modify employee returns false when non admin modifies admin
+ [ ] Can modify employee returns true when admin modifies non admin
+ [ ] Can modify employee returns true when non admin modifies non admin
+ [ ] Can modify employee returns false for non admin editing admin
+ [x] Has grant returns true for actual grant
+ [x] Has grant returns false for missing grant
 
