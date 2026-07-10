@@ -21,7 +21,7 @@ $request = Services::request();
     <link rel="shortcut icon" type="image/x-icon" href="images/favicon.ico">
     <link rel="stylesheet" href="<?= 'resources/bootswatch/' . (empty($config['theme']) ? 'flatly' : esc($config['theme'])) . '/bootstrap.min.css' ?>">
 
-    <?php if (ENVIRONMENT == 'development' || get_cookie('debug') == 'true' || $request->getGet('debug') == 'true') : ?>
+    <?php if (ENVIRONMENT === 'development') : ?>
         <!-- inject:debug:css -->
         <link rel="stylesheet" href="resources/css/jquery-ui-fe010342cb.css">
         <link rel="stylesheet" href="resources/css/bootstrap-dialog-1716ef6e7c.css">

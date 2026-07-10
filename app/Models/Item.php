@@ -201,9 +201,10 @@ class Item extends Model
 
         if (!empty($search)) {
             if ($attributes_enabled && $filters['search_custom']) {
-                $builder->having("attribute_values LIKE '%$search%'");
-                $builder->orHaving("attribute_dtvalues LIKE '%$search%'");
-                $builder->orHaving("attribute_dvalues LIKE '%$search%'");
+                $escaped_search = $this->db->escapeLikeString($search);
+                $builder->having("attribute_values LIKE '%{$escaped_search}%'");
+                $builder->orHaving("attribute_dtvalues LIKE '%{$escaped_search}%'");
+                $builder->orHaving("attribute_dvalues LIKE '%{$escaped_search}%'");
             } else {
                 $builder->groupStart();
                 $builder->like('name', $search);
@@ -357,6 +358,9 @@ class Item extends Model
             $builder->where('items.deleted', 0);
         }
 
+        // Prioritize exact item_id match over item_number match
+        $builder->orderBy('items.item_id', 'asc');
+
         // Limit to only 1 so there is a result in case two are returned
         // due to barcode and item_id clash
         $builder->limit(1);
@@ -377,8 +381,10 @@ class Item extends Model
     {
         $builder = $this->db->table('items');
         $builder->join('suppliers', 'suppliers.person_id = items.supplier_id', 'left');
+        $builder->groupStart();
         $builder->where('item_number', $item_number);
         $builder->orWhere('item_id', $item_number);
+        $builder->groupEnd();
 
         if (!$ignore_deleted) {
             $builder->where('items.deleted', $deleted);
@@ -708,10 +714,11 @@ class Item extends Model
                 $builder = $this->db->table('attribute_links');
                 $builder->join('attribute_values', 'attribute_links.attribute_id = attribute_values.attribute_id');
                 $builder->join('attribute_definitions', 'attribute_definitions.definition_id = attribute_links.definition_id');
+                $builder->join('items', 'items.item_id = attribute_links.item_id');
                 $builder->like('attribute_value', $search);
                 $builder->where('definition_type', TEXT);
-                $builder->where('deleted', $filters['is_deleted']);
-                $builder->whereIn('item_type', $non_kit); // Standard, exclude kit items since kits will be picked up later
+                $builder->where('items.deleted', $filters['is_deleted']);
+                $builder->whereIn('items.item_type', $non_kit); // Standard, exclude kit items since kits will be picked up later
 
                 foreach ($builder->get()->getResult() as $row) {
                     $suggestions[] = ['value' => $row->item_id, 'label' => $this->get_search_suggestion_label($row)];
@@ -816,10 +823,11 @@ class Item extends Model
                 $builder = $this->db->table('attribute_links');
                 $builder->join('attribute_values', 'attribute_links.attribute_id = attribute_values.attribute_id');
                 $builder->join('attribute_definitions', 'attribute_definitions.definition_id = attribute_links.definition_id');
+                $builder->join('items', 'items.item_id = attribute_links.item_id');
                 $builder->like('attribute_value', $search);
                 $builder->where('definition_type', TEXT);
-                $builder->where('stock_type', '0'); // Stocked items only
-                $builder->where('deleted', $filters['is_deleted']);
+                $builder->where('items.stock_type', '0'); // Stocked items only
+                $builder->where('items.deleted', $filters['is_deleted']);
 
                 foreach ($builder->get()->getResult() as $row) {
                     $suggestions[] = ['value' => $row->item_id, 'label' => $this->get_search_suggestion_label($row)];
@@ -919,10 +927,11 @@ class Item extends Model
                 $builder = $this->db->table('attribute_links');
                 $builder->join('attribute_values', 'attribute_links.attribute_id = attribute_values.attribute_id');
                 $builder->join('attribute_definitions', 'attribute_definitions.definition_id = attribute_links.definition_id');
+                $builder->join('items', 'items.item_id = attribute_links.item_id');
                 $builder->like('attribute_value', $search);
                 $builder->where('definition_type', TEXT);
-                $builder->where('stock_type', '0'); // Stocked items only
-                $builder->where('deleted', $filters['is_deleted']);
+                $builder->where('items.stock_type', '0'); // Stocked items only
+                $builder->where('items.deleted', $filters['is_deleted']);
 
                 foreach ($builder->get()->getResult() as $row) {
                     $suggestions[] = ['value' => $row->item_id, 'label' => $this->get_search_suggestion_label($row)];

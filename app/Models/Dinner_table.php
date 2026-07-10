@@ -57,8 +57,10 @@ class Dinner_table extends Model
     public function get_empty_tables(?int $current_dinner_table_id): array
     {
         $builder = $this->db->table('dinner_tables');
+        $builder->groupStart();
         $builder->where('status', 0);
         $builder->orWhere('dinner_table_id', $current_dinner_table_id);
+        $builder->groupEnd();
         $builder->where('deleted', 0);
 
         $empty_tables = $builder->get()->getResultArray();

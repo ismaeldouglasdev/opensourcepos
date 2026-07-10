@@ -1210,7 +1210,7 @@ class Sale_lib
             $this->set_cart($items);
         }
 
-        return false;    // TODO: This function will always return false.
+        return true;
     }
 
     /**

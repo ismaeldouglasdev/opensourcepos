@@ -730,6 +730,12 @@ if (!empty($editing_sale_id)) {
                     $(this).val('');
                     return false;
                 }
+                // Se o menu do autocomplete estiver aberto, não submete
+                // o formulário com o texto digitado — deixa o autocomplete
+                // cuidar da seleção via callback select.
+                if ($('#item').autocomplete('widget').is(':visible')) {
+                    return false;
+                }
                 document.getElementById('add_item_form').submit();
                 return false;
             }
@@ -839,12 +845,6 @@ if (!empty($editing_sale_id)) {
 
         $('#payment_types').change(check_payment_type).ready(check_payment_type);
 
-        $('#cart_contents input').keypress(function(event) {
-            if (event.which == 13) {
-                $(this).parents('tr').prevAll('form:first').submit();
-            }
-        });
-
         $('#amount_tendered').keypress(function(event) {
             if (event.which == 13) {
                 $('#add_payment_form').submit();
@@ -924,7 +924,7 @@ if (!empty($editing_sale_id)) {
 
     // Add Keyboard Shortcuts/Hotkeys to Sale Register
     document.body.onkeyup = function(e) {
-        switch (event.altKey && event.keyCode) {
+        switch (e.altKey && e.keyCode) {
             case 49: // Alt + 1 Items Seach
                 $("#item").focus();
                 $("#item").select();
@@ -958,7 +958,7 @@ if (!empty($editing_sale_id)) {
                 break;
         }
 
-        switch (event.keyCode) {
+        switch (e.keyCode) {
             case 27: // ESC Cancel Current Sale
                 $("#cancel_sale_button").click();
                 break;
@@ -1319,7 +1319,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Enter em campos de edição inline no carrinho (preço, qtd, desconto)
-    document.querySelectorAll('#cart_contents input.form-control').forEach(function(el) {
+    document.querySelectorAll('#cart_contents input').forEach(function(el) {
         el.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
