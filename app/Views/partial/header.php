@@ -73,6 +73,7 @@ $request = Services::request();
         <script src="resources/js/chartist-plugin-axistitle-80a1198058.js"></script>
         <script src="resources/js/chartist-plugin-barlabels-4165273742.js"></script>
         <script src="resources/js/bootstrap-notify-376bc6eb87.js"></script>
+        <script src="resources/js/js-fa93e8894e.cookie.js"></script>
         <script src="resources/js/bootstrap-tagsinput-855a7c7670.js"></script>
         <script src="resources/js/bootstrap-toggle-1c7a19a049.js"></script>
         <script src="resources/js/clipboard-908af414ab.js"></script>
@@ -105,7 +106,7 @@ $request = Services::request();
     </style>
 
     <!-- CSS Acessível para Idosos -->
-    <link rel="stylesheet" href="<?= base_url('resources/css/accessible.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/accessible.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/custom.css') ?>">
 </head>
 
