@@ -15,14 +15,12 @@
 		module.exports = factory();
 		registeredInModuleLoader = true;
 	}
-	if (!registeredInModuleLoader) {
-		var OldCookies = window.Cookies;
-		var api = window.Cookies = factory();
-		api.noConflict = function () {
-			window.Cookies = OldCookies;
-			return api;
-		};
-	}
+	var OldCookies = window.Cookies;
+	var api = window.Cookies = factory();
+	api.noConflict = function () {
+		window.Cookies = OldCookies;
+		return api;
+	};
 }(function () {
 	function extend () {
 		var i = 0;
