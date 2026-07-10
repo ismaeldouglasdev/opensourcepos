@@ -5,7 +5,6 @@ use CodeIgniter\Router\RouteCollection;
 /**
  * @var RouteCollection $routes
  */
-$routes->setAutoRoute(false);
 $routes->setDefaultController('Login');
 
 $routes->get('/', 'Login::index');
