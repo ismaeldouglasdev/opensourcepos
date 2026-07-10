@@ -46,6 +46,7 @@ $request = Services::request();
         <!-- endinject -->
         <!-- inject:debug:js -->
         <script src="resources/js/jquery-12e87d2f3a.js"></script>
+        <script src="resources/js/js-fa93e8894e.cookie.js"></script>
         <script src="resources/js/jquery-4fa896f615.form.js"></script>
         <script src="resources/js/jquery-a0350e8820.validate.js"></script>
         <script src="resources/js/jquery-ui-cbc65ff85e.js"></script>
@@ -73,7 +74,6 @@ $request = Services::request();
         <script src="resources/js/chartist-plugin-axistitle-80a1198058.js"></script>
         <script src="resources/js/chartist-plugin-barlabels-4165273742.js"></script>
         <script src="resources/js/bootstrap-notify-376bc6eb87.js"></script>
-        <script src="resources/js/js-fa93e8894e.cookie.js"></script>
         <script src="resources/js/bootstrap-tagsinput-855a7c7670.js"></script>
         <script src="resources/js/bootstrap-toggle-1c7a19a049.js"></script>
         <script src="resources/js/clipboard-908af414ab.js"></script>
