@@ -1,38 +1,8 @@
-/* Aumentar fonte do sistema */
-body {
-    font-size: 16px !important;
-}
-
-.table {
-    font-size: 15px !important;
-}
-
-.navbar {
-    font-size: 15px !important;
-}
-
-.form-control {
-    font-size: 15px !important;
-}
-
-.btn {
-    font-size: 15px !important;
-}
-
-.modal {
-    font-size: 15px !important;
-}
-
-.dropdown-menu {
-    font-size: 15px !important;
-}
-
-/* Tabela de vendas */
-#table {
-    font-size: 15px !important;
-}
-
-/* Payment summary */
+/* Custom POS overrides */
 #payment_summary {
-    font-size: 32px !important;
+    background: var(--os-surface) !important;
+    border: 1px solid var(--os-border) !important;
+    border-radius: var(--os-radius-lg) !important;
+    box-shadow: var(--os-shadow) !important;
+    padding: 16px 24px !important;
 }

@@ -34,14 +34,15 @@
 
     var csrf_form_base = function() {
         return {
-            <?= esc(config('Security')->tokenName, 'js') ?>: function() {
-                return csrf_token()
-            }
+            <?= esc(config('Security')->tokenName, 'js') ?>: csrf_token() || ''
         }
     };
 
     var setup_csrf_token = function() {
-        $('input[name="<?= esc(config('Security')->tokenName, 'js') ?>"]').val(csrf_token());
+        var token = csrf_token();
+        if (token) {
+            $('input[name="<?= esc(config('Security')->tokenName, 'js') ?>"]').val(token);
+        }
     };
 
     var ajax = $.ajax;
@@ -73,9 +74,7 @@
             event.preventDefault();
             $.ajax({
                 url: "<?= site_url('home/logout'); ?>",
-                data: {
-                    "<?= esc(config('Security')->tokenName, 'js'); ?>": csrf_token()
-                },
+                data: csrf_form_base(),
                 success: function() {
                     window.location.href = '<?= site_url(); ?>';
                 },

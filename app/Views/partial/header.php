@@ -108,17 +108,19 @@ $request = Services::request();
     <!-- CSS Acessível para Idosos -->
     <link rel="stylesheet" href="<?= base_url('css/accessible.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/custom.css') ?>">
+    <!-- Modern UI Overhaul -->
+    <link rel="stylesheet" href="<?= base_url('css/modern.css') ?>">
 </head>
 
 <body>
     <?php if (ENVIRONMENT === 'development'): ?>
     <style>
     .test-banner {
-        background: #28a745; color: white; text-align: center; padding: 6px; font-weight: bold; position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+        background: var(--os-warning, #d97706); color: rgba(255,255,255,0.7); text-align: center; padding: 0; font-weight: 700; font-size: 0; letter-spacing: 0; text-transform: uppercase; position: fixed; top: 0; left: 0; right: 0; z-index: 10001; height: 8px; line-height: 8px; overflow: hidden;
     }
-    .topbar {   padding-top: 32px;    }
+    .topbar { padding-top: 8px; }
     </style>
-    <div class="test-banner">AMBIENTE DE TESTE</div>
+    <div class="test-banner"></div>
     <?php endif; ?>
     <div class="wrapper">
         <div class="topbar">
@@ -130,13 +132,13 @@ $request = Services::request();
                     ?><?= date($config['dateformat'] . ' ' . $config['timeformat']) ?></div>
                 </div>
 
-                <div class="navbar-right" style="margin: 0;">
+                <div class="navbar-right topbar-right">
                     <?= anchor("home/changePassword/$user_info->person_id", "$user_info->first_name $user_info->last_name", ['class' => 'modal-dlg', 'data-btn-submit' => lang('Common.submit'), 'title' => lang('Employees.change_password')]) ?>
-                    <span>&nbsp;|&nbsp;</span>
+                    <span class="topbar-sep">|</span>
                     <?= anchor('home/logout', lang('Login.logout')) ?>
                 </div>
 
-                <div class="navbar-center" style="text-align: center;">
+                <div class="navbar-center topbar-center">
                     <strong><?= esc($config['company']) ?></strong>
                 </div>
             </div>
@@ -147,7 +149,7 @@ $request = Services::request();
                 <div class="navbar-header">
                     <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-collapse">
                         <span class="sr-only">Menu</span>
-                        <span style="font-size: 20px;">☰</span>
+                        <span class="glyphicon glyphicon-menu-hamburger"></span>
                     </button>
                 </div>
 
@@ -163,28 +165,33 @@ $request = Services::request();
                         $is_clientes = ($current == 'customers');
                         ?>
                         <li class="<?=$is_home ? 'active': ' ' ?>">
-                            <a href="<?=base_url('home') ?>" style="font-size: 16px;">
-                                🏠 HOME
+                            <a href="<?=base_url('home') ?>">
+                                <span class="glyphicon glyphicon-home menu-icon"></span>
+                                <span class="nav-label">HOME</span>
                             </a>
                         </li>
                         <li class="<?=$is_resumo ? 'active' : ' ' ?>">
-                            <a href="<?=base_url('sales/manage') ?>" style="font-size: 16px;">
-                            📊 RESUMO
+                            <a href="<?=base_url('sales/manage') ?>">
+                                <span class="glyphicon glyphicon-list-alt menu-icon"></span>
+                                <span class="nav-label">RESUMO</span>
                             </a>
                         </li>
                         <li class="<?=$is_vendas ? 'active' : ' ' ?>">
-                            <a href="<?=base_url('sales/add') ?>" style="font-size: 16px;">
-                            💰 VENDAS
+                            <a href="<?=base_url('sales/add') ?>">
+                                <span class="glyphicon glyphicon-shopping-cart menu-icon"></span>
+                                <span class="nav-label">VENDAS</span>
                             </a>
                         </li>
                         <li class="<?=$is_itens ? 'active' : ' ' ?> ">
-                            <a href="<?=base_url('items') ?>" style="font-size: 16px;">
-                                📦 ITENS
+                            <a href="<?=base_url('items') ?>">
+                                <span class="glyphicon glyphicon-tag menu-icon"></span>
+                                <span class="nav-label">ITENS</span>
                             </a>
                         </li>
                         <li class="<?= $is_clientes ? 'active' : ' ' ?>">
-                            <a href="<?=base_url('customers')?>" style="font-size: 16px;">
-                                👥 CLIENTES
+                            <a href="<?=base_url('customers')?>">
+                                <span class="glyphicon glyphicon-user menu-icon"></span>
+                                <span class="nav-label">CLIENTES</span>
                             </a>
                         </li>
                     </ul>
@@ -192,8 +199,8 @@ $request = Services::request();
                     <!-- Menu Hamburguer-->
                     <ul class="nav navbar-nav navbar-right">
                         <li class="dropdown">
-                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" style="font-size: 20px; padding: 10px;">
-                            ☰ <span class="caret"></span>
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            <span class="glyphicon glyphicon-menu-hamburger"></span> <span class="caret"></span>
                             </a>
                             <ul class="dropdown-menu">
                                 <li><a href="<?=site_url('items')?>"><span class="glyphicon glyphicon-tag"></span> Produtos </a></li>
