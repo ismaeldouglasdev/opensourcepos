@@ -621,11 +621,33 @@ class Sale extends Model
                 // Update stock quantity if item type is a standard stock item and the sale is a standard sale
                 $item_quantity_data = $item_quantity->get_item_quantity($item_data['item_id'], $item_data['item_location']);
 
+                $current_stock = (float)$item_quantity_data->quantity;
+                $sold_qty = (float)$item_data['quantity'];
+                $new_stock = $current_stock - $sold_qty;
+
+                // Determine stock status: never allow negative stock
+                if ($new_stock < 0) {
+                    // Would go negative — clamp to 0, flag as irregular
+                    $new_stock = 0;
+                    $new_status = Item_quantity::STOCK_IRREGULAR;
+                } elseif ($new_stock == 0 && $current_stock > 0) {
+                    // Just hit zero from positive — mark as zerado
+                    $new_status = Item_quantity::STOCK_ZERADO;
+                } elseif ($new_stock == 0 && $current_stock <= 0) {
+                    // Was already zero or below and sold again — flag as irregular
+                    $new_stock = 0;
+                    $new_status = Item_quantity::STOCK_IRREGULAR;
+                } else {
+                    // Still has stock — OK
+                    $new_status = Item_quantity::STOCK_OK;
+                }
+
                 $item_quantity->save_value(
                     [
-                        'quantity'    => $item_quantity_data->quantity - $item_data['quantity'],
-                        'item_id'     => $item_data['item_id'],
-                        'location_id' => $item_data['item_location']
+                        'quantity'      => $new_stock,
+                        'stock_status'  => $new_status,
+                        'item_id'       => $item_data['item_id'],
+                        'location_id'   => $item_data['item_location']
                     ],
                     $item_data['item_id'],
                     $item_data['item_location']

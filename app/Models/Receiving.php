@@ -160,11 +160,14 @@ class Receiving extends Model
 
             // Update stock quantity
             $item_quantity_value = $item_quantity->get_item_quantity($item_data['item_id'], $item_data['item_location']);
+            $new_qty = $item_quantity_value->quantity + $items_received;
+            $new_status = ($new_qty > 0) ? Item_quantity::STOCK_OK : (($new_qty == 0) ? Item_quantity::STOCK_ZERADO : Item_quantity::STOCK_IRREGULAR);
             $item_quantity->save_value(
                 [
-                    'quantity'    => $item_quantity_value->quantity + $items_received,
-                    'item_id'     => $item_data['item_id'],
-                    'location_id' => $item_data['item_location']
+                    'quantity'      => $new_qty,
+                    'stock_status'  => $new_status,
+                    'item_id'       => $item_data['item_id'],
+                    'location_id'   => $item_data['item_location']
                 ],
                 $item_data['item_id'],
                 $item_data['item_location']

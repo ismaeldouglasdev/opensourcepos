@@ -48,24 +48,80 @@ use App\Models\Employee;
 .checkout-modal .modal-dialog { max-width: 380px; }
 .checkout-modal .modal-content { max-height: 90vh; overflow: visible; }
 .checkout-modal .modal-body { max-height: none; overflow: visible; padding: 10px 15px; }
-.checkout-total { font-weight: bold; text-align: center; background: #f5f5f5; border-radius: 5px; margin-bottom: 8px; padding: 12px; font-size: 28px; }
-.payment-list button { margin-bottom: 3px; height: 36px; font-size: 13px; text-align: center; line-height: 20px; display: flex; align-items: center; justify-content: center; }
+.checkout-total { font-weight: 600; text-align: center; background: var(--os-primary-light, #e8f8f0); border-radius: var(--os-radius-lg, 12px); margin-bottom: 8px; padding: 8px; font-size: 14px; }
+
+/* Payment list */
 .payment-list { margin-bottom: 5px; }
+.payment-list button { margin-bottom: 3px; height: 40px; font-size: 15px; text-align: center; line-height: 22px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: var(--os-radius, 8px) !important; }
+
+/* Payment buttons */
+.payment-btn.cash { background: var(--pay-cash, #16a34a); border-color: var(--pay-cash, #16a34a); color: white; }
+.payment-btn.debit { background: var(--pay-debit, #2563eb); border-color: var(--pay-debit, #2563eb); color: white; }
+.payment-btn.credit { background: var(--pay-credit, #7c3aed); border-color: var(--pay-credit, #7c3aed); color: white; }
+.payment-btn.pix { background: var(--pay-pix, #0891b2); border-color: var(--pay-pix, #0891b2); color: white; }
+.payment-btn.fiado { background: var(--pay-fiado, #ea580c); border-color: var(--pay-fiado, #ea580c); color: white; }
+.payment-btn:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: translateY(-1px); }
+.payment-btn.active { box-shadow: 0 0 0 3px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.15); transform: translateY(-1px); }
+
+/* Troco */
+.troco-display { font-size: 15px; padding: 6px; margin-bottom: 8px; text-align: center; font-weight: 600; }
+.troco-display.negative { background: #fef2f2; color: #991b1b; }
+
+/* Checkout form */
 .form-group { margin-bottom: 5px; }
-.form-group input { height: 36px; font-size: 16px; text-align: center; }
-.troco-display { font-size: 14px; padding: 6px; margin-bottom: 8px; text-align: center; }
-#finish_checkout_btn { height: 40px; font-size: 16px; }
-#btn_finalizar_venda { height: 60px !important; font-size: 20px !important; font-weight: bold !important; margin-top: 10px !important; }
+.form-group input { height: 36px; font-size: 17px; text-align: center; }
+
+/* Finalizar venda button */
+#btn_finalizar_venda { height: 44px; font-size: 17px; font-weight: bold; margin-top: 8px; }
+#finish_checkout_btn { height: 40px; font-size: 17px; }
+
+/* Hidden payment details */
 #payment_details { display: none !important; }
 </style>
 
-<style>
-#payment_details { display: none !important; }
-#btn_finalizar_venda { 
-    height: 60px !important; 
-    font-size: 20px !important; 
-    font-weight: bold !important;
-    margin-top: 10px !important;
+/* Discount toggle override */
+#register td:nth-child(6) { overflow: hidden; }
+#register td .input-group { display: flex; align-items: center; width: 100%; }
+#register td .input-group .form-control { flex: 1 1 0%; min-width: 0; height: 28px; font-size: 12px; padding: 1px 4px; }
+#register td .input-group .input-group-btn { flex: 0 0 auto; display: flex; align-items: center; }
+#register td .input-group .input-group-btn .bootstrap-toggle { margin: 0; flex: 0 0 46px; width: 46px; }
+#register td .input-group .input-group-btn .bootstrap-toggle .toggle { width: 46px !important; min-width: 46px !important; min-height: 26px !important; }
+#register td .input-group .input-group-btn .bootstrap-toggle .toggle.btn-sm { width: 46px !important; min-width: 46px !important; }
+#register td .input-group .input-group-btn .bootstrap-toggle .toggle-on { padding-right: 0 !important; text-align: center; }
+#register td .input-group .input-group-btn .bootstrap-toggle .toggle-off { padding-left: 0 !important; text-align: center; }
+#register td .input-group .input-group-btn .bootstrap-toggle .toggle-on.btn { padding-right: 0 !important; }
+#register td .input-group .input-group-btn .bootstrap-toggle .toggle-off.btn { padding-left: 0 !important; }
+
+/* Custom discount toggle */
+.disc-toggle { display: inline-flex; border-radius: 4px; overflow: hidden; border: 1px solid #ccc; cursor: pointer; }
+.disc-toggle-btn { padding: 3px 7px; font-size: 11px; font-weight: 700; border: none; cursor: pointer; background: #f0f0f0; color: #888; line-height: 1; min-width: 22px; text-align: center; transition: background 0.15s, color 0.15s; }
+.disc-toggle-btn:hover { background: #e0e0e0; }
+.disc-toggle-btn.active { background: #5cb85c; color: #fff; }
+
+/* Stock status badges */
+.stock-badge { font-size: 11px; padding: 1px 4px; vertical-align: middle; }
+.stock-badge-zerado { background: #f59e0b; color: #000; }
+.stock-badge-irregular { background: #dc2626; color: #fff; }
+
+/* Empty cart state */
+.empty-cart-row td {
+    padding: 40px 20px !important;
+    text-align: center !important;
+}
+.empty-cart-msg {
+    color: var(--os-text-light, #9ca3af) !important;
+    font-size: 18px !important;
+    font-weight: 500 !important;
+}
+.empty-cart-icon {
+    font-size: 48px !important;
+    opacity: 0.3 !important;
+    margin-bottom: 8px !important;
+    display: block !important;
+}
+.empty-cart-sub {
+    color: var(--os-text-light, #9ca3af) !important;
+    font-size: 14px !important;
 }
 </style>
 
@@ -185,14 +241,14 @@ if (!empty($editing_sale_id)) {
     <table class="sales_table_100" id="register">
         <thead>
             <tr>
-                <th style="width: 5%;"><?= lang('Common.delete') ?></th>
-                <th style="width: 15%;"><?= lang(ucfirst($controller_name) . '.item_number') ?></th>
-                <th style="width: 30%;"><?= lang(ucfirst($controller_name) . '.item_name') ?></th>
-                <th style="width: 10%;"><?= lang(ucfirst($controller_name) . '.price') ?></th>
-                <th style="width: 10%;"><?= lang(ucfirst($controller_name) . '.quantity') ?></th>
-                <th style="width: 15%;"><?= lang(ucfirst($controller_name) . '.discount') ?></th>
-                <th style="width: 10%;"><?= lang(ucfirst($controller_name) . '.total') ?></th>
-                <th style="width: 5%;"><?= lang(ucfirst($controller_name) . '.update') ?></th>
+                <th style="width: 4%;"><?= lang('Common.delete') ?></th>
+                <th style="width: 10%;"><?= lang(ucfirst($controller_name) . '.item_number') ?></th>
+                <th style="width: 35%;"><?= lang(ucfirst($controller_name) . '.item_name') ?></th>
+                <th style="width: 9%;"><?= lang(ucfirst($controller_name) . '.price') ?></th>
+                <th style="width: 9%;"><?= lang(ucfirst($controller_name) . '.quantity') ?></th>
+                <th style="width: 13%;"><?= lang(ucfirst($controller_name) . '.discount') ?></th>
+                <th style="width: 9%;"><?= lang(ucfirst($controller_name) . '.total') ?></th>
+                <th style="width: 4%;"><?= lang(ucfirst($controller_name) . '.update') ?></th>
             </tr>
         </thead>
 
@@ -226,7 +282,16 @@ if (!empty($editing_sale_id)) {
                                 <td style="align: center;">
                                     <?= esc($item['name'] ?? '') . ' ' . implode(' ', [$item['attribute_values'] ?? '', $item['attribute_dtvalues'] ?? '']) ?>
                                     <br>
-                                    <?php if (($item['stock_type'] ?? '') == '0'): echo '[' . to_quantity_decimals($item['in_stock'] ?? 0) . ' ' . lang('Items.stock') . ' ' . ($item['stock_name'] ?? '') . ']';
+                                    <?php if (($item['stock_type'] ?? '') == '0'):
+                                        $stock_qty = to_quantity_decimals($item['in_stock'] ?? 0);
+                                        $stock_lbl = $item['stock_name'] ?? '';
+                                        $stk_status = $item['stock_status'] ?? 0;
+                                        echo '[' . $stock_qty . ' ' . lang('Items.stock') . ']';
+                                        if ($stk_status == 2) {
+                                            echo ' <span class="stock-badge stock-badge-irregular" title="Estoque irregular - precisa contagem">IRREGULAR</span>';
+                                        } elseif ($stk_status == 1) {
+                                            echo ' <span class="stock-badge stock-badge-zerado" title="Produto zerado">ZERADO</span>';
+                                        }
                                     endif; ?>
                                 </td>
                             <?php } ?>
@@ -257,7 +322,10 @@ if (!empty($editing_sale_id)) {
                                 <div class="input-group">
                                     <?= form_input(['name' => 'discount', 'class' => 'form-control input-sm', 'value' => $item['discount_type'] ? to_currency_no_money($item['discount']) : to_decimals($item['discount']), 'tabindex' => ++$tabindex, 'onClick' => 'this.select();']) ?>
                                     <span class="input-group-btn">
-                                        <?= form_checkbox(['id' => 'discount_toggle', 'name' => 'discount_toggle', 'value' => 1, 'data-toggle' => "toggle", 'data-size' => 'small', 'data-onstyle' => 'success', 'data-on' => '<b>' . $config['currency_symbol'] . '</b>', 'data-off' => '<b>%</b>', 'data-line' => $line, 'checked' => $item['discount_type'] == 1]) ?>
+                                        <span class="disc-toggle" data-line="<?= $line ?>">
+                                            <button type="button" class="disc-toggle-btn <?= $item['discount_type'] == 1 ? 'active' : '' ?>" data-val="1"><?= $config['currency_symbol'] ?></button>
+                                            <button type="button" class="disc-toggle-btn <?= $item['discount_type'] != 1 ? 'active' : '' ?>" data-val="0">%</button>
+                                        </span>
                                     </span>
                                 </div>
                             </td>
@@ -430,8 +498,8 @@ if (!empty($editing_sale_id)) {
                 </tr>
             <?php } ?>
             <tr>
-                <th style="width: 55%; font-size: 150%"><?= lang(ucfirst($controller_name) . '.total') ?></th>
-                <th style="width: 45%; font-size: 150%; text-align: right;"><span id="sale_total"><?= to_currency($total) ?></span></th>
+                <th style="width: 55%; font-size: 160%"><?= lang(ucfirst($controller_name) . '.total') ?></th>
+                <th style="width: 45%; font-size: 160%; text-align: right;"><span id="sale_total"><?= to_currency($total) ?></span></th>
             </tr>
         </table>
 
@@ -442,8 +510,8 @@ if (!empty($editing_sale_id)) {
                     <th style="width: 45%; text-align: right;"><?= to_currency($payments_total) ?></th>
                 </tr>
                 <tr>
-                    <th style="width: 55%; font-size: 120%"><?= lang(ucfirst($controller_name) . '.amount_due') ?></th>
-                    <th style="width: 45%; font-size: 120%; text-align: right;"><span id="sale_amount_due"><?= to_currency($amount_due) ?></span></th>
+                    <th style="width: 55%; font-size: 130%"><?= lang(ucfirst($controller_name) . '.amount_due') ?></th>
+                    <th style="width: 45%; font-size: 130%; text-align: right;"><span id="sale_amount_due"><?= to_currency($amount_due) ?></span></th>
                 </tr>
             </table>
 
@@ -887,10 +955,16 @@ if (!empty($editing_sale_id)) {
             $(this).parents('tr').prevAll('form:first').submit()
         });
 
-        $('[name="discount_toggle"]').change(function() {
-            var input = $('<input>').attr('type', 'hidden').attr('name', 'discount_type').val(($(this).prop('checked')) ? 1 : 0);
-            $('#cart_' + $(this).attr('data-line')).append($(input));
-            $('#cart_' + $(this).attr('data-line')).submit();
+        // Custom discount toggle
+        $('.disc-toggle-btn').click(function() {
+            var $group = $(this).closest('.disc-toggle');
+            var line = $group.data('line');
+            var val = $(this).data('val');
+            $group.find('.disc-toggle-btn').removeClass('active');
+            $(this).addClass('active');
+            var input = $('<input>').attr('type', 'hidden').attr('name', 'discount_type').val(val);
+            $('#cart_' + line).append(input);
+            $('#cart_' + line).submit();
         });
     });
 
@@ -968,9 +1042,9 @@ if (!empty($editing_sale_id)) {
 
 <!-- Modal de Checkout com Múltiplos Pagamentos -->
 <style>
-.checkout-modal .modal-dialog {
-    max-width: 400px;
-}
+.checkout-modal .modal-dialog { width: 420px !important; max-width: 420px !important; }
+.checkout-modal .modal-content { display: flex; flex-direction: column; max-height: 90vh; }
+.checkout-modal .modal-body { padding: 10px 12px !important; overflow-y: auto !important; overflow-x: hidden !important; flex: 1 1 auto; }
 .checkout-modal .payment-list {
     display: flex;
     flex-wrap: wrap;
@@ -982,12 +1056,13 @@ if (!empty($editing_sale_id)) {
     flex: 1 1 calc(50% - 8px);
     min-width: 120px;
     max-width: 180px;
-    padding: 12px 8px !important;
+    padding: 8px 6px !important;
     font-size: 14px !important;
     border-radius: 8px !important;
     margin: 0 !important;
     white-space: nowrap;
 }
+.checkout-finish-btn { flex-shrink: 0; margin-top: 8px; }
 </style>
 <style>
 .checkout-modal .modal-dialog { width: 480px !important; max-width: 480px !important; }
@@ -1188,6 +1263,11 @@ function selectPayment(type, lang_key) {
         document.getElementById('payment_type_label').textContent = lang_key + ':';
         document.getElementById('checkout_amount').placeholder = getRestante().toFixed(2).replace('.', ',');
     }
+    
+    setTimeout(function() {
+        amountInput.focus();
+        amountInput.select();
+    }, 50);
 }
 
 function getRestante() {
@@ -1221,6 +1301,17 @@ function addPayment() {
     document.getElementById('amount_group').style.display = 'none';
     
     checkIfCanFinish();
+    
+    // Se o pagamento cobriu o total, finalizar direto
+    var novoRestante = getRestante();
+    if (novoRestante <= 0.01 && payments_list.length > 0) {
+        finishCheckout();
+        return;
+    }
+    
+    // Senão, voltar foco pro primeiro botão de pagamento
+    var firstBtn = document.querySelector('.payment-btn');
+    if (firstBtn) firstBtn.focus();
 }
 
 function removePayment(index) {
@@ -1346,9 +1437,80 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(function() {
                 var amt = document.getElementById('checkout_amount');
                 if (amt) amt.focus();
-            }, 200);
+            }, 50);
         });
     });
+
+    // Keyboard navigation between payment buttons
+    var paymentBtns = document.querySelectorAll('.payment-btn');
+    paymentBtns.forEach(function(btn, index) {
+        btn.setAttribute('tabindex', '0');
+        btn.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                var next = paymentBtns[(index + 1) % paymentBtns.length];
+                next.focus();
+            } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                var prev = paymentBtns[(index - 1 + paymentBtns.length) % paymentBtns.length];
+                prev.focus();
+            } else if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                btn.click();
+            }
+        });
+    });
+
+    // When modal opens, focus first payment button
+    jQuery('#checkoutModal').on('shown.bs.modal', function() {
+        var firstBtn = document.querySelector('.payment-btn');
+        if (firstBtn) firstBtn.focus();
+    });
+
+    // Escape in amount input goes back to payment buttons
+    if (amountInput) {
+        amountInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                var firstBtn = document.querySelector('.payment-btn');
+                if (firstBtn) firstBtn.focus();
+                payment_type_selected = '';
+                document.querySelectorAll('.payment-btn').forEach(function(b) { b.classList.remove('active'); });
+                document.getElementById('amount_group').style.display = 'none';
+            }
+        });
+    }
+
+    // Tab navigation: amount input -> finish button -> payment buttons
+    if (amountInput) {
+        amountInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab' && !e.shiftKey) {
+                e.preventDefault();
+                var finishBtn = document.getElementById('finish_checkout_btn');
+                if (finishBtn && !finishBtn.disabled) {
+                    finishBtn.focus();
+                } else {
+                    var firstBtn = document.querySelector('.payment-btn');
+                    if (firstBtn) firstBtn.focus();
+                }
+            }
+        });
+    }
+
+    var finishBtn = document.getElementById('finish_checkout_btn');
+    if (finishBtn) {
+        finishBtn.setAttribute('tabindex', '0');
+        finishBtn.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                var firstBtn = document.querySelector('.payment-btn');
+                if (firstBtn) firstBtn.focus();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                finishCheckout();
+            }
+        });
+    }
 
     document.addEventListener('keydown', function(e) {
         if (e.key === 'F2') { e.preventDefault(); openCheckoutModal(); }

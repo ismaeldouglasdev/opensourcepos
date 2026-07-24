@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="/home/ismael/opensourcepos-fork/tests/unit" tests="93" assertions="118" errors="0" warnings="0" failures="13" skipped="0" time="0.149629">
+    <testsuite name="Tests\unit\Helpers\DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" tests="34" assertions="37" errors="0" warnings="0" failures="0" skipped="0" time="0.059166">
+      <testcase name="testDateformatMomentjsConvertsDayFormat" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="17" assertions="1" time="0.018079"/>
+      <testcase name="testDateformatMomentjsConvertsMonthFormat" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="22" assertions="1" time="0.001219"/>
+      <testcase name="testDateformatMomentjsConvertsYearFormat" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="27" assertions="1" time="0.001193"/>
+      <testcase name="testDateformatMomentjsConvertsShortYear" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="32" assertions="1" time="0.001150"/>
+      <testcase name="testDateformatMomentjsConvertsTimeFormat" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="37" assertions="1" time="0.000997"/>
+      <testcase name="testDateformatMomentjsConverts12HourTime" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="42" assertions="1" time="0.001035"/>
+      <testcase name="testDateformatMomentjsConvertsFullDateTime" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="47" assertions="1" time="0.001278"/>
+      <testcase name="testDateformatMomentjsConvertsMonthName" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="53" assertions="1" time="0.001115"/>
+      <testcase name="testDateformatMomentjsConvertsShortMonthName" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="58" assertions="1" time="0.001181"/>
+      <testcase name="testDateformatMomentjsConvertsDayOfWeek" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="63" assertions="1" time="0.001270"/>
+      <testcase name="testDateformatMomentjsConvertsFullDayOfWeek" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="68" assertions="1" time="0.001309"/>
+      <testcase name="testDateformatMomentjsConvertsUnixTimestamp" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="73" assertions="1" time="0.001426"/>
+      <testcase name="testDateformatBootstrapConvertsDayFormat" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="80" assertions="1" time="0.001361"/>
+      <testcase name="testDateformatBootstrapConvertsMonthFormat" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="85" assertions="1" time="0.001466"/>
+      <testcase name="testDateformatBootstrapConvertsYearFormat" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="90" assertions="1" time="0.001279"/>
+      <testcase name="testDateformatBootstrapConvertsTimeFormat" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="95" assertions="1" time="0.001324"/>
+      <testcase name="testDateformatBootstrapConvertsFullDateTime" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="100" assertions="1" time="0.001175"/>
+      <testcase name="testDateformatBootstrapConvertsShortDay" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="106" assertions="1" time="0.001427"/>
+      <testcase name="testValidDecimalAcceptsInteger" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="113" assertions="1" time="0.001626"/>
+      <testcase name="testValidDecimalAcceptsDecimal" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="118" assertions="1" time="0.000961"/>
+      <testcase name="testValidDecimalAcceptsLeadingDot" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="123" assertions="1" time="0.000897"/>
+      <testcase name="testValidDecimalAcceptsZero" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="128" assertions="1" time="0.002205"/>
+      <testcase name="testValidDecimalAcceptsZeroDecimal" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="133" assertions="1" time="0.001288"/>
+      <testcase name="testValidDecimalRejectsLetters" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="138" assertions="1" time="0.001341"/>
+      <testcase name="testValidDecimalRejectsEmptyString" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="143" assertions="1" time="0.001770"/>
+      <testcase name="testValidDecimalRejectsMixedAlphaNumeric" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="148" assertions="1" time="0.001209"/>
+      <testcase name="testValidDecimalRejectsNegativeNumber" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="153" assertions="1" time="0.001088"/>
+      <testcase name="testValidDecimalRejectsSpecialCharacters" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="158" assertions="1" time="0.000992"/>
+      <testcase name="testEncodeArrayUrlEncodesValues" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="165" assertions="2" time="0.000765"/>
+      <testcase name="testDecodeArrayUrlDecodesValues" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="174" assertions="2" time="0.000654"/>
+      <testcase name="testEncodeDecodeRoundTrip" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="183" assertions="1" time="0.000601"/>
+      <testcase name="testEncodeArrayHandlesEmptyArray" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="197" assertions="1" time="0.000986"/>
+      <testcase name="testDecodeArrayHandlesEmptyArray" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="202" assertions="1" time="0.001449"/>
+      <testcase name="testEncodeArrayPreservesKeys" class="Tests\unit\Helpers\DateHelpersTest" classname="Tests.unit.Helpers.DateHelpersTest" file="/home/ismael/opensourcepos-fork/tests/unit/Helpers/DateHelpersTest.php" line="207" assertions="2" time="0.002051"/>
+    </testsuite>
+    <testsuite name="Tests\unit\Libraries\SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" tests="29" assertions="41" errors="0" warnings="0" failures="13" skipped="0" time="0.040664">
+      <testcase name="testGetItemTotalMultipliesQuantityByPrice" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="69" assertions="1" time="0.008722">
+        <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\unit\Libraries\SaleLibTest::testGetItemTotalMultipliesQuantityByPrice
+Failed asserting that two strings are equal.
+--- Expected
++++ Actual
+@@ @@
+-'31.50'
++'31'
+
+/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php:72</failure>
+      </testcase>
+      <testcase name="testGetItemTotalReturnsZeroForZeroQuantity" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="75" assertions="1" time="0.001096"/>
+      <testcase name="testGetItemTotalHandlesFractionalValues" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="81" assertions="1" time="0.000747">
+        <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\unit\Libraries\SaleLibTest::testGetItemTotalHandlesFractionalValues
+Failed asserting that two strings are equal.
+--- Expected
++++ Actual
+@@ @@
+-'19.98'
++'19'
+
+/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php:84</failure>
+      </testcase>
+      <testcase name="testGetItemTotalWithOneItemReturnsPrice" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="87" assertions="1" time="0.000714">
+        <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\unit\Libraries\SaleLibTest::testGetItemTotalWithOneItemReturnsPrice
+Failed asserting that two strings are equal.
+--- Expected
++++ Actual
+@@ @@
+-'25.00'
++'25'
+
+/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php:90</failure>
+      </testcase>
+      <testcase name="testGetItemTotalWithPercentDiscount" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="95" assertions="1" time="0.000718">
+        <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\unit\Libraries\SaleLibTest::testGetItemTotalWithPercentDiscount
+Failed asserting that two strings are equal.
+--- Expected
++++ Actual
+@@ @@
+-'180.00'
++'200'
+
+/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php:98</failure>
+      </testcase>
+      <testcase name="testGetItemTotalWithFixedDiscount" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="101" assertions="1" time="0.000689">
+        <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\unit\Libraries\SaleLibTest::testGetItemTotalWithFixedDiscount
+Failed asserting that two strings are equal.
+--- Expected
++++ Actual
+@@ @@
+-'120.00'
++'120'
+
+/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php:104</failure>
+      </testcase>
+      <testcase name="testGetItemTotalPercentDiscountFiftyPercent" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="107" assertions="1" time="0.000672">
+        <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\unit\Libraries\SaleLibTest::testGetItemTotalPercentDiscountFiftyPercent
+Failed asserting that two strings are equal.
+--- Expected
++++ Actual
+@@ @@
+-'50.00'
++'100'
+
+/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php:110</failure>
+      </testcase>
+      <testcase name="testGetExtendedAmountMultipliesAndSubtracts" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="115" assertions="1" time="0.000647">
+        <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\unit\Libraries\SaleLibTest::testGetExtendedAmountMultipliesAndSubtracts
+Failed asserting that two strings are equal.
+--- Expected
++++ Actual
+@@ @@
+-'85.00'
++'85'
+
+/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php:118</failure>
+      </testcase>
+      <testcase name="testGetExtendedAmountWithZeroDiscount" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="121" assertions="1" time="0.000725">
+        <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\unit\Libraries\SaleLibTest::testGetExtendedAmountWithZeroDiscount
+Failed asserting that two strings are equal.
+--- Expected
++++ Actual
+@@ @@
+-'30.00'
++'30'
+
+/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php:124</failure>
+      </testcase>
+      <testcase name="testGetExtendedAmountDefaultDiscountIsZero" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="127" assertions="1" time="0.001400">
+        <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\unit\Libraries\SaleLibTest::testGetExtendedAmountDefaultDiscountIsZero
+Failed asserting that two strings are equal.
+--- Expected
++++ Actual
+@@ @@
+-'30.00'
++'30'
+
+/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php:130</failure>
+      </testcase>
+      <testcase name="testGetExtendedAmountFullDiscountReturnsZero" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="133" assertions="1" time="0.000969">
+        <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\unit\Libraries\SaleLibTest::testGetExtendedAmountFullDiscountReturnsZero
+Failed asserting that two strings are equal.
+--- Expected
++++ Actual
+@@ @@
+-'0.00'
++'0'
+
+/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php:136</failure>
+      </testcase>
+      <testcase name="testGetItemDiscountPercentType" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="141" assertions="1" time="0.000966">
+        <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\unit\Libraries\SaleLibTest::testGetItemDiscountPercentType
+Failed asserting that two strings are equal.
+--- Expected
++++ Actual
+@@ @@
+-'20'
++'0'
+
+/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php:144</failure>
+      </testcase>
+      <testcase name="testGetItemDiscountFixedType" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="147" assertions="1" time="0.000800"/>
+      <testcase name="testGetItemDiscountZeroPercentReturnsZero" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="153" assertions="1" time="0.000677"/>
+      <testcase name="testGetItemDiscountFixedZeroQuantityReturnsZero" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="159" assertions="1" time="0.000663"/>
+      <testcase name="testGetQuantitySoldCalculatesFromTotalAndPrice" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="167" assertions="1" time="0.001000"/>
+      <testcase name="testGetQuantitySoldHandlesDecimalDivision" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="173" assertions="1" time="0.001069"/>
+      <testcase name="testSortAndFilterCartReturnsEmptyForEmptyCart" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="181" assertions="1" time="0.000981"/>
+      <testcase name="testSortAndFilterCartFiltersPrintNoItems" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="187" assertions="2" time="0.001164"/>
+      <testcase name="testSortAndFilterCartZeroesDiscountForFreeItems" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="199" assertions="2" time="0.001234"/>
+      <testcase name="testSortAndFilterCartPreservesNonZeroDiscountOnPaidItems" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="210" assertions="2" time="0.001126"/>
+      <testcase name="testSortAndFilterCartSortsByLineAscending" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="221" assertions="4" time="0.001157"/>
+      <testcase name="testAddPaymentCreatesNewEntry" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="238" assertions="3" time="0.001530"/>
+      <testcase name="testAddPaymentAggregatesSameType" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="249" assertions="2" time="0.000897">
+        <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\unit\Libraries\SaleLibTest::testAddPaymentAggregatesSameType
+Failed asserting that two strings are equal.
+--- Expected
++++ Actual
+@@ @@
+-'50.00'
++'50'
+
+/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php:257</failure>
+      </testcase>
+      <testcase name="testAddPaymentHandlesMultipleTypes" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="260" assertions="3" time="0.000931"/>
+      <testcase name="testEditPaymentUpdatesAmount" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="272" assertions="2" time="0.001516"/>
+      <testcase name="testEditPaymentReturnsFalseForNonexistent" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="284" assertions="1" time="0.001097"/>
+      <testcase name="testGetPaymentsTotalSumsAllPayments" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="291" assertions="1" time="0.005558">
+        <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\unit\Libraries\SaleLibTest::testGetPaymentsTotalSumsAllPayments
+Failed asserting that two strings are equal.
+--- Expected
++++ Actual
+@@ @@
+-'100.00'
++'100'
+
+/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php:298</failure>
+      </testcase>
+      <testcase name="testGetPaymentsTotalReturnsZeroForNoPayments" class="Tests\unit\Libraries\SaleLibTest" classname="Tests.unit.Libraries.SaleLibTest" file="/home/ismael/opensourcepos-fork/tests/unit/Libraries/SaleLibTest.php" line="301" assertions="1" time="0.001198"/>
+    </testsuite>
+    <testsuite name="Tests\unit\Models\ItemQuantityTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemQuantityTest.php" tests="13" assertions="20" errors="0" warnings="0" failures="0" skipped="0" time="0.035523">
+      <testcase name="testStockOkConstantIsZero" class="Tests\unit\Models\ItemQuantityTest" classname="Tests.unit.Models.ItemQuantityTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemQuantityTest.php" line="19" assertions="1" time="0.004860"/>
+      <testcase name="testStockZeradoConstantIsOne" class="Tests\unit\Models\ItemQuantityTest" classname="Tests.unit.Models.ItemQuantityTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemQuantityTest.php" line="24" assertions="1" time="0.001492"/>
+      <testcase name="testStockIrregularConstantIsTwo" class="Tests\unit\Models\ItemQuantityTest" classname="Tests.unit.Models.ItemQuantityTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemQuantityTest.php" line="29" assertions="1" time="0.000846"/>
+      <testcase name="testStockStatusLabelsMapCorrectly" class="Tests\unit\Models\ItemQuantityTest" classname="Tests.unit.Models.ItemQuantityTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemQuantityTest.php" line="34" assertions="3" time="0.000965"/>
+      <testcase name="testGetStockStatusLabelReturnsEmptyForOk" class="Tests\unit\Models\ItemQuantityTest" classname="Tests.unit.Models.ItemQuantityTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemQuantityTest.php" line="43" assertions="1" time="0.001258"/>
+      <testcase name="testGetStockStatusLabelReturnsZeradoForStatus1" class="Tests\unit\Models\ItemQuantityTest" classname="Tests.unit.Models.ItemQuantityTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemQuantityTest.php" line="48" assertions="1" time="0.001192"/>
+      <testcase name="testGetStockStatusLabelReturnsIrregularForStatus2" class="Tests\unit\Models\ItemQuantityTest" classname="Tests.unit.Models.ItemQuantityTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemQuantityTest.php" line="53" assertions="1" time="0.000707"/>
+      <testcase name="testGetStockStatusLabelReturnsEmptyForInvalidStatus" class="Tests\unit\Models\ItemQuantityTest" classname="Tests.unit.Models.ItemQuantityTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemQuantityTest.php" line="58" assertions="1" time="0.000931"/>
+      <testcase name="testChangeQuantityPositiveIncreasesStock" class="Tests\unit\Models\ItemQuantityTest" classname="Tests.unit.Models.ItemQuantityTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemQuantityTest.php" line="65" assertions="2" time="0.015224"/>
+      <testcase name="testChangeQuantityNegativeDecreasesStock" class="Tests\unit\Models\ItemQuantityTest" classname="Tests.unit.Models.ItemQuantityTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemQuantityTest.php" line="84" assertions="2" time="0.001779"/>
+      <testcase name="testChangeQuantityToZeroSetsStockZerado" class="Tests\unit\Models\ItemQuantityTest" classname="Tests.unit.Models.ItemQuantityTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemQuantityTest.php" line="103" assertions="2" time="0.003797"/>
+      <testcase name="testChangeQuantityNegativeClampsToZeroAndSetsIrregular" class="Tests\unit\Models\ItemQuantityTest" classname="Tests.unit.Models.ItemQuantityTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemQuantityTest.php" line="122" assertions="2" time="0.001475"/>
+      <testcase name="testChangeQuantityFromZeroToPositiveSetsStockOk" class="Tests\unit\Models\ItemQuantityTest" classname="Tests.unit.Models.ItemQuantityTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemQuantityTest.php" line="141" assertions="2" time="0.000998"/>
+    </testsuite>
+    <testsuite name="Tests\unit\Models\ItemTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemTest.php" tests="17" assertions="20" errors="0" warnings="0" failures="0" skipped="0" time="0.014276">
+      <testcase name="testTableNameIsItems" class="Tests\unit\Models\ItemTest" classname="Tests.unit.Models.ItemTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemTest.php" line="37" assertions="1" time="0.002940"/>
+      <testcase name="testPrimaryKeyIsItemId" class="Tests\unit\Models\ItemTest" classname="Tests.unit.Models.ItemTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemTest.php" line="46" assertions="1" time="0.000779"/>
+      <testcase name="testAllowedFieldsContainsCostPrice" class="Tests\unit\Models\ItemTest" classname="Tests.unit.Models.ItemTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemTest.php" line="55" assertions="1" time="0.000986"/>
+      <testcase name="testAllowedFieldsContainsUnitPrice" class="Tests\unit\Models\ItemTest" classname="Tests.unit.Models.ItemTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemTest.php" line="65" assertions="1" time="0.000676"/>
+      <testcase name="testAllowedFieldsContainsName" class="Tests\unit\Models\ItemTest" classname="Tests.unit.Models.ItemTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemTest.php" line="75" assertions="1" time="0.000653"/>
+      <testcase name="testAllowedFieldsContainsStockType" class="Tests\unit\Models\ItemTest" classname="Tests.unit.Models.ItemTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemTest.php" line="85" assertions="1" time="0.000655"/>
+      <testcase name="testAllowedFieldsContainsItemType" class="Tests\unit\Models\ItemTest" classname="Tests.unit.Models.ItemTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemTest.php" line="95" assertions="1" time="0.000682"/>
+      <testcase name="testGetItemNameReturnsBaseNameWhenMultipackDisabled" class="Tests\unit\Models\ItemTest" classname="Tests.unit.Models.ItemTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemTest.php" line="107" assertions="1" time="0.000668"/>
+      <testcase name="testGetItemNameWithAliasReturnsAliasExpression" class="Tests\unit\Models\ItemTest" classname="Tests.unit.Models.ItemTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemTest.php" line="114" assertions="1" time="0.000645"/>
+      <testcase name="testGetItemNameNullAliasReturnsBaseExpression" class="Tests\unit\Models\ItemTest" classname="Tests.unit.Models.ItemTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemTest.php" line="121" assertions="1" time="0.000630"/>
+      <testcase name="testGetItemNameMultipackEnabledReturnsConcatExpression" class="Tests\unit\Models\ItemTest" classname="Tests.unit.Models.ItemTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemTest.php" line="128" assertions="3" time="0.000827"/>
+      <testcase name="testGetItemNameMultipackWithAliasReturnsConcatWithAlias" class="Tests\unit\Models\ItemTest" classname="Tests.unit.Models.ItemTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemTest.php" line="142" assertions="2" time="0.000669"/>
+      <testcase name="testChangeCostPriceWeightedAverageFormula" class="Tests\unit\Models\ItemTest" classname="Tests.unit.Models.ItemTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemTest.php" line="157" assertions="1" time="0.000754"/>
+      <testcase name="testChangeCostPriceSingleReceivedItem" class="Tests\unit\Models\ItemTest" classname="Tests.unit.Models.ItemTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemTest.php" line="165" assertions="1" time="0.000767"/>
+      <testcase name="testChangeCostPriceEqualQuantitiesAveragesCorrectly" class="Tests\unit\Models\ItemTest" classname="Tests.unit.Models.ItemTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemTest.php" line="172" assertions="1" time="0.000684"/>
+      <testcase name="testChangeCostPriceLargeReceivingSkewsToNewPrice" class="Tests\unit\Models\ItemTest" classname="Tests.unit.Models.ItemTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemTest.php" line="179" assertions="1" time="0.000630"/>
+      <testcase name="testChangeCostPriceSmallReceivingSkewsToOldPrice" class="Tests\unit\Models\ItemTest" classname="Tests.unit.Models.ItemTest" file="/home/ismael/opensourcepos-fork/tests/unit/Models/ItemTest.php" line="186" assertions="1" time="0.000631"/>
+    </testsuite>
+  </testsuite>
+</testsuites>

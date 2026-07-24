@@ -1,13 +1,101 @@
-Employee (Tests\Models\Employee)
- [ ] Is admin returns true for person id 1
- [ ] Is admin returns true for employee with all permissions
- [ ] Is admin returns false when missing permissions
- [ ] Can modify employee returns true for own account
- [ ] Can modify employee returns true for own admin account
- [ ] Can modify employee returns false when non admin modifies admin
- [ ] Can modify employee returns true when admin modifies non admin
- [ ] Can modify employee returns true when non admin modifies non admin
- [ ] Can modify employee returns false for non admin editing admin
- [x] Has grant returns true for actual grant
- [x] Has grant returns false for missing grant
+Date Helpers (Tests\unit\Helpers\DateHelpers)
+ [x] Dateformat momentjs converts day format
+ [x] Dateformat momentjs converts month format
+ [x] Dateformat momentjs converts year format
+ [x] Dateformat momentjs converts short year
+ [x] Dateformat momentjs converts time format
+ [x] Dateformat momentjs converts 12 hour time
+ [x] Dateformat momentjs converts full date time
+ [x] Dateformat momentjs converts month name
+ [x] Dateformat momentjs converts short month name
+ [x] Dateformat momentjs converts day of week
+ [x] Dateformat momentjs converts full day of week
+ [x] Dateformat momentjs converts unix timestamp
+ [x] Dateformat bootstrap converts day format
+ [x] Dateformat bootstrap converts month format
+ [x] Dateformat bootstrap converts year format
+ [x] Dateformat bootstrap converts time format
+ [x] Dateformat bootstrap converts full date time
+ [x] Dateformat bootstrap converts short day
+ [x] Valid decimal accepts integer
+ [x] Valid decimal accepts decimal
+ [x] Valid decimal accepts leading dot
+ [x] Valid decimal accepts zero
+ [x] Valid decimal accepts zero decimal
+ [x] Valid decimal rejects letters
+ [x] Valid decimal rejects empty string
+ [x] Valid decimal rejects mixed alpha numeric
+ [x] Valid decimal rejects negative number
+ [x] Valid decimal rejects special characters
+ [x] Encode array url encodes values
+ [x] Decode array url decodes values
+ [x] Encode decode round trip
+ [x] Encode array handles empty array
+ [x] Decode array handles empty array
+ [x] Encode array preserves keys
+
+Sale Lib (Tests\unit\Libraries\SaleLib)
+ [ ] Get item total multiplies quantity by price
+ [x] Get item total returns zero for zero quantity
+ [ ] Get item total handles fractional values
+ [ ] Get item total with one item returns price
+ [ ] Get item total with percent discount
+ [ ] Get item total with fixed discount
+ [ ] Get item total percent discount fifty percent
+ [ ] Get extended amount multiplies and subtracts
+ [ ] Get extended amount with zero discount
+ [ ] Get extended amount default discount is zero
+ [ ] Get extended amount full discount returns zero
+ [ ] Get item discount percent type
+ [x] Get item discount fixed type
+ [x] Get item discount zero percent returns zero
+ [x] Get item discount fixed zero quantity returns zero
+ [x] Get quantity sold calculates from total and price
+ [x] Get quantity sold handles decimal division
+ [x] Sort and filter cart returns empty for empty cart
+ [x] Sort and filter cart filters print no items
+ [x] Sort and filter cart zeroes discount for free items
+ [x] Sort and filter cart preserves non zero discount on paid items
+ [x] Sort and filter cart sorts by line ascending
+ [x] Add payment creates new entry
+ [ ] Add payment aggregates same type
+ [x] Add payment handles multiple types
+ [x] Edit payment updates amount
+ [x] Edit payment returns false for nonexistent
+ [ ] Get payments total sums all payments
+ [x] Get payments total returns zero for no payments
+
+Item Quantity (Tests\unit\Models\ItemQuantity)
+ [x] Stock ok constant is zero
+ [x] Stock zerado constant is one
+ [x] Stock irregular constant is two
+ [x] Stock status labels map correctly
+ [x] Get stock status label returns empty for ok
+ [x] Get stock status label returns zerado for status 1
+ [x] Get stock status label returns irregular for status 2
+ [x] Get stock status label returns empty for invalid status
+ [x] Change quantity positive increases stock
+ [x] Change quantity negative decreases stock
+ [x] Change quantity to zero sets stock zerado
+ [x] Change quantity negative clamps to zero and sets irregular
+ [x] Change quantity from zero to positive sets stock ok
+
+Item (Tests\unit\Models\Item)
+ [x] Table name is items
+ [x] Primary key is item id
+ [x] Allowed fields contains cost price
+ [x] Allowed fields contains unit price
+ [x] Allowed fields contains name
+ [x] Allowed fields contains stock type
+ [x] Allowed fields contains item type
+ [x] Get item name returns base name when multipack disabled
+ [x] Get item name with alias returns alias expression
+ [x] Get item name null alias returns base expression
+ [x] Get item name multipack enabled returns concat expression
+ [x] Get item name multipack with alias returns concat with alias
+ [x] Change cost price weighted average formula
+ [x] Change cost price single received item
+ [x] Change cost price equal quantities averages correctly
+ [x] Change cost price large receiving skews to new price
+ [x] Change cost price small receiving skews to old price
 

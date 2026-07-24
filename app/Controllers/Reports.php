@@ -118,6 +118,85 @@ class Reports extends Secure_Controller
     }
 
     /**
+     * Renders a standard tabular report.
+     *
+     * @param object $model Report model with getData(), getSummaryData(), getDataColumns()
+     * @param array $inputs Model input parameters
+     * @param callable $rowFormatter fn($row) => formatted row array
+     * @param string $titleKey Lang key for the report title
+     * @param array $subtitleParams Parameters for _get_subtitle_report (start_date, end_date)
+     * @return void
+     */
+    private function renderTabularReport(
+        $model,
+        array $inputs,
+        callable $rowFormatter,
+        string $titleKey,
+        array $subtitleParams = []
+    ): void {
+        $this->clearCache();
+
+        $report_data = $model->getData($inputs);
+        $summary = $model->getSummaryData($inputs);
+
+        $tabular_data = [];
+        foreach ($report_data as $row) {
+            $tabular_data[] = $rowFormatter($row);
+        }
+
+        $data = [
+            'title'        => lang($titleKey),
+            'subtitle'     => $subtitleParams ? $this->_get_subtitle_report($subtitleParams) : '',
+            'headers'      => $model->getDataColumns(),
+            'data'         => $tabular_data,
+            'summary_data' => $summary
+        ];
+
+        echo view('reports/tabular', $data);
+    }
+
+    /**
+     * Renders a standard graphical report.
+     *
+     * @param object $model Report model with getData(), getSummaryData()
+     * @param array $inputs Model input parameters
+     * @param callable $chartDataBuilder fn($report_data, $summary) => ['labels' => [...], 'series' => [...]]
+     * @param string $titleKey Lang key for the report title
+     * @param array $subtitleParams Parameters for _get_subtitle_report
+     * @param string $chartType Chart view path (e.g. 'reports/graphs/pie')
+     * @param array $extraViewData Additional view data (yaxis_title, xaxis_title, show_currency)
+     * @return void
+     */
+    private function renderGraphicalReport(
+        $model,
+        array $inputs,
+        callable $chartDataBuilder,
+        string $titleKey,
+        array $subtitleParams,
+        string $chartType,
+        array $extraViewData = []
+    ): void {
+        $this->clearCache();
+
+        $report_data = $model->getData($inputs);
+        $summary = $model->getSummaryData($inputs);
+
+        $chartData = $chartDataBuilder($report_data, $summary);
+
+        $data = array_merge([
+            'title'          => lang($titleKey),
+            'subtitle'       => $subtitleParams ? $this->_get_subtitle_report($subtitleParams) : '',
+            'chart_type'     => $chartType,
+            'labels_1'       => $chartData['labels'],
+            'series_data_1'  => $chartData['series'],
+            'summary_data_1' => $summary,
+            'show_currency'  => true
+        ], $extraViewData);
+
+        echo view('reports/graphical', $data);
+    }
+
+    /**
      * Summary Sales Report.
      * @param string $start_date
      * @param string $end_date
@@ -125,23 +204,12 @@ class Reports extends Secure_Controller
      * @param string $location_id
      * @return void
      */
-    public function summary_sales(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void    // TODO: Perhaps these need to be passed as an array?  Too many parameters in the signature.
-    {   // TODO: Duplicated code
-        $this->clearCache();
-
-        $inputs = [
-            'start_date'  => $start_date,
-            'end_date'    => $end_date,
-            'sale_type'   => $sale_type,
-            'location_id' => $location_id
-        ];
-
-        $report_data = $this->summary_sales->getData($inputs);
-        $summary = $this->summary_sales->getSummaryData($inputs);
-
-        $tabular_data = [];
-        foreach ($report_data as $row) {
-            $tabular_data[] = [
+    public function summary_sales(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
+    {
+        $this->renderTabularReport(
+            $this->summary_sales,
+            ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => $sale_type, 'location_id' => $location_id],
+            fn($row) => [
                 'sale_date' => to_date(strtotime($row['sale_date'])),
                 'sales'     => to_quantity_decimals($row['sales']),
                 'quantity'  => to_quantity_decimals($row['quantity_purchased']),
@@ -150,18 +218,10 @@ class Reports extends Secure_Controller
                 'total'     => to_currency($row['total']),
                 'cost'      => to_currency($row['cost']),
                 'profit'    => to_currency($row['profit'])
-            ];
-        }
-
-        $data = [
-            'title'        => lang('Reports.sales_summary_report'),
-            'subtitle'     => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
-            'headers'      => $this->summary_sales->getDataColumns(),
-            'data'         => $tabular_data,
-            'summary_data' => $summary
-        ];
-
-        echo view('reports/tabular', $data);
+            ],
+            'Reports.sales_summary_report',
+            ['start_date' => $start_date, 'end_date' => $end_date]
+        );
     }
 
     /**
@@ -173,22 +233,11 @@ class Reports extends Secure_Controller
      * @return void
      */
     public function summary_categories(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
-    {   // TODO: Duplicated code
-        $this->clearCache();
-
-        $inputs = [
-            'start_date'  => $start_date,
-            'end_date'    => $end_date,
-            'sale_type'   => $sale_type,
-            'location_id' => $location_id
-        ];
-
-        $report_data = $this->summary_categories->getData($inputs);
-        $summary = $this->summary_categories->getSummaryData($inputs);
-
-        $tabular_data = [];
-        foreach ($report_data as $row) {
-            $tabular_data[] = [
+    {
+        $this->renderTabularReport(
+            $this->summary_categories,
+            ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => $sale_type, 'location_id' => $location_id],
+            fn($row) => [
                 'category' => $row['category'],
                 'quantity' => to_quantity_decimals($row['quantity_purchased']),
                 'subtotal' => to_currency($row['subtotal']),
@@ -196,18 +245,10 @@ class Reports extends Secure_Controller
                 'total'    => to_currency($row['total']),
                 'cost'     => to_currency($row['cost']),
                 'profit'   => to_currency($row['profit'])
-            ];
-        }
-
-        $data = [
-            'title'        => lang('Reports.categories_summary_report'),
-            'subtitle'     => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
-            'headers'      => $this->summary_categories->getDataColumns(),
-            'data'         => $tabular_data,
-            'summary_data' => $summary
-        ];
-
-        echo view('reports/tabular', $data);
+            ],
+            'Reports.categories_summary_report',
+            ['start_date' => $start_date, 'end_date' => $end_date]
+        );
     }
 
     /**
@@ -219,32 +260,18 @@ class Reports extends Secure_Controller
      */
     public function summary_expenses_categories(string $start_date, string $end_date, string $sale_type): void
     {
-        $this->clearCache();
-
-        $inputs = ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => $sale_type];    // TODO: Duplicated Code
-
-        $report_data = $this->summary_expenses_categories->getData($inputs);
-        $summary = $this->summary_expenses_categories->getSummaryData($inputs);
-
-        $tabular_data = [];
-        foreach ($report_data as $row) {
-            $tabular_data[] = [
+        $this->renderTabularReport(
+            $this->summary_expenses_categories,
+            ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => $sale_type],
+            fn($row) => [
                 'category_name'    => $row['category_name'],
                 'count'            => $row['count'],
                 'total_amount'     => to_currency($row['total_amount']),
                 'total_tax_amount' => to_currency($row['total_tax_amount'])
-            ];
-        }
-
-        $data = [
-            'title'        => lang('Reports.expenses_categories_summary_report'),
-            'subtitle'     => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
-            'headers'      => $this->summary_expenses_categories->getDataColumns(),
-            'data'         => $tabular_data,
-            'summary_data' => $summary
-        ];
-
-        echo view('reports/tabular', $data);
+            ],
+            'Reports.expenses_categories_summary_report',
+            ['start_date' => $start_date, 'end_date' => $end_date]
+        );
     }
 
     /**
@@ -257,22 +284,10 @@ class Reports extends Secure_Controller
      */
     public function summary_customers(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {
-        $this->clearCache();
-
-        $inputs = [    // TODO: Duplicated Code
-            'start_date'  => $start_date,
-            'end_date'    => $end_date,
-            'sale_type'   => $sale_type,
-            'location_id' => $location_id
-        ];
-
-        $report_data = $this->summary_customers->getData($inputs);
-        $summary = $this->summary_customers->getSummaryData($inputs);
-
-        $tabular_data = [];
-
-        foreach ($report_data as $row) {
-            $tabular_data[] = [
+        $this->renderTabularReport(
+            $this->summary_customers,
+            ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => $sale_type, 'location_id' => $location_id],
+            fn($row) => [
                 'customer_name' => $row['customer'],
                 'sales'         => to_quantity_decimals($row['sales']),
                 'quantity'      => to_quantity_decimals($row['quantity_purchased']),
@@ -281,18 +296,10 @@ class Reports extends Secure_Controller
                 'total'         => to_currency($row['total']),
                 'cost'          => to_currency($row['cost']),
                 'profit'        => to_currency($row['profit'])
-            ];
-        }
-
-        $data = [
-            'title'        => lang('Reports.customers_summary_report'),
-            'subtitle'     => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
-            'headers'      => $this->summary_customers->getDataColumns(),
-            'data'         => $tabular_data,
-            'summary_data' => $summary
-        ];
-
-        echo view('reports/tabular', $data);
+            ],
+            'Reports.customers_summary_report',
+            ['start_date' => $start_date, 'end_date' => $end_date]
+        );
     }
 
     /**
@@ -304,22 +311,11 @@ class Reports extends Secure_Controller
      * @return void
      */
     public function summary_suppliers(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
-    {   // TODO: Duplicated Code
-        $this->clearCache();
-
-        $inputs = [
-            'start_date'  => $start_date,
-            'end_date'    => $end_date,
-            'sale_type'   => $sale_type,
-            'location_id' => $location_id
-        ];
-
-        $report_data = $this->summary_suppliers->getData($inputs);
-        $summary = $this->summary_suppliers->getSummaryData($inputs);
-
-        $tabular_data = [];
-        foreach ($report_data as $row) {
-            $tabular_data[] = [
+    {
+        $this->renderTabularReport(
+            $this->summary_suppliers,
+            ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => $sale_type, 'location_id' => $location_id],
+            fn($row) => [
                 'supplier_name' => $row['supplier'],
                 'quantity'      => to_quantity_decimals($row['quantity_purchased']),
                 'subtotal'      => to_currency($row['subtotal']),
@@ -327,18 +323,10 @@ class Reports extends Secure_Controller
                 'total'         => to_currency($row['total']),
                 'cost'          => to_currency($row['cost']),
                 'profit'        => to_currency($row['profit'])
-            ];
-        }
-
-        $data = [
-            'title'        => lang('Reports.suppliers_summary_report'),
-            'subtitle'     => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
-            'headers'      => $this->summary_suppliers->getDataColumns(),
-            'data'         => $tabular_data,
-            'summary_data' => $summary
-        ];
-
-        echo view('reports/tabular', $data);
+            ],
+            'Reports.suppliers_summary_report',
+            ['start_date' => $start_date, 'end_date' => $end_date]
+        );
     }
 
     /**
@@ -351,22 +339,10 @@ class Reports extends Secure_Controller
      */
     public function summary_items(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {
-        $this->clearCache();
-
-        $inputs = [
-            'start_date'  => $start_date,
-            'end_date'    => $end_date,
-            'sale_type'   => $sale_type,
-            'location_id' => $location_id
-        ];
-
-        $report_data = $this->summary_items->getData($inputs);
-        $summary = $this->summary_items->getSummaryData($inputs);
-
-        $tabular_data = [];
-
-        foreach ($report_data as $row) {
-            $tabular_data[] = [
+        $this->renderTabularReport(
+            $this->summary_items,
+            ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => $sale_type, 'location_id' => $location_id],
+            fn($row) => [
                 'item_name'  => $row['name'],
                 'category'   => $row['category'],
                 'cost_price' => $row['cost_price'],
@@ -377,18 +353,10 @@ class Reports extends Secure_Controller
                 'total'      => to_currency($row['total']),
                 'cost'       => to_currency($row['cost']),
                 'profit'     => to_currency($row['profit'])
-            ];
-        }
-
-        $data = [
-            'title'        => lang('Reports.items_summary_report'),
-            'subtitle'     => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
-            'headers'      => $this->summary_items->getDataColumns(),
-            'data'         => $tabular_data,
-            'summary_data' => $summary
-        ];
-
-        echo view('reports/tabular', $data);
+            ],
+            'Reports.items_summary_report',
+            ['start_date' => $start_date, 'end_date' => $end_date]
+        );
     }
 
     /**
@@ -401,22 +369,10 @@ class Reports extends Secure_Controller
      */
     public function summary_employees(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {
-        $this->clearCache();
-
-        $inputs = [
-            'start_date'  => $start_date,
-            'end_date'    => $end_date,
-            'sale_type'   => $sale_type,
-            'location_id' => $location_id
-        ];
-
-        $report_data = $this->summary_employees->getData($inputs);
-        $summary = $this->summary_employees->getSummaryData($inputs);
-
-        $tabular_data = [];
-
-        foreach ($report_data as $row) {
-            $tabular_data[] = [
+        $this->renderTabularReport(
+            $this->summary_employees,
+            ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => $sale_type, 'location_id' => $location_id],
+            fn($row) => [
                 'employee_name' => $row['employee'],
                 'sales'         => to_quantity_decimals($row['sales']),
                 'quantity'      => to_quantity_decimals($row['quantity_purchased']),
@@ -425,18 +381,10 @@ class Reports extends Secure_Controller
                 'total'         => to_currency($row['total']),
                 'cost'          => to_currency($row['cost']),
                 'profit'        => to_currency($row['profit'])
-            ];
-        }
-
-        $data = [
-            'title'        => lang('Reports.employees_summary_report'),
-            'subtitle'     => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
-            'headers'      => $this->summary_employees->getDataColumns(),
-            'data'         => $tabular_data,
-            'summary_data' => $summary
-        ];
-
-        echo view('reports/tabular', $data);
+            ],
+            'Reports.employees_summary_report',
+            ['start_date' => $start_date, 'end_date' => $end_date]
+        );
     }
 
     /**
@@ -448,80 +396,41 @@ class Reports extends Secure_Controller
      * @return void
      */
     public function summary_taxes(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
-    {   // TODO: Duplicate Code
-        $this->clearCache();
-
-        $inputs = [
-            'start_date'  => $start_date,
-            'end_date'    => $end_date,
-            'sale_type'   => $sale_type,
-            'location_id' => $location_id
-        ];
-
-        $report_data = $this->summary_taxes->getData($inputs);
-        $summary = $this->summary_taxes->getSummaryData($inputs);
-
-        $tabular_data = [];
-
-        foreach ($report_data as $row) {
-            $tabular_data[] = [
+    {
+        $this->renderTabularReport(
+            $this->summary_taxes,
+            ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => $sale_type, 'location_id' => $location_id],
+            fn($row) => [
                 'tax_name'     => $row['name'],
                 'tax_percent'  => $row['percent'],
                 'report_count' => $row['count'],
                 'subtotal'     => to_currency($row['subtotal']),
                 'tax'          => to_currency_tax($row['tax']),
                 'total'        => to_currency($row['total'])
-            ];
-        }
-
-        $data = [
-            'title'        => lang('Reports.taxes_summary_report'),
-            'subtitle'     => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
-            'headers'      => $this->summary_taxes->getDataColumns(),
-            'data'         => $tabular_data,
-            'summary_data' => $summary
-        ];
-
-        echo view('reports/tabular', $data);
+            ],
+            'Reports.taxes_summary_report',
+            ['start_date' => $start_date, 'end_date' => $end_date]
+        );
     }
 
     /**
      * Summary Sales Taxes report
      */
     public function summary_sales_taxes(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
-    {   // TODO: Duplicated code
-        $this->clearCache();
-
-        $inputs = [
-            'start_date'  => $start_date,
-            'end_date'    => $end_date,
-            'sale_type'   => $sale_type,
-            'location_id' => $location_id
-        ];
-
-        $report_data = $this->summary_sales_taxes->getData($inputs);
-        $summary = $this->summary_sales_taxes->getSummaryData($inputs);
-
-        $tabular_data = [];
-        foreach ($report_data as $row) {
-            $tabular_data[] = [
+    {
+        $this->renderTabularReport(
+            $this->summary_sales_taxes,
+            ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => $sale_type, 'location_id' => $location_id],
+            fn($row) => [
                 'reporting_authority' => $row['reporting_authority'],
                 'jurisdiction_name'   => $row['jurisdiction_name'],
                 'tax_category'        => $row['tax_category'],
                 'tax_rate'            => $row['tax_rate'],
                 'tax'                 => to_currency_tax($row['tax'])
-            ];
-        }
-
-        $data = [
-            'title'        => lang('Reports.sales_taxes_summary_report'),
-            'subtitle'     => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
-            'headers'      => $this->summary_sales_taxes->getDataColumns(),
-            'data'         => $tabular_data,
-            'summary_data' => $summary
-        ];
-
-        echo view('reports/tabular', $data);
+            ],
+            'Reports.sales_taxes_summary_report',
+            ['start_date' => $start_date, 'end_date' => $end_date]
+        );
     }
 
     /**
@@ -548,38 +457,18 @@ class Reports extends Secure_Controller
      * Summary Discounts report
      **/
     public function summary_discounts(string $start_date, string $end_date, string $sale_type, string $location_id = 'all', int $discount_type = 0): void
-    {   // TODO: Duplicated Code
-        $this->clearCache();
-
-        $inputs = [
-            'start_date'    => $start_date,
-            'end_date'      => $end_date,
-            'sale_type'     => $sale_type,
-            'location_id'   => $location_id,
-            'discount_type' => $discount_type
-        ];
-
-        $report_data = $this->summary_discounts->getData($inputs);
-        $summary = $this->summary_discounts->getSummaryData($inputs);
-
-        $tabular_data = [];
-        foreach ($report_data as $row) {
-            $tabular_data[] = [
+    {
+        $this->renderTabularReport(
+            $this->summary_discounts,
+            ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => $sale_type, 'location_id' => $location_id, 'discount_type' => $discount_type],
+            fn($row) => [
                 'total'    => to_currency($row['total']),
                 'discount' => $row['discount'],
                 'count'    => $row['count']
-            ];
-        }
-
-        $data = [
-            'title'        => lang('Reports.discounts_summary_report'),
-            'subtitle'     => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
-            'headers'      => $this->summary_discounts->getDataColumns(),
-            'data'         => $tabular_data,
-            'summary_data' => $summary
-        ];
-
-        echo view('reports/tabular', $data);
+            ],
+            'Reports.discounts_summary_report',
+            ['start_date' => $start_date, 'end_date' => $end_date]
+        );
     }
 
     /**
@@ -587,37 +476,27 @@ class Reports extends Secure_Controller
      */
     public function summary_payments(string $start_date, string $end_date): void
     {
-        $this->clearCache();
+        $this->renderTabularReport(
+            $this->summary_payments,
+            ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => 'complete', 'location_id' => 'all'],
+            function ($row) {
+                if ($row['trans_group'] == '<HR>') {
+                    return [
+                        'trans_group'    => '--',
+                        'trans_type'     => '--',
+                        'trans_sales'    => '--',
+                        'trans_amount'   => '--',
+                        'trans_payments' => '--',
+                        'trans_refunded' => '--',
+                        'trans_due'      => '--'
+                    ];
+                }
 
-        $inputs = [
-            'start_date'  => $start_date,
-            'end_date'    => $end_date,
-            'sale_type'   => 'complete',
-            'location_id' => 'all'
-        ];
-
-        $report_data = $this->summary_payments->getData($inputs);
-        $summary = $this->summary_payments->getSummaryData($inputs);
-
-        $tabular_data = [];
-
-        foreach ($report_data as $row) {
-            if ($row['trans_group'] == '<HR>') {
-                $tabular_data[] = [
-                    'trans_group'    => '--',
-                    'trans_type'     => '--',
-                    'trans_sales'    => '--',
-                    'trans_amount'   => '--',
-                    'trans_payments' => '--',
-                    'trans_refunded' => '--',
-                    'trans_due'      => '--'
-                ];
-            } else {
                 if (empty($row['trans_type'])) {
                     $row['trans_type'] = lang('Reports.trans_nopay_sales');
                 }
 
-                $tabular_data[] = [
+                return [
                     'trans_group'    => $row['trans_group'],
                     'trans_type'     => $row['trans_type'],
                     'trans_sales'    => $row['trans_sales'],
@@ -626,18 +505,10 @@ class Reports extends Secure_Controller
                     'trans_refunded' => to_currency($row['trans_refunded']),
                     'trans_due'      => to_currency($row['trans_due'])
                 ];
-            }
-        }
-
-        $data = [
-            'title'        => lang('Reports.payments_summary_report'),
-            'subtitle'     => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
-            'headers'      => $this->summary_payments->getDataColumns(),
-            'data'         => $tabular_data,
-            'summary_data' => $summary
-        ];
-
-        echo view('reports/tabular', $data);
+            },
+            'Reports.payments_summary_report',
+            ['start_date' => $start_date, 'end_date' => $end_date]
+        );
     }
 
     /**
@@ -647,7 +518,7 @@ class Reports extends Secure_Controller
      * @noinspection PhpUnused
      */
     public function date_input(): void
-    {   // TODO: Duplicated Code
+    {
         $this->clearCache();
 
         $stock_locations = $data = $this->stock_location->get_allowed_locations('sales');
@@ -680,11 +551,11 @@ class Reports extends Secure_Controller
      * @noinspection PhpUnused
      */
     public function date_input_sales(): void
-    {   // TODO: Duplicated Code
+    {
         $this->clearCache();
 
         $stock_locations = $data = $this->stock_location->get_allowed_locations('sales');
-        $stock_locations['all'] =  lang('Reports.all');
+        $stock_locations['all'] = lang('Reports.all');
         $data['stock_locations'] = array_reverse($stock_locations, true);
         $data['mode'] = 'sale';
         $data['sale_type_options'] = $this->get_sale_type_options();
@@ -701,7 +572,7 @@ class Reports extends Secure_Controller
     public function date_input_recv(): void
     {
         $stock_locations = $data = $this->stock_location->get_allowed_locations('receivings');
-        $stock_locations['all'] =  lang('Reports.all');
+        $stock_locations['all'] = lang('Reports.all');
         $data['stock_locations'] = array_reverse($stock_locations, true);
         $data['mode'] = 'receiving';
 
@@ -719,38 +590,25 @@ class Reports extends Secure_Controller
      */
     public function graphical_summary_expenses_categories(string $start_date, string $end_date, string $sale_type): void
     {
-        $this->clearCache();
-
-        $inputs = [
-            'start_date' => $start_date,
-            'end_date'   => $end_date,
-            'sale_type'  => $sale_type
-        ];
-
-        $report_data = $this->summary_expenses_categories->getData($inputs);
-        $summary = $this->summary_expenses_categories->getSummaryData($inputs);
-
-        $labels = [];
-        $series = [];
-        foreach ($report_data as $row) {
-            $labels[] = $row['category_name'];
-            $series[] = [
-                'meta'  => $row['category_name'] . ' ' . round($row['total_amount'] / $summary['expenses_total_amount'] * 100, 2) . '%',
-                'value' => $row['total_amount']
-            ];
-        }
-
-        $data = [
-            'title'          => lang('Reports.expenses_categories_summary_report'),
-            'subtitle'       => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
-            'chart_type'     => 'reports/graphs/pie',
-            'labels_1'       => $labels,
-            'series_data_1'  => $series,
-            'summary_data_1' => $summary,
-            'show_currency'  => true
-        ];
-
-        echo view('reports/graphical', $data);
+        $this->renderGraphicalReport(
+            $this->summary_expenses_categories,
+            ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => $sale_type],
+            function ($report_data, $summary) {
+                $labels = [];
+                $series = [];
+                foreach ($report_data as $row) {
+                    $labels[] = $row['category_name'];
+                    $series[] = [
+                        'meta'  => $row['category_name'] . ' ' . round($row['total_amount'] / $summary['expenses_total_amount'] * 100, 2) . '%',
+                        'value' => $row['total_amount']
+                    ];
+                }
+                return ['labels' => $labels, 'series' => $series];
+            },
+            'Reports.expenses_categories_summary_report',
+            ['start_date' => $start_date, 'end_date' => $end_date],
+            'reports/graphs/pie'
+        );
     }
 
     /**
@@ -764,39 +622,24 @@ class Reports extends Secure_Controller
      */
     public function graphical_summary_sales(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {
-        $this->clearCache();
-
-        $inputs = [
-            'start_date'  => $start_date,
-            'end_date'    => $end_date,
-            'sale_type'   => $sale_type,
-            'location_id' => $location_id
-        ];
-
-        $report_data = $this->summary_sales->getData($inputs);
-        $summary = $this->summary_sales->getSummaryData($inputs);
-
-        $labels = [];
-        $series = [];
-        foreach ($report_data as $row) {
-            $date = to_date(strtotime($row['sale_date']));
-            $labels[] = $date;
-            $series[] = ['meta' => $date, 'value' => $row['total']];
-        }
-
-        $data = [
-            'title'          => lang('Reports.sales_summary_report'),
-            'subtitle'       => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
-            'chart_type'     => 'reports/graphs/line',
-            'labels_1'       => $labels,
-            'series_data_1'  => $series,
-            'summary_data_1' => $summary,
-            'yaxis_title'    => lang('Reports.revenue'),
-            'xaxis_title'    => lang('Reports.date'),
-            'show_currency'  => true
-        ];
-
-        echo view('reports/graphical', $data);
+        $this->renderGraphicalReport(
+            $this->summary_sales,
+            ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => $sale_type, 'location_id' => $location_id],
+            function ($report_data) {
+                $labels = [];
+                $series = [];
+                foreach ($report_data as $row) {
+                    $date = to_date(strtotime($row['sale_date']));
+                    $labels[] = $date;
+                    $series[] = ['meta' => $date, 'value' => $row['total']];
+                }
+                return ['labels' => $labels, 'series' => $series];
+            },
+            'Reports.sales_summary_report',
+            ['start_date' => $start_date, 'end_date' => $end_date],
+            'reports/graphs/line',
+            ['yaxis_title' => lang('Reports.revenue'), 'xaxis_title' => lang('Reports.date')]
+        );
     }
 
     /**
@@ -810,40 +653,23 @@ class Reports extends Secure_Controller
      */
     public function graphical_summary_items(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {
-        $this->clearCache();
-
-        $inputs = [
-            'start_date'  => $start_date,
-            'end_date'    => $end_date,
-            'sale_type'   => $sale_type,
-            'location_id' => $location_id
-        ];
-
-
-        $report_data = $this->summary_items->getData($inputs);
-        $summary = $this->summary_items->getSummaryData($inputs);
-
-        $labels = [];
-        $series = [];
-
-        foreach ($report_data as $row) {
-            $labels[] = $row['name'];
-            $series[] = $row['total'];
-        }
-
-        $data = [
-            'title'          => lang('Reports.items_summary_report'),
-            'subtitle'       => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
-            'chart_type'     => 'reports/graphs/hbar',
-            'labels_1'       => $labels,
-            'series_data_1'  => $series,
-            'summary_data_1' => $summary,
-            'yaxis_title'    => lang('Reports.items'),
-            'xaxis_title'    => lang('Reports.revenue'),
-            'show_currency'  => true
-        ];
-
-        echo view('reports/graphical', $data);
+        $this->renderGraphicalReport(
+            $this->summary_items,
+            ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => $sale_type, 'location_id' => $location_id],
+            function ($report_data) {
+                $labels = [];
+                $series = [];
+                foreach ($report_data as $row) {
+                    $labels[] = $row['name'];
+                    $series[] = $row['total'];
+                }
+                return ['labels' => $labels, 'series' => $series];
+            },
+            'Reports.items_summary_report',
+            ['start_date' => $start_date, 'end_date' => $end_date],
+            'reports/graphs/hbar',
+            ['yaxis_title' => lang('Reports.items'), 'xaxis_title' => lang('Reports.revenue')]
+        );
     }
 
     /**
@@ -856,37 +682,23 @@ class Reports extends Secure_Controller
      * @return void
      */
     public function graphical_summary_categories(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
-    {   // TODO: Duplicated Code
-        $this->clearCache();
-
-        $inputs = [
-            'start_date'  => $start_date,
-            'end_date'    => $end_date,
-            'sale_type'   => $sale_type,
-            'location_id' => $location_id
-        ];
-
-        $report_data = $this->summary_categories->getData($inputs);
-        $summary = $this->summary_categories->getSummaryData($inputs);
-
-        $labels = [];
-        $series = [];
-        foreach ($report_data as $row) {
-            $labels[] = $row['category'];
-            $series[] = ['meta' => $row['category'] . ' ' . round($row['total'] / $summary['total'] * 100, 2) . '%', 'value' => $row['total']];
-        }
-
-        $data = [
-            'title'          => lang('Reports.categories_summary_report'),
-            'subtitle'       => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
-            'chart_type'     => 'reports/graphs/pie',
-            'labels_1'       => $labels,
-            'series_data_1'  => $series,
-            'summary_data_1' => $summary,
-            'show_currency'  => true
-        ];
-
-        echo view('reports/graphical', $data);
+    {
+        $this->renderGraphicalReport(
+            $this->summary_categories,
+            ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => $sale_type, 'location_id' => $location_id],
+            function ($report_data, $summary) {
+                $labels = [];
+                $series = [];
+                foreach ($report_data as $row) {
+                    $labels[] = $row['category'];
+                    $series[] = ['meta' => $row['category'] . ' ' . round($row['total'] / $summary['total'] * 100, 2) . '%', 'value' => $row['total']];
+                }
+                return ['labels' => $labels, 'series' => $series];
+            },
+            'Reports.categories_summary_report',
+            ['start_date' => $start_date, 'end_date' => $end_date],
+            'reports/graphs/pie'
+        );
     }
 
     /**
@@ -899,39 +711,23 @@ class Reports extends Secure_Controller
      * @return void
      */
     public function graphical_summary_suppliers(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
-    {   // TODO: Duplicated Code
-        $this->clearCache();
-
-        $inputs = [
-            'start_date'  => $start_date,
-            'end_date'    => $end_date,
-            'sale_type'   => $sale_type,
-            'location_id' => $location_id
-        ];
-
-
-        $report_data = $this->summary_suppliers->getData($inputs);
-        $summary = $this->summary_suppliers->getSummaryData($inputs);
-
-        $labels = [];
-        $series = [];
-
-        foreach ($report_data as $row) {
-            $labels[] = $row['supplier'];
-            $series[] = ['meta' => $row['supplier'] . ' ' . round($row['total'] / $summary['total'] * 100, 2) . '%', 'value' => $row['total']];
-        }
-
-        $data = [
-            'title'          => lang('Reports.suppliers_summary_report'),
-            'subtitle'       => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
-            'chart_type'     => 'reports/graphs/pie',
-            'labels_1'       => $labels,
-            'series_data_1'  => $series,
-            'summary_data_1' => $summary,
-            'show_currency'  => true
-        ];
-
-        echo view('reports/graphical', $data);
+    {
+        $this->renderGraphicalReport(
+            $this->summary_suppliers,
+            ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => $sale_type, 'location_id' => $location_id],
+            function ($report_data, $summary) {
+                $labels = [];
+                $series = [];
+                foreach ($report_data as $row) {
+                    $labels[] = $row['supplier'];
+                    $series[] = ['meta' => $row['supplier'] . ' ' . round($row['total'] / $summary['total'] * 100, 2) . '%', 'value' => $row['total']];
+                }
+                return ['labels' => $labels, 'series' => $series];
+            },
+            'Reports.suppliers_summary_report',
+            ['start_date' => $start_date, 'end_date' => $end_date],
+            'reports/graphs/pie'
+        );
     }
 
     /**
@@ -945,37 +741,22 @@ class Reports extends Secure_Controller
      */
     public function graphical_summary_employees(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {
-        $this->clearCache();
-
-        $inputs = [
-            'start_date'  => $start_date,
-            'end_date'    => $end_date,
-            'sale_type'   => $sale_type,
-            'location_id' => $location_id
-        ];
-
-        $report_data = $this->summary_employees->getData($inputs);
-        $summary = $this->summary_employees->getSummaryData($inputs);
-
-        $labels = [];
-        $series = [];
-
-        foreach ($report_data as $row) {
-            $labels[] = $row['employee'];
-            $series[] = ['meta' => $row['employee'] . ' ' . round($row['total'] / $summary['total'] * 100, 2) . '%', 'value' => $row['total']];
-        }
-
-        $data = [
-            'title'          => lang('Reports.employees_summary_report'),
-            'subtitle'       => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
-            'chart_type'     => 'reports/graphs/pie',
-            'labels_1'       => $labels,
-            'series_data_1'  => $series,
-            'summary_data_1' => $summary,
-            'show_currency'  => true
-        ];
-
-        echo view('reports/graphical', $data);
+        $this->renderGraphicalReport(
+            $this->summary_employees,
+            ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => $sale_type, 'location_id' => $location_id],
+            function ($report_data, $summary) {
+                $labels = [];
+                $series = [];
+                foreach ($report_data as $row) {
+                    $labels[] = $row['employee'];
+                    $series[] = ['meta' => $row['employee'] . ' ' . round($row['total'] / $summary['total'] * 100, 2) . '%', 'value' => $row['total']];
+                }
+                return ['labels' => $labels, 'series' => $series];
+            },
+            'Reports.employees_summary_report',
+            ['start_date' => $start_date, 'end_date' => $end_date],
+            'reports/graphs/pie'
+        );
     }
 
     /**
@@ -988,38 +769,23 @@ class Reports extends Secure_Controller
      * @return void
      */
     public function graphical_summary_taxes(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
-    {   // TODO: Duplicated Code
-        $this->clearCache();
-
-        $inputs = [
-            'start_date'  => $start_date,
-            'end_date'    => $end_date,
-            'sale_type'   => $sale_type,
-            'location_id' => $location_id
-        ];
-
-        $report_data = $this->summary_taxes->getData($inputs);
-        $summary = $this->summary_taxes->getSummaryData($inputs);
-
-        $labels = [];
-        $series = [];
-
-        foreach ($report_data as $row) {
-            $labels[] = $row['percent'];
-            $series[] = ['meta' => $row['percent'] . ' ' . round($row['total'] / $summary['total'] * 100, 2) . '%', 'value' => $row['total']];
-        }
-
-        $data = [
-            'title'          => lang('Reports.taxes_summary_report'),
-            'subtitle'       => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
-            'chart_type'     => 'reports/graphs/pie',
-            'labels_1'       => $labels,
-            'series_data_1'  => $series,
-            'summary_data_1' => $summary,
-            'show_currency'  => true
-        ];
-
-        echo view('reports/graphical', $data);
+    {
+        $this->renderGraphicalReport(
+            $this->summary_taxes,
+            ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => $sale_type, 'location_id' => $location_id],
+            function ($report_data, $summary) {
+                $labels = [];
+                $series = [];
+                foreach ($report_data as $row) {
+                    $labels[] = $row['percent'];
+                    $series[] = ['meta' => $row['percent'] . ' ' . round($row['total'] / $summary['total'] * 100, 2) . '%', 'value' => $row['total']];
+                }
+                return ['labels' => $labels, 'series' => $series];
+            },
+            'Reports.taxes_summary_report',
+            ['start_date' => $start_date, 'end_date' => $end_date],
+            'reports/graphs/pie'
+        );
     }
 
     /**
@@ -1032,38 +798,23 @@ class Reports extends Secure_Controller
      * @return void
      */
     public function graphical_summary_sales_taxes(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
-    {   // TODO: Duplicated Code
-        $this->clearCache();
-
-        $inputs = [
-            'start_date'  => $start_date,
-            'end_date'    => $end_date,
-            'sale_type'   => $sale_type,
-            'location_id' => $location_id
-        ];
-
-        $report_data = $this->summary_sales_taxes->getData($inputs);
-        $summary = $this->summary_sales_taxes->getSummaryData($inputs);
-
-        $labels = [];
-        $series = [];
-
-        foreach ($report_data as $row) {
-            $labels[] = $row['jurisdiction_name'];
-            $series[] = ['meta' => $row['tax_rate'] . '%', 'value' => $row['tax']];
-        }
-
-        $data = [
-            'title'          => lang('Reports.sales_taxes_summary_report'),
-            'subtitle'       => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
-            'chart_type'     => 'reports/graphs/pie',
-            'labels_1'       => $labels,
-            'series_data_1'  => $series,
-            'summary_data_1' => $summary,
-            'show_currency'  => true
-        ];
-
-        echo view('reports/graphical', $data);
+    {
+        $this->renderGraphicalReport(
+            $this->summary_sales_taxes,
+            ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => $sale_type, 'location_id' => $location_id],
+            function ($report_data) {
+                $labels = [];
+                $series = [];
+                foreach ($report_data as $row) {
+                    $labels[] = $row['jurisdiction_name'];
+                    $series[] = ['meta' => $row['tax_rate'] . '%', 'value' => $row['tax']];
+                }
+                return ['labels' => $labels, 'series' => $series];
+            },
+            'Reports.sales_taxes_summary_report',
+            ['start_date' => $start_date, 'end_date' => $end_date],
+            'reports/graphs/pie'
+        );
     }
 
     /**
@@ -1076,40 +827,24 @@ class Reports extends Secure_Controller
      * @return void
      */
     public function graphical_summary_customers(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
-    {   // TODO: Duplicated Code
-        $this->clearCache();
-
-        $inputs = [
-            'start_date'  => $start_date,
-            'end_date'    => $end_date,
-            'sale_type'   => $sale_type,
-            'location_id' => $location_id
-        ];
-
-        $report_data = $this->summary_customers->getData($inputs);
-        $summary = $this->summary_customers->getSummaryData($inputs);
-
-        $labels = [];
-        $series = [];
-
-        foreach ($report_data as $row) {
-            $labels[] = $row['customer'];
-            $series[] = $row['total'];
-        }
-
-        $data = [
-            'title'          => lang('Reports.customers_summary_report'),
-            'subtitle'       => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
-            'chart_type'     => 'reports/graphs/hbar',
-            'labels_1'       => $labels,
-            'series_data_1'  => $series,
-            'summary_data_1' => $summary,
-            'yaxis_title'    => lang('Reports.customers'),
-            'xaxis_title'    => lang('Reports.revenue'),
-            'show_currency'  => true
-        ];
-
-        echo view('reports/graphical', $data);
+    {
+        $this->renderGraphicalReport(
+            $this->summary_customers,
+            ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => $sale_type, 'location_id' => $location_id],
+            function ($report_data) {
+                $labels = [];
+                $series = [];
+                foreach ($report_data as $row) {
+                    $labels[] = $row['customer'];
+                    $series[] = $row['total'];
+                }
+                return ['labels' => $labels, 'series' => $series];
+            },
+            'Reports.customers_summary_report',
+            ['start_date' => $start_date, 'end_date' => $end_date],
+            'reports/graphs/hbar',
+            ['yaxis_title' => lang('Reports.customers'), 'xaxis_title' => lang('Reports.revenue')]
+        );
     }
 
     /**
@@ -1123,41 +858,24 @@ class Reports extends Secure_Controller
      * @noinspection PhpUnused
      */
     public function graphical_summary_discounts(string $start_date, string $end_date, string $sale_type, string $location_id = 'all', int $discount_type = 0): void
-    {   // TODO: Duplicated Code
-        $this->clearCache();
-
-        $inputs = [
-            'start_date'    => $start_date,
-            'end_date'      => $end_date,
-            'sale_type'     => $sale_type,
-            'location_id'   => $location_id,
-            'discount_type' => $discount_type
-        ];
-
-        $report_data = $this->summary_discounts->getData($inputs);
-        $summary = $this->summary_discounts->getSummaryData($inputs);
-
-        $labels = [];
-        $series = [];
-
-        foreach ($report_data as $row) {
-            $labels[] = $row['discount'];
-            $series[] = $row['count'];
-        }
-
-        $data = [
-            'title'          => lang('Reports.discounts_summary_report'),
-            'subtitle'       => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
-            'chart_type'     => 'reports/graphs/bar',
-            'labels_1'       => $labels,
-            'series_data_1'  => $series,
-            'summary_data_1' => $summary,
-            'yaxis_title'    => lang('Reports.count'),
-            'xaxis_title'    => lang('Reports.discount'),
-            'show_currency'  => false
-        ];
-
-        echo view('reports/graphical', $data);
+    {
+        $this->renderGraphicalReport(
+            $this->summary_discounts,
+            ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => $sale_type, 'location_id' => $location_id, 'discount_type' => $discount_type],
+            function ($report_data) {
+                $labels = [];
+                $series = [];
+                foreach ($report_data as $row) {
+                    $labels[] = $row['discount'];
+                    $series[] = $row['count'];
+                }
+                return ['labels' => $labels, 'series' => $series];
+            },
+            'Reports.discounts_summary_report',
+            ['start_date' => $start_date, 'end_date' => $end_date],
+            'reports/graphs/bar',
+            ['yaxis_title' => lang('Reports.count'), 'xaxis_title' => lang('Reports.discount'), 'show_currency' => false]
+        );
     }
 
     /**
@@ -1171,39 +889,24 @@ class Reports extends Secure_Controller
      */
     public function graphical_summary_payments(string $start_date, string $end_date, string $sale_type, string $location_id = 'all'): void
     {
-        $this->clearCache();
-
-        $inputs = [
-            'start_date'  => $start_date,
-            'end_date'    => $end_date,
-            'sale_type'   => $sale_type,
-            'location_id' => $location_id
-        ];
-
-        $report_data = $this->summary_payments->getData($inputs);
-        $summary = $this->summary_payments->getSummaryData($inputs);
-
-        $labels = [];
-        $series = [];
-
-        foreach ($report_data as $row) {
-            if ($row['trans_group'] == lang('Reports.trans_payments') && !empty($row['trans_amount'])) {
-                $labels[] = $row['trans_type'];
-                $series[] = ['meta' => $row['trans_type'] . ' ' . round($row['trans_amount'] / $summary['total'] * 100, 2) . '%', 'value' => $row['trans_amount']];
-            }
-        }
-
-        $data = [
-            'title'          => lang('Reports.payments_summary_report'),
-            'subtitle'       => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
-            'chart_type'     => 'reports/graphs/pie',
-            'labels_1'       => $labels,
-            'series_data_1'  => $series,
-            'summary_data_1' => $summary,
-            'show_currency'  => true
-        ];
-
-        echo view('reports/graphical', $data);
+        $this->renderGraphicalReport(
+            $this->summary_payments,
+            ['start_date' => $start_date, 'end_date' => $end_date, 'sale_type' => $sale_type, 'location_id' => $location_id],
+            function ($report_data, $summary) {
+                $labels = [];
+                $series = [];
+                foreach ($report_data as $row) {
+                    if ($row['trans_group'] == lang('Reports.trans_payments') && !empty($row['trans_amount'])) {
+                        $labels[] = $row['trans_type'];
+                        $series[] = ['meta' => $row['trans_type'] . ' ' . round($row['trans_amount'] / $summary['total'] * 100, 2) . '%', 'value' => $row['trans_amount']];
+                    }
+                }
+                return ['labels' => $labels, 'series' => $series];
+            },
+            'Reports.payments_summary_report',
+            ['start_date' => $start_date, 'end_date' => $end_date],
+            'reports/graphs/pie'
+        );
     }
 
     /**
@@ -1311,7 +1014,7 @@ class Reports extends Secure_Controller
                 )
             ];
 
-            foreach ($report_data['details'][$key] as $drow) {    // TODO: Duplicated Code
+            foreach ($report_data['details'][$key] as $drow) {
                 $details_data[$row['sale_id']][] = [
                     $drow['name'],
                     $drow['category'],
@@ -1335,11 +1038,7 @@ class Reports extends Secure_Controller
         }
 
         $customer_info = $this->customer->get_info($customer_id);
-        $customer_name = !empty($customer_info->company_name)    // TODO: This variable is not used anywhere in the code. Should it be or can it be deleted?
-            ? "[ $customer_info->company_name ]"
-            : $customer_info->company_name;
 
-        // TODO: Duplicated Code
         $data = [
             'title'                => $customer_info->first_name . ' ' . $customer_info->last_name . ' ' . lang('Reports.report'),
             'subtitle'             => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
@@ -1437,7 +1136,7 @@ class Reports extends Secure_Controller
                     ]
                 )
             ];
-            // TODO: Duplicated Code
+
             foreach ($report_data['details'][$key] as $drow) {
                 $details_data[$row['sale_id']][] = [
                     $drow['name'],
@@ -1462,7 +1161,7 @@ class Reports extends Secure_Controller
         }
 
         $employee_info = $this->employee->get_info($employee_id);
-        // TODO: Duplicated Code
+
         $data = [
             'title'                => $employee_info->first_name . ' ' . $employee_info->last_name . ' ' . lang('Reports.report'),
             'subtitle'             => $this->_get_subtitle_report(['start_date' => $start_date, 'end_date' => $end_date]),
@@ -1535,7 +1234,7 @@ class Reports extends Secure_Controller
         $details_data = [];
         $details_data_rewards = [];
 
-        foreach ($report_data['summary'] as $key => $row) {    // TODO: Duplicated Code
+        foreach ($report_data['summary'] as $key => $row) {
             if ($row['sale_status'] == CANCELED) {
                 $button_key = 'data-btn-restore';
                 $button_label = lang('Common.restore');
@@ -1569,7 +1268,7 @@ class Reports extends Secure_Controller
                     ]
                 )
             ];
-            // TODO: Duplicated Code
+
             foreach ($report_data['details'][$key] as $drow) {
                 $details_data[$row['sale_id']][] = [
                     $drow['name'],
@@ -1794,7 +1493,7 @@ class Reports extends Secure_Controller
 
         $show_locations = $this->stock_location->multiple_locations();
 
-        foreach ($report_data['summary'] as $key => $row) {    // TODO: Duplicated Code
+        foreach ($report_data['summary'] as $key => $row) {
             if ($row['sale_status'] == CANCELED) {
                 $button_key = 'data-btn-restore';
                 $button_label = lang('Common.restore');
@@ -2001,34 +1700,18 @@ class Reports extends Secure_Controller
      */
     public function inventory_low(): void
     {
-        $this->clearCache();
-
-        $inputs = [];
-
-        $inventory_low = model(Inventory_low::class);
-
-        $report_data = $inventory_low->getData($inputs);
-
-        $tabular_data = [];
-        foreach ($report_data as $row) {
-            $tabular_data[] = [
+        $this->renderTabularReport(
+            model(Inventory_low::class),
+            [],
+            fn($row) => [
                 'item_name'     => $row['name'],
                 'item_number'   => $row['item_number'],
                 'quantity'      => to_quantity_decimals($row['quantity']),
                 'reorder_level' => to_quantity_decimals($row['reorder_level']),
                 'location_name' => $row['location_name']
-            ];
-        }
-
-        $data = [
-            'title'        => lang('Reports.inventory_low_report'),
-            'subtitle'     => '',
-            'headers'      => $inventory_low->getDataColumns(),
-            'data'         => $tabular_data,
-            'summary_data' => $inventory_low->getSummaryData($inputs)
-        ];
-
-        echo view('reports/tabular', $data);
+            ],
+            'Reports.inventory_low_report'
+        );
     }
 
     /**
@@ -2094,7 +1777,7 @@ class Reports extends Secure_Controller
     /**
      * Returns subtitle for the reports
      */
-    private function _get_subtitle_report(array $inputs): string    // TODO: Hungarian Notation
+    private function _get_subtitle_report(array $inputs): string
     {
         $subtitle = '';
 

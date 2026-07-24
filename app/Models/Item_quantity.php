@@ -15,7 +15,18 @@ class Item_quantity extends Model
     protected $useAutoIncrement = false;
     protected $useSoftDeletes = false;
     protected $allowedFields = [
-        'quantity'
+        'quantity',
+        'stock_status'
+    ];
+
+    const STOCK_OK = 0;
+    const STOCK_ZERADO = 1;
+    const STOCK_IRREGULAR = 2;
+
+    public static $stock_status_labels = [
+        0 => '',
+        1 => 'ZERADO',
+        2 => 'IRREGULAR',
     ];
 
     protected $item_id;
@@ -92,7 +103,23 @@ class Item_quantity extends Model
     {
         $quantity_old = $this->get_item_quantity($item_id, $location_id);
         $quantity_new = $quantity_old->quantity + $quantity_change;
-        $location_detail = ['item_id' => $item_id, 'location_id' => $location_id, 'quantity' => $quantity_new];
+
+        // Determine stock status after change
+        if ($quantity_new < 0) {
+            $quantity_new = 0;
+            $new_status = self::STOCK_IRREGULAR;
+        } elseif ($quantity_new == 0) {
+            $new_status = self::STOCK_ZERADO;
+        } else {
+            $new_status = self::STOCK_OK;
+        }
+
+        $location_detail = [
+            'item_id'       => $item_id,
+            'location_id'   => $location_id,
+            'quantity'      => $quantity_new,
+            'stock_status'  => $new_status
+        ];
 
         return $this->save_value($location_detail, $item_id, $location_id);
     }
@@ -117,5 +144,39 @@ class Item_quantity extends Model
         $builder->whereIn('item_id', $item_ids);
 
         return $builder->update(['quantity' => 0]);
+    }
+
+    /**
+     * Get stock status label for display
+     */
+    public static function get_stock_status_label(int $status): string
+    {
+        return self::$stock_status_labels[$status] ?? '';
+    }
+
+    /**
+     * Update stock status for an item at a location
+     */
+    public function set_stock_status(int $item_id, int $location_id, int $status): bool
+    {
+        $builder = $this->db->table('item_quantities');
+        $builder->where('item_id', $item_id);
+        $builder->where('location_id', $location_id);
+
+        return $builder->update(['stock_status' => $status]);
+    }
+
+    /**
+     * Get count of items with stock alerts (ZERADO or IRREGULAR)
+     */
+    public function get_stock_alert_count(): int
+    {
+        $builder = $this->db->table('item_quantities');
+        $builder->join('items', 'items.item_id = item_quantities.item_id');
+        $builder->where('item_quantities.stock_status IN', [self::STOCK_ZERADO, self::STOCK_IRREGULAR]);
+        $builder->where('items.deleted', 0);
+        $builder->where('items.stock_type', HAS_STOCK);
+
+        return (int)$builder->countAllResults();
     }
 }

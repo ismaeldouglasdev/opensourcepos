@@ -36,7 +36,7 @@ class Honeypot extends BaseConfig
     /**
      * The id attribute for Honeypot container tag
      *
-     * Used when CSP is enabled.
+     * If CSP is enabled.
      */
     public string $containerId = 'hpc';
 }

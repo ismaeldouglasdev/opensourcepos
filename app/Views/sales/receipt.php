@@ -50,8 +50,14 @@ if (isset($error_message)) {
     </a>
     <?php if (!empty($config['escpos_enabled'])): ?>
         <a href="javascript:void(0);" id="thermal_print_btn">
-            <div class="btn btn-primary btn-sm"><?= '<span class="glyphicon glyphicon-print">&nbsp;</span> Impressora Térmica' ?></div>
+            <button class="btn btn-primary btn-sm print_hide"><span class="glyphicon glyphicon-print">&nbsp;</span> Reimprimir Térmica</button>
         </a>
+    <?php else: ?>
+        <a href="javascript:printdoc();">
+            <button class="btn btn-primary btn-sm print_hide"><span class="glyphicon glyphicon-print">&nbsp;</span> Imprimir Nota</button>
+        </a>
+    <?php endif; ?>
+    <?php if (!empty($config['escpos_enabled'])): ?>
         <script>
             $(document).ready(function() {
                 $('#thermal_print_btn').click(function() {

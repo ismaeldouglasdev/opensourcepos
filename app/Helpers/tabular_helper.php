@@ -195,17 +195,17 @@ function get_sales_manage_payments_summary(array $payments): string
         $type = $payment['payment_type'];
         $icon = $payment_icons[$type] ?? '💰';
         $color = $payment_colors[$type] ?? '#666';
-        $table .= '<div class="summary_row" style="background:' . $color . '; color:white; padding:10px 18px; border-radius:8px; min-width:150px; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.2);">';
-        $table .= '<div style="font-size:24px;">' . $icon . '</div>';
-        $table .= '<div style="font-size:11px; opacity:0.9;">' . $type . '</div>';
-        $table .= '<div style="font-size:16px; font-weight:bold;">' . to_currency($amount) . '</div>';
+        $table .= '<div class="summary_row" style="background:' . $color . ' !important; color:white !important; padding:10px 18px; border-radius:8px; min-width:150px; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.2);">';
+        $table .= '<div style="font-size:26px;">' . $icon . '</div>';
+        $table .= '<div style="font-size:12px; opacity:0.9;">' . $type . '</div>';
+        $table .= '<div style="font-size:17px; font-weight:bold;">' . to_currency($amount) . '</div>';
         $table .= '</div>';
     }
 
-    $table .= '<div class="summary_row" style="background:#333; color:white; padding:10px 18px; border-radius:8px; min-width:150px; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.2);">';
-    $table .= '<div style="font-size:24px;">📊</div>';
-    $table .= '<div style="font-size:11px; opacity:0.9;">TOTAL</div>';
-    $table .= '<div style="font-size:16px; font-weight:bold;">' . to_currency($total) . '</div>';
+    $table .= '<div class="summary_row" style="background:#333 !important; color:white !important; padding:10px 18px; border-radius:8px; min-width:150px; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.2);">';
+    $table .= '<div style="font-size:26px;">📊</div>';
+    $table .= '<div style="font-size:12px; opacity:0.9;">TOTAL</div>';
+    $table .= '<div style="font-size:17px; font-weight:bold;">' . to_currency($total) . '</div>';
     $table .= '</div>';
     $table .= '</div>';
 

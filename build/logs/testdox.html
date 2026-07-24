@@ -51,19 +51,110 @@
         </style>
     </head>
     <body>
-        <h2>Employee (Tests\Models\Employee)</h2>
+        <h2>Date Helpers (Tests\unit\Helpers\DateHelpers)</h2>
         <ul>
-            <li class="defect">Is admin returns true for person id 1</li>
-            <li class="defect">Is admin returns true for employee with all permissions</li>
-            <li class="defect">Is admin returns false when missing permissions</li>
-            <li class="defect">Can modify employee returns true for own account</li>
-            <li class="defect">Can modify employee returns true for own admin account</li>
-            <li class="defect">Can modify employee returns false when non admin modifies admin</li>
-            <li class="defect">Can modify employee returns true when admin modifies non admin</li>
-            <li class="defect">Can modify employee returns true when non admin modifies non admin</li>
-            <li class="defect">Can modify employee returns false for non admin editing admin</li>
-            <li class="success">Has grant returns true for actual grant</li>
-            <li class="success">Has grant returns false for missing grant</li>
+            <li class="success">Dateformat momentjs converts day format</li>
+            <li class="success">Dateformat momentjs converts month format</li>
+            <li class="success">Dateformat momentjs converts year format</li>
+            <li class="success">Dateformat momentjs converts short year</li>
+            <li class="success">Dateformat momentjs converts time format</li>
+            <li class="success">Dateformat momentjs converts 12 hour time</li>
+            <li class="success">Dateformat momentjs converts full date time</li>
+            <li class="success">Dateformat momentjs converts month name</li>
+            <li class="success">Dateformat momentjs converts short month name</li>
+            <li class="success">Dateformat momentjs converts day of week</li>
+            <li class="success">Dateformat momentjs converts full day of week</li>
+            <li class="success">Dateformat momentjs converts unix timestamp</li>
+            <li class="success">Dateformat bootstrap converts day format</li>
+            <li class="success">Dateformat bootstrap converts month format</li>
+            <li class="success">Dateformat bootstrap converts year format</li>
+            <li class="success">Dateformat bootstrap converts time format</li>
+            <li class="success">Dateformat bootstrap converts full date time</li>
+            <li class="success">Dateformat bootstrap converts short day</li>
+            <li class="success">Valid decimal accepts integer</li>
+            <li class="success">Valid decimal accepts decimal</li>
+            <li class="success">Valid decimal accepts leading dot</li>
+            <li class="success">Valid decimal accepts zero</li>
+            <li class="success">Valid decimal accepts zero decimal</li>
+            <li class="success">Valid decimal rejects letters</li>
+            <li class="success">Valid decimal rejects empty string</li>
+            <li class="success">Valid decimal rejects mixed alpha numeric</li>
+            <li class="success">Valid decimal rejects negative number</li>
+            <li class="success">Valid decimal rejects special characters</li>
+            <li class="success">Encode array url encodes values</li>
+            <li class="success">Decode array url decodes values</li>
+            <li class="success">Encode decode round trip</li>
+            <li class="success">Encode array handles empty array</li>
+            <li class="success">Decode array handles empty array</li>
+            <li class="success">Encode array preserves keys</li>
+        </ul>
+        <h2>Sale Lib (Tests\unit\Libraries\SaleLib)</h2>
+        <ul>
+            <li class="defect">Get item total multiplies quantity by price</li>
+            <li class="success">Get item total returns zero for zero quantity</li>
+            <li class="defect">Get item total handles fractional values</li>
+            <li class="defect">Get item total with one item returns price</li>
+            <li class="defect">Get item total with percent discount</li>
+            <li class="defect">Get item total with fixed discount</li>
+            <li class="defect">Get item total percent discount fifty percent</li>
+            <li class="defect">Get extended amount multiplies and subtracts</li>
+            <li class="defect">Get extended amount with zero discount</li>
+            <li class="defect">Get extended amount default discount is zero</li>
+            <li class="defect">Get extended amount full discount returns zero</li>
+            <li class="defect">Get item discount percent type</li>
+            <li class="success">Get item discount fixed type</li>
+            <li class="success">Get item discount zero percent returns zero</li>
+            <li class="success">Get item discount fixed zero quantity returns zero</li>
+            <li class="success">Get quantity sold calculates from total and price</li>
+            <li class="success">Get quantity sold handles decimal division</li>
+            <li class="success">Sort and filter cart returns empty for empty cart</li>
+            <li class="success">Sort and filter cart filters print no items</li>
+            <li class="success">Sort and filter cart zeroes discount for free items</li>
+            <li class="success">Sort and filter cart preserves non zero discount on paid items</li>
+            <li class="success">Sort and filter cart sorts by line ascending</li>
+            <li class="success">Add payment creates new entry</li>
+            <li class="defect">Add payment aggregates same type</li>
+            <li class="success">Add payment handles multiple types</li>
+            <li class="success">Edit payment updates amount</li>
+            <li class="success">Edit payment returns false for nonexistent</li>
+            <li class="defect">Get payments total sums all payments</li>
+            <li class="success">Get payments total returns zero for no payments</li>
+        </ul>
+        <h2>Item Quantity (Tests\unit\Models\ItemQuantity)</h2>
+        <ul>
+            <li class="success">Stock ok constant is zero</li>
+            <li class="success">Stock zerado constant is one</li>
+            <li class="success">Stock irregular constant is two</li>
+            <li class="success">Stock status labels map correctly</li>
+            <li class="success">Get stock status label returns empty for ok</li>
+            <li class="success">Get stock status label returns zerado for status 1</li>
+            <li class="success">Get stock status label returns irregular for status 2</li>
+            <li class="success">Get stock status label returns empty for invalid status</li>
+            <li class="success">Change quantity positive increases stock</li>
+            <li class="success">Change quantity negative decreases stock</li>
+            <li class="success">Change quantity to zero sets stock zerado</li>
+            <li class="success">Change quantity negative clamps to zero and sets irregular</li>
+            <li class="success">Change quantity from zero to positive sets stock ok</li>
+        </ul>
+        <h2>Item (Tests\unit\Models\Item)</h2>
+        <ul>
+            <li class="success">Table name is items</li>
+            <li class="success">Primary key is item id</li>
+            <li class="success">Allowed fields contains cost price</li>
+            <li class="success">Allowed fields contains unit price</li>
+            <li class="success">Allowed fields contains name</li>
+            <li class="success">Allowed fields contains stock type</li>
+            <li class="success">Allowed fields contains item type</li>
+            <li class="success">Get item name returns base name when multipack disabled</li>
+            <li class="success">Get item name with alias returns alias expression</li>
+            <li class="success">Get item name null alias returns base expression</li>
+            <li class="success">Get item name multipack enabled returns concat expression</li>
+            <li class="success">Get item name multipack with alias returns concat with alias</li>
+            <li class="success">Change cost price weighted average formula</li>
+            <li class="success">Change cost price single received item</li>
+            <li class="success">Change cost price equal quantities averages correctly</li>
+            <li class="success">Change cost price large receiving skews to new price</li>
+            <li class="success">Change cost price small receiving skews to old price</li>
         </ul>
     </body>
 </html>
