@@ -40,11 +40,6 @@ class Secure_Controller extends BaseController
         $validation = Services::validation();
 
         if (!$this->employee->is_logged_in()) {
-            $request = Services::request();
-            if ($request->isAJAX()) {
-                echo json_encode(['success' => false, 'message' => 'Sessão expirada', 'redirect' => base_url('login')]);
-                exit();
-            }
             header("Location:" . base_url('login'));
             exit();
         }
@@ -110,8 +105,9 @@ class Secure_Controller extends BaseController
      */
     public function getConfig($key)
     {
-        $config = config(OSPOS::class)->settings;
-        return $config[$key] ?? null;
+        if (isset($config[$key])) {
+            return $config[$key];
+        }
     }
 
     /**

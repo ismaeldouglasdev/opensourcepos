@@ -27,7 +27,7 @@ use stdClass;
 
 class Sales extends Secure_Controller
 {
-    protected $helpers = ['file'];
+    protected $helpers = ['file', 'tabular'];
     private Barcode_lib $barcode_lib;
     private Email_lib $email_lib;
     private Sale_lib $sale_lib;
@@ -155,6 +155,25 @@ class Sales extends Secure_Controller
 
             echo view('sales/manage', $data);
         }
+    }
+
+    /**
+     * Gets one row for a sales manage table. This is called using AJAX to update one row.
+     *
+     * @param int $row_id
+     * @return void
+     * @noinspection PhpUnused
+     */
+    public function getRow(int $row_id): void
+    {
+        $sale_info = $this->sale->get_info($row_id)->getRowArray();
+
+        if (empty($sale_info)) {
+            echo json_encode(['success' => false, 'message' => 'Venda não encontrada']);
+            return;
+        }
+
+        echo json_encode(get_sale_data_row($sale_info));
     }
 
     /**
@@ -631,20 +650,6 @@ class Sales extends Secure_Controller
             } else {
                 $data['barcode'] = $this->barcode_lib->generate_receipt_barcode($data['sale_id']);
                 echo view('sales/receipt', $data);
-
-                // Thermal ESC/POS printing (if enabled in config)
-                if (!empty($this->config['escpos_enabled'])) {
-                    try {
-                        $printer = new \App\Libraries\ThermalPrinter($this->config);
-                        $printerName = $this->config['escpos_printer'] ?? 'TM-T20';
-                        $printer->connect($printerName);
-                        $printer->printReceipt($data);
-                    } catch (\Exception $e) {
-                        log_message('error', 'ESC/POS print failed: ' . $e->getMessage());
-                        // Don't block the sale if printing fails
-                    }
-                }
-
                 $this->sale_lib->clear_all();
             }
         }
@@ -1023,18 +1028,6 @@ class Sales extends Secure_Controller
     {
         $data = $this->_load_sale_data($sale_id);
         echo view('sales/receipt', $data);
-
-        if (!empty($this->config['escpos_enabled']) && !empty($this->session->get('sales_print_after_sale'))) {
-            try {
-                $printer = new \App\Libraries\ThermalPrinter($this->config);
-                $printerName = $this->config['escpos_printer'] ?? 'TM-T20';
-                $printer->connect($printerName);
-                $printer->printReceipt($data);
-            } catch (\Exception $e) {
-                log_message('error', 'ESC/POS print failed: ' . $e->getMessage());
-            }
-        }
-
         $this->sale_lib->clear_all();
     }
 
@@ -1168,9 +1161,33 @@ class Sales extends Secure_Controller
         $date_formatter = date_create_from_format($this->config['dateformat'] . ' ' . $this->config['timeformat'], $newdate);
         $sale_time = $date_formatter->format('Y-m-d H:i:s');
 
+        // Verificar se precisa criar cliente automaticamente
+        $customer_id = $this->request->getPost('customer_id');
+        $customer_name = $this->request->getPost('customer_name');
+        
+        if (empty($customer_id) && !empty($customer_name)) {
+            // Criar novo cliente automaticamente
+            $name_parts = explode(' ', trim($customer_name), 2);
+            $first_name = $name_parts[0];
+            $last_name = $name_parts[1] ?? '';
+            
+            $person_data = [
+                'first_name' => $first_name,
+                'last_name' => $last_name,
+            ];
+            
+            $customer_data = [
+                'date' => $sale_time,
+                'employee_id' => $employee_id,
+            ];
+            
+            $this->customer->save_customer($person_data, $customer_data);
+            $customer_id = $customer_data['person_id'] ?? null;
+        }
+
         $sale_data = [
             'sale_time'      => $sale_time,
-            'customer_id'    => $this->request->getPost('customer_id') != '' ? $this->request->getPost('customer_id', FILTER_SANITIZE_NUMBER_INT) : null,
+            'customer_id'    => $customer_id ?: null,
             'employee_id'    => $this->request->getPost('employee_id') != '' ? $this->request->getPost('employee_id', FILTER_SANITIZE_NUMBER_INT) : null,
             'comment'        => $this->request->getPost('comment', FILTER_SANITIZE_FULL_SPECIAL_CHARS),
             'invoice_number' => $this->request->getPost('invoice_number') != '' ? $this->request->getPost('invoice_number', FILTER_SANITIZE_FULL_SPECIAL_CHARS) : null
@@ -1279,28 +1296,6 @@ class Sales extends Secure_Controller
 
         $this->sale_lib->clear_all();
         $this->_reload();    // TODO: Hungarian notation
-    }
-
-    /**
-     * Set a given customer. Used in app/Views/sales/register.php.
-     *
-     * @return void
-     * @noinspection PhpUnused
-     */
-    public function postSelectCustomer(): void
-    {
-        $customer_id = (int)$this->request->getPost('customer', FILTER_SANITIZE_NUMBER_INT);
-        if ($this->customer->exists($customer_id)) {
-            $this->sale_lib->set_customer($customer_id);
-            $discount = $this->customer->get_info($customer_id)->discount;
-            $discount_type = $this->customer->get_info($customer_id)->discount_type;
-
-            if ($discount != '') {
-                $this->sale_lib->apply_customer_discount($discount, $discount_type);
-            }
-        }
-
-        $this->_reload();
     }
 
     /**
@@ -1558,6 +1553,29 @@ class Sales extends Secure_Controller
         $sales_taxes = $this->tax_lib->get_taxes($cart);
         $sale_status = COMPLETED;
 
+        $totals = $this->sale_lib->get_totals($sales_taxes[0] ?? null);
+        $amount_due = $totals['total'];
+        $payments_total = $this->sale_lib->get_payments_total();
+
+        if ($payments_total > $amount_due) {
+            $cash_refund = $payments_total - $amount_due;
+            foreach ($payments as $key => &$payment) {
+                if (strpos($key, lang('Sales.cash')) !== false && $cash_refund > 0) {
+                    if (!isset($payment['cash_refund'])) {
+                        $payment['cash_refund'] = 0;
+                    }
+                    if ($payment['payment_amount'] > $cash_refund) {
+                        $payment['cash_refund'] = $cash_refund;
+                        $cash_refund = 0;
+                    } else {
+                        $cash_refund -= $payment['payment_amount'];
+                    }
+                }
+            }
+            unset($payment);
+            $this->sale_lib->set_payments($payments);
+        }
+
         $data['sale_id_num'] = $this->sale->save_value(
             -1, $sale_status, $cart,
             $customer,
@@ -1661,7 +1679,21 @@ class Sales extends Secure_Controller
             $data_rows[] = get_sale_data_last_row($sales);
         }
 
-        echo json_encode(['total' => $total_rows, 'rows' => $data_rows]);
+        $inputs = [
+            'start_date' => $filters['start_date'],
+            'end_date' => $filters['end_date'],
+            'sale_type' => 'sales',
+            'only_cash' => $filters['only_cash'] ?? false,
+            'only_creditcard' => $filters['only_creditcard'] ?? false,
+            'only_pix' => $filters['only_pix'] ?? false,
+            'only_account_receivable' => $filters['only_account_receivable'] ?? false,
+            'only_invoices' => false,
+            'selected_customer' => false
+        ];
+        $payments = $this->sale->get_payments_summary('', $inputs);
+        $payment_summary = get_sales_manage_payments_summary($payments);
+
+        echo json_encode(['total' => $total_rows, 'rows' => $data_rows, 'payment_summary' => $payment_summary]);
     }
 
     public function getPaymentSummary(): void

@@ -161,7 +161,7 @@ return [
     "receipt_sent"                     => "Enviar recibo para",
     "receipt_unsent"                   => "Recibo não devem ser enviados para",
     "refund"                           => "Tipo de Reembolso",
-    "register"                         => "Registrar Venda",
+    "register"                         => "Registar Venda",
     "remove_customer"                  => "Remover Cliente",
     "remove_discount"                  => "",
     "return"                           => "Devolução",

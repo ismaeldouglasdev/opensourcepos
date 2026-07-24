@@ -45,61 +45,43 @@ use App\Models\Employee;
 
 <?= view('partial/header') ?>
 <style>
-/* Checkout modal */
 .checkout-modal .modal-dialog { max-width: 380px; }
-.checkout-modal .modal-content { max-height: 90vh; overflow: visible; border-radius: var(--os-radius-xl, 16px); }
+.checkout-modal .modal-content { max-height: 90vh; overflow: visible; }
 .checkout-modal .modal-body { max-height: none; overflow: visible; padding: 10px 15px; }
-.checkout-total { font-weight: 600; text-align: center; background: var(--os-primary-light, #e8f8f0); border-radius: var(--os-radius-lg, 12px); margin-bottom: 8px; padding: 8px; font-size: 13px; }
-
-/* Payment list */
+.checkout-total { font-weight: bold; text-align: center; background: #f5f5f5; border-radius: 5px; margin-bottom: 8px; padding: 12px; font-size: 28px; }
+.payment-list button { margin-bottom: 3px; height: 36px; font-size: 13px; text-align: center; line-height: 20px; display: flex; align-items: center; justify-content: center; }
 .payment-list { margin-bottom: 5px; }
-.payment-list button { margin-bottom: 3px; height: 40px; font-size: 14px; text-align: center; line-height: 22px; display: flex; align-items: center; justify-content: center; border-radius: var(--os-radius, 8px) !important; }
-
-/* Payment buttons */
-.payment-btn.cash { background: var(--pay-cash, #16a34a); border-color: var(--pay-cash, #16a34a); color: white; }
-.payment-btn.debit { background: var(--pay-debit, #2563eb); border-color: var(--pay-debit, #2563eb); color: white; }
-.payment-btn.credit { background: var(--pay-credit, #7c3aed); border-color: var(--pay-credit, #7c3aed); color: white; }
-.payment-btn.pix { background: var(--pay-pix, #0891b2); border-color: var(--pay-pix, #0891b2); color: white; }
-.payment-btn.fiado { background: var(--pay-fiado, #ea580c); border-color: var(--pay-fiado, #ea580c); color: white; }
-.payment-btn:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: translateY(-1px); }
-.payment-btn.active { box-shadow: 0 0 0 3px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.15); transform: translateY(-1px); }
-
-/* Troco */
-.troco-display { font-size: 14px; padding: 6px; margin-bottom: 8px; text-align: center; font-weight: 600; }
-.troco-display.negative { background: #fef2f2; color: #991b1b; }
-
-/* Checkout form */
 .form-group { margin-bottom: 5px; }
 .form-group input { height: 36px; font-size: 16px; text-align: center; }
-
-/* Finalizar venda button */
-#btn_finalizar_venda { height: 44px; font-size: 16px; font-weight: bold; margin-top: 8px; }
+.troco-display { font-size: 14px; padding: 6px; margin-bottom: 8px; text-align: center; }
 #finish_checkout_btn { height: 40px; font-size: 16px; }
-
-/* Hidden payment details */
+#btn_finalizar_venda { height: 60px !important; font-size: 20px !important; font-weight: bold !important; margin-top: 10px !important; }
 #payment_details { display: none !important; }
+</style>
 
-/* Empty cart state */
-.empty-cart-row td {
-    padding: 40px 20px !important;
-    text-align: center !important;
+<style>
+#payment_details { display: none !important; }
+#btn_finalizar_venda { 
+    height: 60px !important; 
+    font-size: 20px !important; 
+    font-weight: bold !important;
+    margin-top: 10px !important;
 }
-.empty-cart-msg {
-    color: var(--os-text-light, #9ca3af) !important;
-    font-size: 16px !important;
-    font-weight: 500 !important;
-}
-.empty-cart-icon {
-    font-size: 48px !important;
-    opacity: 0.3 !important;
-    margin-bottom: 8px !important;
-    display: block !important;
-}
-.empty-cart-sub {
-    color: var(--os-text-light, #9ca3af) !important;
-    font-size: 13px !important;
-    margin-top: 4px !important;
-}
+</style>
+
+<style>
+.checkout-modal .modal-dialog { max-width: 380px; }
+.checkout-modal .modal-content { border-radius: 10px; }
+.checkout-total { font-weight: bold; text-align: center; background: #f5f5f5; border-radius: 5px; margin-bottom: 8px; padding: 10px 8px; font-size: 28px; }
+.payment-list button { margin-bottom: 2px; height: 34px; font-size: 13px; text-align: center; font-size: 14px; }
+.payment-btn.cash { background: #FF9800; border-color: #FF9800; color: white; }
+.payment-btn.debit { background: #4CAF50; border-color: #4CAF50; color: white; }
+.payment-btn.credit { background: #2196F3; border-color: #2196F3; color: white; }
+.payment-btn.pix { background: #9C27B0; border-color: #9C27B0; color: white; }
+.payment-btn.fiado { background: #f44336; border-color: #f44336; color: white; }
+.payment-btn:hover, .payment-btn.active { opacity: 0.8; box-shadow: 0 0 0 3px #333; }
+.troco-display.negative { background: #ffebee; }
+#btn_finalizar_venda { height: 45px; font-size: 16px; margin-top: 5px; }
 </style>
 
 
@@ -216,11 +198,9 @@ if (!empty($editing_sale_id)) {
 
         <tbody id="cart_contents">
             <?php if (count($cart) == 0) { ?>
-                <tr class="empty-cart-row">
+                <tr>
                     <td colspan="8">
-                        <span class="empty-cart-icon glyphicon glyphicon-shopping-cart"></span>
-                        <div class="empty-cart-msg"><?= lang(ucfirst($controller_name) . '.no_items_in_cart') ?></div>
-                        <div class="empty-cart-sub">Digite ou escaneie um produto para comecar</div>
+                        <div class="alert alert-dismissible alert-info"><?= lang(ucfirst($controller_name) . '.no_items_in_cart') ?></div>
                     </td>
                 </tr>
             <?php
@@ -308,7 +288,7 @@ if (!empty($editing_sale_id)) {
                             <?php } else { ?>
                                 <td>&nbsp;</td>
                                 <?php if ($item['allow_alt_description']) { ?>
-                                    <td style="color: var(--os-text-muted);"><?= lang(ucfirst($controller_name) . '.description_abbrv') ?></td>
+                                    <td style="color: #2F4F4F;"><?= lang(ucfirst($controller_name) . '.description_abbrv') ?></td>
                                 <?php } ?>
 
                                 <td colspan="2" style="text-align: left;">
@@ -327,7 +307,7 @@ if (!empty($editing_sale_id)) {
                                     ?>
                                 </td>
                                 <td>&nbsp;</td>
-                                <td style="color: var(--os-text-muted);">
+                                <td style="color: #2F4F4F;">
                                     <?php
                                     if ($item['is_serialized']) {
                                         echo lang(ucfirst($controller_name) . '.serial');
@@ -419,7 +399,7 @@ if (!empty($editing_sale_id)) {
                 ?>
             <?php } else { ?>
                 <div class="form-group" id="select_customer">
-                    <label id="customer_label" for="customer" class="control-label">
+                    <label id="customer_label" for="customer" class="control-label" style="margin-bottom: 1em; margin-top: -1em;">
                         <?= lang(ucfirst($controller_name) . '.select_customer') . esc(" $customer_required") ?>
                     </label>
                     <?= form_input(['name' => 'customer', 'id' => 'customer', 'class' => 'form-control input-sm', 'value' => lang(ucfirst($controller_name) . '.start_typing_customer_name')]) ?>
@@ -717,7 +697,7 @@ if (!empty($editing_sale_id)) {
                     success: function(data) {
                         if (term === '1' || term === 'diversos') {
                             data.unshift({
-                                label: 'DIVERSOS',
+                                label: '💰 DIVERSOS',
                                 value: '1',
                                 item_id: 'DIVERSOS'
                             });
@@ -988,67 +968,72 @@ if (!empty($editing_sale_id)) {
 
 <!-- Modal de Checkout com Múltiplos Pagamentos -->
 <style>
-.checkout-modal .modal-dialog { width: 420px !important; max-width: 420px !important; }
-.checkout-modal .modal-body { padding: 10px 12px !important; overflow: hidden !important; }
+.checkout-modal .modal-dialog {
+    max-width: 400px;
+}
 .checkout-modal .payment-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px !important;
+    gap: 8px;
     justify-content: center;
-    margin: 8px 0;
+    margin: 10px 0;
 }
 .checkout-modal .payment-btn {
-    flex: 1 1 calc(50% - 6px);
-    min-width: 110px;
+    flex: 1 1 calc(50% - 8px);
+    min-width: 120px;
     max-width: 180px;
-    padding: 8px 6px !important;
-    font-size: 13px !important;
+    padding: 12px 8px !important;
+    font-size: 14px !important;
     border-radius: 8px !important;
     margin: 0 !important;
     white-space: nowrap;
 }
 </style>
+<style>
+.checkout-modal .modal-dialog { width: 480px !important; max-width: 480px !important; }
+.checkout-modal .modal-body { padding: 10px !important; overflow: hidden !important; }
+.checkout-modal .payment-list { gap: 6px !important; }
+.checkout-modal .payment-btn { padding: 8px 5px !important; font-size: 13px !important; }
+</style>
 <div class="modal fade checkout-modal" id="checkoutModal" tabindex="-1" role="dialog">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header checkout-header">
+            <div class="modal-header" style="padding: 8px 15px; background: #5cb85c; color: white;">
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4 class="modal-title">
+                <h4 class="modal-title" style="text-align:center; margin:0;">
                     <?= !empty($editing_sale_id) ? 'ATUALIZAR VENDA' : 'FINALIZAR VENDA' ?>
                 </h4>
             </div>
             <div class="modal-body">
-                <div class="checkout-summary-row">
-                    <div class="checkout-total checkout-box">
-                        <span class="checkout-box-label">TOTAL</span>
-                        <span id="checkout_total" class="checkout-box-value text-success">R$ 0,00</span>
+                <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: stretch;">
+                    <div class="checkout-total" style="flex: 1; min-width: 0; min-height: 80px; background: #e8f5e9; padding: 10px; border-radius: 6px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+                        <strong>TOTAL:</strong><br><span id="checkout_total" style="font-size: 24px; color: #2e7d32; font-weight: bold;">R$ 0,00</span>
                     </div>
-                    <div class="checkout-restante checkout-box">
-                        <span class="checkout-box-label">RESTANTE</span>
-                        <span id="checkout_restante" class="checkout-box-value text-danger">R$ 0,00</span>
+                    <div class="checkout-restante" style="flex: 1; min-width: 0; min-height: 80px; background: #ffebee; padding: 10px; border-radius: 6px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+                        <strong>RESTANTE:</strong><br><span id="checkout_restante" style="font-size: 24px; color: #c62828; font-weight: bold;">R$ 0,00</span>
                     </div>
                 </div>
                 
-                <div id="payment_summary_list" class="payment-summary-list"></div>
+                <div id="payment_summary_list" style="margin: 5px 0;"></div>
                 
                 <div class="payment-list">
-                    <button type="button" class="btn payment-btn cash" id="payment_btn_cash" onclick="selectPayment('cash', '<?= lang("Sales.cash") ?>')"><span class="glyphicon glyphicon-usd"></span> Dinheiro</button>
-                    <button type="button" class="btn payment-btn debit" id="payment_btn_debit" onclick="selectPayment('debit', '<?= lang("Sales.debit") ?>')"><span class="glyphicon glyphicon-credit-card"></span> Debito</button>
-                    <button type="button" class="btn payment-btn credit" id="payment_btn_credit" onclick="selectPayment('credit', '<?= lang("Sales.credit") ?>')"><span class="glyphicon glyphicon-credit-card"></span> Credito</button>
-                    <button type="button" class="btn payment-btn pix" id="payment_btn_pix" onclick="selectPayment('pix', '<?= lang("Sales.pix") ?>')"><span class="glyphicon glyphicon-qrcode"></span> PIX</button>
-                    <button type="button" class="btn payment-btn fiado" id="payment_btn_fiado" onclick="selectPayment('fiado', '<?= lang("Sales.account_receivable") ?>')"><span class="glyphicon glyphicon-time"></span> Fiado</button>
+                    <button type="button" class="btn payment-btn cash" id="payment_btn_cash" onclick="selectPayment('cash', '<?= lang("Sales.cash") ?>')">💵 Dinheiro</button>
+                    <button type="button" class="btn payment-btn debit" id="payment_btn_debit" onclick="selectPayment('debit', '<?= lang("Sales.debit") ?>')">💳 Débito</button>
+                    <button type="button" class="btn payment-btn credit" id="payment_btn_credit" onclick="selectPayment('credit', '<?= lang("Sales.credit") ?>')">💳 Crédito</button>
+                    <button type="button" class="btn payment-btn pix" id="payment_btn_pix" onclick="selectPayment('pix', '<?= lang("Sales.pix") ?>')">📱 PIX</button>
+                    <button type="button" class="btn payment-btn fiado" id="payment_btn_fiado" onclick="selectPayment('fiado', '<?= lang("Sales.account_receivable") ?>')">📝 Fiado</button>
                 </div>
-                <div class="form-group checkout-amount-group" id="amount_group">
+                <div class="form-group" id="amount_group" style="margin: 8px 0; display: none;">
                     <div class="input-group">
                         <span class="input-group-addon" id="payment_type_label">R$</span>
-                        <input type="number" class="form-control" id="checkout_amount" step="0.01" min="0" placeholder="0,00">
+                        <input type="number" class="form-control" id="checkout_amount" step="0.01" min="0" placeholder="0,00" style="text-align: center;">
                         <span class="input-group-btn">
                             <button type="button" class="btn btn-primary" id="add_payment_btn" onclick="addPayment()">+</button>
                         </span>
                     </div>
                 </div>
-                <div class="troco-display" id="troco_display"></div>
-                <button type="button" class="btn <?= !empty($editing_sale_id) ? 'btn-warning' : 'btn-success' ?> btn-block checkout-finish-btn" id="finish_checkout_btn" onclick="finishCheckout()" disabled>
+                <div class="troco-display" id="troco_display" style="font-size: 14px; padding: 5px; text-align: center; font-weight: bold;"></div>
+                <button type="button" class="btn <?= !empty($editing_sale_id) ? 'btn-warning' : 'btn-success' ?> btn-block" id="finish_checkout_btn" onclick="finishCheckout()" disabled>
                     <?= !empty($editing_sale_id) ? 'ATUALIZAR' : 'FINALIZAR' ?>
                 </button>
             </div>
@@ -1060,28 +1045,28 @@ if (!empty($editing_sale_id)) {
 <div class="modal fade" id="diversosModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-sm">
         <div class="modal-content">
-            <div class="modal-header diversos-header">
+            <div class="modal-header" style="background: #FF9800; color: white;">
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4 class="modal-title"><span class="glyphicon glyphicon-tag"></span> PRODUTO DIVERSOS</h4>
+                <h4 class="modal-title" style="text-align:center;">💰 PRODUTO DIVERSOS</h4>
             </div>
             <div class="modal-body">
-                <p class="diversos-subtitle">Digite o valor do produto:</p>
+                <p style="text-align:center; margin-bottom: 15px;">Digite o valor do produto:</p>
                 <div class="form-group">
                     <label for="diversos_valor">Valor (R$):</label>
-                    <input type="number" class="form-control diversos-input-lg" id="diversos_valor" step="0.01" min="0.01" placeholder="0,00">
+                    <input type="number" class="form-control" id="diversos_valor" step="0.01" min="0.01" placeholder="0,00" style="text-align: center; font-size: 24px; height: 60px;">
                 </div>
                 <div class="form-group">
                     <label for="diversos_qtd">Quantidade:</label>
-                    <input type="number" class="form-control diversos-input-md" id="diversos_qtd" value="1" min="1">
+                    <input type="number" class="form-control" id="diversos_qtd" value="1" min="1" style="text-align: center; font-size: 20px; height: 50px;">
                 </div>
                 <div class="form-group">
                     <label for="diversos_desc">Descrição (opcional):</label>
-                    <input type="text" class="form-control" id="diversos_desc" placeholder="Ex: Café, Lanche...">
+                    <input type="text" class="form-control" id="diversos_desc" placeholder="Ex: Café, Lanche..." style="text-align: center;">
                 </div>
             </div>
-            <div class="modal-footer diversos-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-warning diversos-submit-btn" onclick="addDiversos()">Adicionar</button>
+            <div class="modal-footer" style="text-align: center;">
+                <button type="button" class="btn btn-default" data-dismiss="modal" style="padding: 10px 30px;">Cancelar</button>
+                <button type="button" class="btn btn-warning" onclick="addDiversos()" style="padding: 10px 30px; font-size: 18px;">Adicionar</button>
             </div>
         </div>
     </div>
@@ -1194,25 +1179,15 @@ function selectPayment(type, lang_key) {
     var btn = document.getElementById('payment_btn_' + type);
     if (btn) btn.classList.add('active');
     
-    var amountInput = document.getElementById('checkout_amount');
-    var restante = getRestante();
-    
-    document.getElementById('amount_group').style.display = 'block';
-    
     if (type === 'cash') {
+        document.getElementById('amount_group').style.display = 'block';
         document.getElementById('payment_type_label').textContent = 'R$';
-        amountInput.placeholder = total_venda.toFixed(2).replace('.', ',');
-        amountInput.value = total_venda.toFixed(2).replace('.', ',');
+        document.getElementById('checkout_amount').placeholder = total_venda.toFixed(2).replace('.', ',');
     } else {
+        document.getElementById('amount_group').style.display = 'block';
         document.getElementById('payment_type_label').textContent = lang_key + ':';
-        amountInput.placeholder = restante.toFixed(2).replace('.', ',');
-        amountInput.value = restante.toFixed(2).replace('.', ',');
+        document.getElementById('checkout_amount').placeholder = getRestante().toFixed(2).replace('.', ',');
     }
-    
-    setTimeout(function() {
-        amountInput.focus();
-        amountInput.select();
-    }, 100);
 }
 
 function getRestante() {
@@ -1261,9 +1236,9 @@ function updatePaymentSummary() {
     
     payments_list.forEach(function(p, index) {
         totalPago += p.amount;
-        html += '<div class="payment-item">';
-        html += '<span class="payment-item-label">' + p.type + ': <strong>R$ ' + p.amount.toFixed(2).replace('.', ',') + '</strong></span>';
-        html += '<button type="button" class="btn btn-xs btn-danger" onclick="removePayment(' + index + ')">×</button>';
+        html += '<div class="payment-item" style="display:flex; justify-content:space-between; padding: 5px; background:#e8f5e9; margin-bottom:4px; border-radius:4px;">';
+        html += '<span style="flex:1;">' + p.type + ': <strong>R$ ' + p.amount.toFixed(2).replace('.', ',') + '</strong></span>';
+        html += '<button type="button" class="btn btn-xs btn-danger" onclick="removePayment(' + index + ')" style="padding:2px 8px;">×</button>';
         html += '</div>';
     });
     
@@ -1277,7 +1252,7 @@ function updatePaymentSummary() {
     var troco = totalPago - total_venda;
     var trocoDisplay = document.getElementById('troco_display');
     if (troco > 0) {
-        trocoDisplay.innerHTML = '<span style="color:var(--os-success);">Troco: R$ ' + troco.toFixed(2).replace('.', ',') + '</span>';
+        trocoDisplay.innerHTML = '<span style="color:#4caf50;">Troco: R$ ' + troco.toFixed(2).replace('.', ',') + '</span>';
     } else {
         trocoDisplay.textContent = ' ';
     }

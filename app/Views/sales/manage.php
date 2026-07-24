@@ -13,38 +13,33 @@
 <style>
     .detail-table {
         margin: 10px;
-        background: var(--os-surface, #fff);
+        background: #fff;
     }
     .detail-row {
-        background: var(--os-bg, #f8f9fb);
+        background: #f9f9f9;
     }
     .detail-row td {
         padding: 10px !important;
     }
     .expand-btn {
         cursor: pointer;
-        color: var(--os-primary);
+        color: #337ab7;
         font-size: 14px;
     }
     .expand-btn:hover {
-        color: var(--os-primary-dark);
+        color: #23527c;
     }
     #report_summary {
         display: flex !important;
         flex-wrap: wrap !important;
-        gap: 0 !important;
+        gap: 10px !important;
         justify-content: center !important;
-        padding: 0 !important;
+        padding: 15px 0 !important;
     }
     .summary_row {
-        flex: 1 1 0 !important;
-        max-width: none !important;
-        min-width: 0 !important;
-        padding: 10px 16px !important;
-        border-right: 1px solid var(--os-border-light, #eef1f4) !important;
-    }
-    .summary_row:last-child {
-        border-right: none !important;
+        flex: 1 1 140px !important;
+        max-width: 200px !important;
+        min-width: 120px !important;
     }
     @media (max-width: 768px) {
         .summary_row {
@@ -54,21 +49,21 @@
             padding: 8px 12px !important;
         }
         #report_summary {
-            gap: 0 !important;
-            padding: 0 !important;
+            gap: 8px !important;
+            padding: 10px 5px !important;
         }
     }
     @media print {
         #report_summary {
             display: flex !important;
             flex-wrap: wrap !important;
-            gap: 0 !important;
+            gap: 15px !important;
             justify-content: flex-start !important;
         }
         .summary_row {
             flex: 0 0 auto !important;
             padding: 5px 15px !important;
-            border: 1px solid var(--os-border, #ddd) !important;
+            border: 1px solid #ddd !important;
             margin: 3px !important;
         }
     }
@@ -78,7 +73,7 @@
             max-width: 100% !important;
         }
         #payment_summary {
-            font-size: 14px !important;
+            font-size: 22px !important;
         }
     }
 </style>
@@ -243,7 +238,7 @@
     <?= anchor("sales", "<span class=\"glyphicon glyphicon-shopping-cart\">&nbsp;</span>" . lang("Sales.register"), ["class" => "btn btn-info btn-sm pull-right", "id" => "show_sales_button"]) ?>
 </div>
 
-<div id="payment_summary">
+<div id="payment_summary" style="font-size: 28px; margin-bottom: 20px; text-align: center; background: #f5f5f5; padding: 15px; border-radius: 5px;">
     <?= $payment_summary ?>
 </div>
 

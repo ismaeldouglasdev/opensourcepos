@@ -123,10 +123,8 @@ class Item_kit extends Model
         ');
 
         $builder->join('items', 'item_kits.item_id = items.item_id', 'left');
-        $builder->groupStart();
         $builder->where('item_kit_id', $item_kit_id);
         $builder->orWhere('item_kit_number', $item_kit_id);
-        $builder->groupEnd();
 
         $query = $builder->get();
 

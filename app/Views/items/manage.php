@@ -22,10 +22,14 @@ use App\Models\Employee;
             );
         });
 
+        $(".search input").focus();
+
         // When any filter is clicked and the dropdown window is closed
         $('#filters').on('hidden.bs.select', function(e) {
             table_support.refresh();
         });
+
+        $(".search input").focus();
 
         // Load the preset daterange picker
         <?= view('partial/daterangepicker') ?>
@@ -37,9 +41,13 @@ use App\Models\Employee;
             table_support.refresh();
         });
 
+        $(".search input").focus();
+
         $("#stock_location").change(function() {
             table_support.refresh();
         });
+
+        $(".search input").focus();
 
         <?php
         echo view('partial/bootstrap_tables_locale');
@@ -59,6 +67,8 @@ use App\Models\Employee;
                     "stock_location": $("#stock_location").val(),
                     "filters": $("#filters").val()
                 });
+
+        $(".search input").focus();
             },
             onLoadSuccess: function(response) {
                 $('a.rollover').imgPreview({
@@ -72,6 +82,8 @@ use App\Models\Employee;
                 })
             }
         });
+
+        $(".search input").focus();
     });
 </script>
 

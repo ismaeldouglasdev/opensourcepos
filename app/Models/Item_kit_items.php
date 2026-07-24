@@ -26,10 +26,8 @@ class Item_kit_items extends Model
         $builder->select('item_kits.item_kit_id, item_kit_items.item_id, quantity, kit_sequence, unit_price, item_type, stock_type');
         $builder->join('items as items', 'item_kit_items.item_id = items.item_id');
         $builder->join('item_kits as item_kits', 'item_kits.item_kit_id = item_kit_items.item_kit_id');
-        $builder->groupStart();
         $builder->where('item_kits.item_kit_id', $item_kit_id);
         $builder->orWhere('item_kit_number', $item_kit_id);
-        $builder->groupEnd();
         $builder->orderBy('kit_sequence', 'asc');
 
         // Return an array of item kit items for an item

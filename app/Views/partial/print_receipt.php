@@ -57,11 +57,8 @@
 
     <?php if ($print_after_sale) { ?>
         $(window).on('load', (function() {
-            // If ESC/POS is enabled, the thermal printer already printed the receipt.
-            // Skip the browser print dialog to avoid double printing.
-            <?php if (empty($config['escpos_enabled'])) { ?>
-                printdoc();
-            <?php } ?>
+            // Executes when complete page is fully loaded, including all frames, objects and images
+            printdoc();
 
             // After a delay, return to sales view
             setTimeout(function() {

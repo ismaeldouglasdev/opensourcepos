@@ -49,7 +49,7 @@ class Config extends Secure_Controller
 
         $this->barcode_lib = new Barcode_lib();
         $this->sale_lib = new Sale_lib();
-        $this->receiving_lib = new Receiving_lib();
+        $this->receiving_lib = new receiving_lib();
         $this->tax_lib = new Tax_lib();
         $this->appconfig = model(Appconfig::class);
         $this->attribute = model(Attribute::class);
@@ -233,22 +233,7 @@ class Config extends Secure_Controller
         $data['tax_jurisdiction_options'] = $this->tax_lib->get_tax_jurisdiction_options();
         $data['show_office_group'] = $this->module->get_show_office_group();
         $data['currency_code'] = $this->config['currency_code'] ?? '';
-        // Get database version in a driver-agnostic way
-        $dbVersion = 'Unknown';
-        try {
-            if ($this->db->getConnection() instanceof mysqli) {
-                $dbVersion = mysqli_get_server_info($this->db->getConnection());
-            } else {
-                // For non-mysqli drivers (e.g., PDO), query the version
-                $query = $this->db->query('SELECT VERSION() as version');
-                if ($query && $row = $query->getRow()) {
-                    $dbVersion = $row->version;
-                }
-            }
-        } catch (Exception $e) {
-            log_message('error', 'Failed to get database version: ' . $e->getMessage());
-        }
-        $data['dbVersion'] = $dbVersion;
+        $data['dbVersion'] = mysqli_get_server_info($this->db->getConnection());
 
         // Load all the license statements, they are already XSS cleaned in the private function
         $data['licenses'] = $this->_licenses();
@@ -922,16 +907,7 @@ class Config extends Secure_Controller
             'print_top_margin'              => $this->request->getPost('print_top_margin', FILTER_SANITIZE_NUMBER_INT),
             'print_left_margin'             => $this->request->getPost('print_left_margin', FILTER_SANITIZE_NUMBER_INT),
             'print_bottom_margin'           => $this->request->getPost('print_bottom_margin', FILTER_SANITIZE_NUMBER_INT),
-            'print_right_margin'            => $this->request->getPost('print_right_margin', FILTER_SANITIZE_NUMBER_INT),
-            // ESC/POS Thermal Printer settings
-            'escpos_enabled'                => $this->request->getPost('escpos_enabled') != null,
-            'escpos_printer'                => $this->request->getPost('escpos_printer'),
-            'escpos_paper_width'            => $this->request->getPost('escpos_paper_width'),
-            'escpos_connection'             => $this->request->getPost('escpos_connection'),
-            'escpos_device'                 => $this->request->getPost('escpos_device'),
-            'escpos_host'                   => $this->request->getPost('escpos_host'),
-            'escpos_port'                   => $this->request->getPost('escpos_port'),
-            'escpos_show_logo'              => $this->request->getPost('escpos_show_logo') != null
+            'print_right_margin'            => $this->request->getPost('print_right_margin', FILTER_SANITIZE_NUMBER_INT)
         ];
 
         $success = $this->appconfig->batch_save($batch_save_data);

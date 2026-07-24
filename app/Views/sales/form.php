@@ -221,10 +221,12 @@
                         dialog_support.hide();
                         table_support.handle_submit("<?= esc($controller_name) ?>", response);
 
-                        const params = $.param(table_support.query_params());
-                        $.get("<?= $controller_name; ?>/search?" + params, function(response) {
-                            $("#payment_summary").html(response.payment_summary);
-                        }, 'json');
+                        if (typeof table_support.query_params === 'function') {
+                            const params = $.param(table_support.query_params());
+                            $.get("<?= $controller_name; ?>/search?" + params, function(response) {
+                                $("#payment_summary").html(response.payment_summary);
+                            }, 'json');
+                        }
                     },
                     dataType: 'json'
                 });

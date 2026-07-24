@@ -14,9 +14,7 @@
     clock_tick();
 
     var update_clock = function update_clock() {
-        var dias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-        var agora = new Date();
-        document.getElementById('liveclock').innerHTML = dias[agora.getDay()] + ', ' + moment().format("<?= dateformat_momentjs($config['dateformat'] . ' ' . $config['timeformat']) ?>");
+        document.getElementById('liveclock').innerHTML = moment().format("<?= dateformat_momentjs($config['dateformat'] . ' ' . $config['timeformat']) ?>");
     }
 
     $.notifyDefaults({
@@ -34,15 +32,14 @@
 
     var csrf_form_base = function() {
         return {
-            <?= esc(config('Security')->tokenName, 'js') ?>: csrf_token() || ''
+            <?= esc(config('Security')->tokenName, 'js') ?>: function() {
+                return csrf_token()
+            }
         }
     };
 
     var setup_csrf_token = function() {
-        var token = csrf_token();
-        if (token) {
-            $('input[name="<?= esc(config('Security')->tokenName, 'js') ?>"]').val(token);
-        }
+        $('input[name="<?= esc(config('Security')->tokenName, 'js') ?>"]').val(csrf_token());
     };
 
     var ajax = $.ajax;
@@ -61,20 +58,14 @@
     };
 
     $(document).ajaxComplete(setup_csrf_token);
-
-    $(document).ajaxError(function(event, jqxhr, settings, thrownError) {
-        if (settings.dataType === 'json' && jqxhr.responseJSON === undefined) {
-            try { JSON.parse(jqxhr.responseText); } catch(e) {
-                console.warn('JSON.parse error suppressed for:', settings.url);
-            }
-        }
-    });
     $(document).ready(function() {
         $("#logout").click(function(event) {
             event.preventDefault();
             $.ajax({
                 url: "<?= site_url('home/logout'); ?>",
-                data: csrf_form_base(),
+                data: {
+                    "<?= esc(config('Security')->tokenName, 'js'); ?>": csrf_token()
+                },
                 success: function() {
                     window.location.href = '<?= site_url(); ?>';
                 },
@@ -89,14 +80,4 @@
         setup_csrf_token();
         submit.apply(this, arguments);
     };
-
-    // Foco automático no campo de busca em páginas de listagem (Bootstrap-Table)
-    $(document).ready(function() {
-        setTimeout(function() {
-            var searchInput = $('.bootstrap-table .search input, .fixed-table-toolbar .search input');
-            if (searchInput.length) {
-                searchInput.first().focus();
-            }
-        }, 500);
-    });
 </script>

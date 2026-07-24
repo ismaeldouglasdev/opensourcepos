@@ -87,7 +87,7 @@
 
 #sale_totals,
 #payment_totals {
-    border-top: 2px solid var(--os-border, #e2e6ea);
+    border-top: 1px solid #000;
 }
 
 input#amount_tendered:disabled {
@@ -96,7 +96,7 @@ input#amount_tendered:disabled {
 
 #payment_details {
     float: left;
-    border-top: 1px solid var(--os-border, #e2e6ea);
+    border-top: 1px solid #000;
     margin-top: 0.2em;
     padding: 0.5em;
     text-align: left;

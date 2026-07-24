@@ -21,7 +21,7 @@ $request = Services::request();
     <link rel="shortcut icon" type="image/x-icon" href="images/favicon.ico">
     <link rel="stylesheet" href="<?= 'resources/bootswatch/' . (empty($config['theme']) ? 'flatly' : esc($config['theme'])) . '/bootstrap.min.css' ?>">
 
-    <?php if (ENVIRONMENT === 'development') : ?>
+    <?php if (ENVIRONMENT == 'development' || get_cookie('debug') == 'true' || $request->getGet('debug') == 'true') : ?>
         <!-- inject:debug:css -->
         <link rel="stylesheet" href="resources/css/jquery-ui-fe010342cb.css">
         <link rel="stylesheet" href="resources/css/bootstrap-dialog-1716ef6e7c.css">
@@ -38,7 +38,7 @@ $request = Services::request();
         <link rel="stylesheet" href="resources/css/bootstrap-4875cf7b0d.autocomplete.css">
         <link rel="stylesheet" href="resources/css/invoice-a99a4dfac3.css">
         <link rel="stylesheet" href="resources/css/ospos_print-bf10c1438b.css">
-        <link rel="stylesheet" href="resources/css/ospos-d0b91fdf8f.css">
+        <link rel="stylesheet" href="resources/css/ospos-28f7f540a3.css">
         <link rel="stylesheet" href="resources/css/popupbox-57d45cb822.css">
         <link rel="stylesheet" href="resources/css/receipt-0606f1c54e.css">
         <link rel="stylesheet" href="resources/css/register-a6a6cc948d.css">
@@ -46,7 +46,6 @@ $request = Services::request();
         <!-- endinject -->
         <!-- inject:debug:js -->
         <script src="resources/js/jquery-12e87d2f3a.js"></script>
-        <script src="resources/js/js-fa93e8894e.cookie.js"></script>
         <script src="resources/js/jquery-4fa896f615.form.js"></script>
         <script src="resources/js/jquery-a0350e8820.validate.js"></script>
         <script src="resources/js/jquery-ui-cbc65ff85e.js"></script>
@@ -64,26 +63,26 @@ $request = Services::request();
         <script src="resources/js/es6-promise-855125e6f5.js"></script>
         <script src="resources/js/FileSaver-e73b1946e8.js"></script>
         <script src="resources/js/html2canvas-e1d3a8d7cd.js"></script>
-        <script src="resources/js/jspdf-bbbebb610c.umd.js"></script>
-        <script src="resources/js/purify-d160df429f.js"></script>
-        <script src="resources/js/jspdf-92d87e47e8.plugin.autotable.js"></script>
-        <script src="resources/js/tableExport-3d506dfa61.min.js"></script>
+        <script src="resources/js/jspdf-6eb90bf5a3.umd.js"></script>
+        <script src="resources/js/jspdf-4f52bd767f.plugin.autotable.js"></script>
+        <script src="resources/js/tableExport-0df60917ca.min.js"></script>
         <script src="resources/js/chartist-8a7ecb4445.js"></script>
         <script src="resources/js/chartist-plugin-pointlabels-0a1ab6aa4e.js"></script>
         <script src="resources/js/chartist-plugin-tooltip-116cb48831.js"></script>
         <script src="resources/js/chartist-plugin-axistitle-80a1198058.js"></script>
         <script src="resources/js/chartist-plugin-barlabels-4165273742.js"></script>
         <script src="resources/js/bootstrap-notify-376bc6eb87.js"></script>
+        <script src="resources/js/js-fa93e8894e.cookie.js"></script>
         <script src="resources/js/bootstrap-tagsinput-855a7c7670.js"></script>
         <script src="resources/js/bootstrap-toggle-1c7a19a049.js"></script>
         <script src="resources/js/clipboard-908af414ab.js"></script>
         <script src="resources/js/imgpreview-1db063409f.full.jquery.js"></script>
-        <script src="resources/js/manage_tables-e5dae00ba1.js"></script>
+        <script src="resources/js/manage_tables-9b98d5573a.js"></script>
         <script src="resources/js/nominatim-89be77a11a.autocomplete.js"></script>
         <!-- endinject -->
     <?php else : ?>
         <!--inject:prod:css -->
-        <link rel="stylesheet" href="resources/opensourcepos-8f45024eca.min.css">
+        <link rel="stylesheet" href="resources/opensourcepos-8e34d6a398.min.css">
         <!-- endinject -->
 
         <!-- Tweaks to the UI for a particular theme should drop here  -->
@@ -92,7 +91,7 @@ $request = Services::request();
         <?php } ?>
         <!-- inject:prod:js -->
         <script src="resources/jquery-2c872dbe60.min.js"></script>
-        <script src="resources/opensourcepos-0c4b48a0bf.min.js"></script>
+        <script src="resources/opensourcepos-39c74204a5.min.js"></script>
         <!-- endinject -->
     <?php endif; ?>
 
@@ -104,41 +103,26 @@ $request = Services::request();
             overflow: auto;
         }
     </style>
-
+    
     <!-- CSS Acessível para Idosos -->
-    <link rel="stylesheet" href="<?= base_url('css/accessible.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('css/custom.css') ?>">
-    <!-- Modern UI Overhaul -->
-    <link rel="stylesheet" href="<?= base_url('css/modern.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('resources/css/accessible.css') ?>">
 </head>
 
 <body>
-    <?php if (ENVIRONMENT === 'development'): ?>
-    <style>
-    .test-banner {
-        background: var(--os-warning, #d97706); color: rgba(255,255,255,0.7); text-align: center; padding: 0; font-weight: 700; font-size: 0; letter-spacing: 0; text-transform: uppercase; position: fixed; top: 0; left: 0; right: 0; z-index: 10001; height: 8px; line-height: 8px; overflow: hidden;
-    }
-    .topbar { padding-top: 8px; }
-    </style>
-    <div class="test-banner"></div>
-    <?php endif; ?>
     <div class="wrapper">
         <div class="topbar">
             <div class="container">
                 <div class="navbar-left">
-                    <div id="liveclock"><?php
-                    $dias = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
-                    echo $dias[(int)date('w')] . ', ';
-                    ?><?= date($config['dateformat'] . ' ' . $config['timeformat']) ?></div>
+                    <div id="liveclock"><?= date($config['dateformat'] . ' ' . $config['timeformat']) ?></div>
                 </div>
 
-                <div class="navbar-right topbar-right">
+                <div class="navbar-right" style="margin: 0;">
                     <?= anchor("home/changePassword/$user_info->person_id", "$user_info->first_name $user_info->last_name", ['class' => 'modal-dlg', 'data-btn-submit' => lang('Common.submit'), 'title' => lang('Employees.change_password')]) ?>
-                    <span class="topbar-sep">|</span>
+                    <span>&nbsp;|&nbsp;</span>
                     <?= anchor('home/logout', lang('Login.logout')) ?>
                 </div>
 
-                <div class="navbar-center topbar-center">
+                <div class="navbar-center" style="text-align: center;">
                     <strong><?= esc($config['company']) ?></strong>
                 </div>
             </div>
@@ -149,7 +133,7 @@ $request = Services::request();
                 <div class="navbar-header">
                     <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-collapse">
                         <span class="sr-only">Menu</span>
-                        <span class="glyphicon glyphicon-menu-hamburger"></span>
+                        <span style="font-size: 20px;">☰</span>
                     </button>
                 </div>
 
@@ -160,58 +144,53 @@ $request = Services::request();
                         $current_url = current_url();
                         $is_home = ($current == 'home');
                         $is_resumo = ($current == 'sales' && strpos($current_url, 'sales/manage') !== false);
-                        $is_vendas = ($current == 'sales' && (strpos($current_url, 'sales/add')!==false || strpos($current_url, 'sales/register')!==false));
+                        $is_vendas = ($current == 'sales' && (strpos($current_url, 'sales/add') !== false || strpos($current_url, 'sales/register') !== false));
                         $is_itens = ($current == 'items');
                         $is_clientes = ($current == 'customers');
                         ?>
-                        <li class="<?=$is_home ? 'active': ' ' ?>">
-                            <a href="<?=base_url('home') ?>">
-                                <span class="glyphicon glyphicon-home menu-icon"></span>
-                                <span class="nav-label">HOME</span>
+                        <li class="<?= $is_home ? 'active' : '' ?>">
+                            <a href="<?= base_url('home') ?>" style="font-size: 16px;">
+                                🏠 HOME
                             </a>
                         </li>
-                        <li class="<?=$is_resumo ? 'active' : ' ' ?>">
-                            <a href="<?=base_url('sales/manage') ?>">
-                                <span class="glyphicon glyphicon-list-alt menu-icon"></span>
-                                <span class="nav-label">RESUMO</span>
+                        <li class="<?= $is_resumo ? 'active' : '' ?>">
+                            <a href="<?= base_url('sales/manage') ?>" style="font-size: 16px;">
+                                📊 RESUMO
                             </a>
                         </li>
-                        <li class="<?=$is_vendas ? 'active' : ' ' ?>">
-                            <a href="<?=base_url('sales/add') ?>">
-                                <span class="glyphicon glyphicon-shopping-cart menu-icon"></span>
-                                <span class="nav-label">VENDAS</span>
+                        <li class="<?= $is_vendas ? 'active' : '' ?>">
+                            <a href="<?= base_url('sales/add') ?>" style="font-size: 16px;">
+                                💰 VENDAS
                             </a>
                         </li>
-                        <li class="<?=$is_itens ? 'active' : ' ' ?> ">
-                            <a href="<?=base_url('items') ?>">
-                                <span class="glyphicon glyphicon-tag menu-icon"></span>
-                                <span class="nav-label">ITENS</span>
+                        <li class="<?= $is_itens ? 'active' : '' ?>">
+                            <a href="<?= base_url('items') ?>" style="font-size: 16px;">
+                                📦 ITENS
                             </a>
                         </li>
-                        <li class="<?= $is_clientes ? 'active' : ' ' ?>">
-                            <a href="<?=base_url('customers')?>">
-                                <span class="glyphicon glyphicon-user menu-icon"></span>
-                                <span class="nav-label">CLIENTES</span>
+                        <li class="<?= $is_clientes ? 'active' : '' ?>">
+                            <a href="<?= base_url('customers') ?>" style="font-size: 16px;">
+                                👥 CLIENTES
                             </a>
                         </li>
                     </ul>
-
-                    <!-- Menu Hamburguer-->
+                    
+                    <!-- Menu Hamburger -->
                     <ul class="nav navbar-nav navbar-right">
                         <li class="dropdown">
-                            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                            <span class="glyphicon glyphicon-menu-hamburger"></span> <span class="caret"></span>
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" style="font-size: 20px; padding: 10px;">
+                                ☰ <span class="caret"></span>
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a href="<?=site_url('items')?>"><span class="glyphicon glyphicon-tag"></span> Produtos </a></li>
-                                <li><a href="<?=site_url('customers')?>"><span class="glyphicon glyphicon-user"></span> Clientes</a></li>
-                                <li><a href="<?=site_url('employees')?>"><span class="glyphicon glyphicon-user"></span> Funcionários</a></li>
+                                <li><a href="<?= site_url('items') ?>"><span class="glyphicon glyphicon-tag"></span> Produtos</a></li>
+                                <li><a href="<?= site_url('customers') ?>"><span class="glyphicon glyphicon-user"></span> Clientes</a></li>
+                                <li><a href="<?= site_url('employees') ?>"><span class="glyphicon glyphicon-user"></span> Funcionários</a></li>
                                 <li class="divider"></li>
-                                <li><a href="<?=site_url('sales/manage') ?>"><span class="glyphicon glyphicon-list-alt"></span> Vendas</a></li>
-                                <li><a href="<?=site_url('reports')?>"><span class="glyphicon glyphicon-stats"></span> Relatórios</a></li>
+                                <li><a href="<?= site_url('sales/manage') ?>"><span class="glyphicon glyphicon-list-alt"></span> Vendas</a></li>
+                                <li><a href="<?= site_url('reports') ?>"><span class="glyphicon glyphicon-stats"></span> Relatórios</a></li>
                                 <li class="divider"></li>
-                                <li><a href="<?=site_url('config') ?>"><span class="glyphicon glyphicon-cog"></span> Configurações</a></li>
-                                <li><a href="<?=site_url('sales/suspended') ?>"><span class="glyphicon glyphicon-pause"></span> Vendas Suspensas</a></li>
+                                <li><a href="<?= site_url('config') ?>"><span class="glyphicon glyphicon-cog"></span> Configurações</a></li>
+                                <li><a href="<?= site_url('sales/suspended') ?>"><span class="glyphicon glyphicon-pause"></span> Vendas Suspensas</a></li>
                             </ul>
                         </li>
                     </ul>
