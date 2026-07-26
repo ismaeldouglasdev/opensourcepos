@@ -104,6 +104,9 @@ $request = Services::request();
         }
     </style>
     
+    <!-- CSS Moderno OSPOS -->
+    <link rel="stylesheet" href="<?= base_url('css/modern.css') ?>">
+
     <!-- CSS Acessível para Idosos -->
     <link rel="stylesheet" href="<?= base_url('resources/css/accessible.css') ?>">
 </head>

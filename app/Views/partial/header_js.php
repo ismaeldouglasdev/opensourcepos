@@ -31,11 +31,9 @@
     };
 
     var csrf_form_base = function() {
-        return {
-            <?= esc(config('Security')->tokenName, 'js') ?>: function() {
-                return csrf_token()
-            }
-        }
+        var obj = {};
+        obj['<?= esc(config('Security')->tokenName, 'js') ?>'] = csrf_token();
+        return obj;
     };
 
     var setup_csrf_token = function() {

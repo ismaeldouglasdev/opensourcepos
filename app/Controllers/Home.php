@@ -7,9 +7,12 @@ use CodeIgniter\HTTP\RedirectResponse;
 
 class Home extends Secure_Controller
 {
+    private $db;
+
     public function __construct()
     {
         parent::__construct('home', null, 'home');
+        $this->db = db_connect();
     }
 
     /**
@@ -19,18 +22,19 @@ class Home extends Secure_Controller
     {
         $decimals = totals_decimals();
         $data = [];
+        $p = $this->db->getPrefix();
 
-        // --- Sales price expression (with discount) ---
-        $sale_price = "CASE WHEN sales_items.discount_type = " . PERCENT
-            . " THEN sales_items.quantity_purchased * sales_items.item_unit_price - ROUND(sales_items.quantity_purchased * sales_items.item_unit_price * sales_items.discount / 100, $decimals)"
-            . " ELSE sales_items.quantity_purchased * (sales_items.item_unit_price - sales_items.discount) END";
+        // --- Sales price expression (with prefix) ---
+        $sale_price = "CASE WHEN {$p}sales_items.discount_type = " . PERCENT
+            . " THEN {$p}sales_items.quantity_purchased * {$p}sales_items.item_unit_price - ROUND({$p}sales_items.quantity_purchased * {$p}sales_items.item_unit_price * {$p}sales_items.discount / 100, $decimals)"
+            . " ELSE {$p}sales_items.quantity_purchased * ({$p}sales_items.item_unit_price - {$p}sales_items.discount) END";
 
         // 1. Today's sales total
         $builder = $this->db->table('sales_items');
         $builder->select("ROUND(SUM($sale_price), $decimals) AS total");
         $builder->join('sales', 'sales.sale_id = sales_items.sale_id');
         $builder->where('sales.sale_status', COMPLETED);
-        $builder->where('DATE(sales.sale_time)', date('Y-m-d'));
+        $builder->where("DATE({$p}sales.sale_time)", date('Y-m-d'));
         $row = $builder->get()->getRow();
         $data['today_sales'] = (float)($row->total ?? 0);
 
@@ -39,16 +43,16 @@ class Home extends Secure_Controller
         $builder->select("ROUND(SUM($sale_price), $decimals) AS total");
         $builder->join('sales', 'sales.sale_id = sales_items.sale_id');
         $builder->where('sales.sale_status', COMPLETED);
-        $builder->where('DATE(sales.sale_time)', date('Y-m-d', strtotime('-1 day')));
+        $builder->where("DATE({$p}sales.sale_time)", date('Y-m-d', strtotime('-1 day')));
         $row = $builder->get()->getRow();
         $data['yesterday_sales'] = (float)($row->total ?? 0);
 
-        // 3. This week's sales total (YEARWEEK column-to-column: raw where, no escape)
+        // 3. This week's sales total
         $builder = $this->db->table('sales_items');
         $builder->select("ROUND(SUM($sale_price), $decimals) AS total");
         $builder->join('sales', 'sales.sale_id = sales_items.sale_id');
         $builder->where('sales.sale_status', COMPLETED);
-        $builder->where('YEARWEEK(sales.sale_time, 1)', 'YEARWEEK(CURDATE(), 1)', false);
+        $builder->where("YEARWEEK({$p}sales.sale_time, 1)", 'YEARWEEK(CURDATE(), 1)', false);
         $row = $builder->get()->getRow();
         $data['week_sales'] = (float)($row->total ?? 0);
 
@@ -57,27 +61,27 @@ class Home extends Secure_Controller
         $builder->select("ROUND(SUM($sale_price), $decimals) AS total");
         $builder->join('sales', 'sales.sale_id = sales_items.sale_id');
         $builder->where('sales.sale_status', COMPLETED);
-        $builder->where('MONTH(sales.sale_time)', date('m'));
-        $builder->where('YEAR(sales.sale_time)', date('Y'));
+        $builder->where("MONTH({$p}sales.sale_time)", date('m'));
+        $builder->where("YEAR({$p}sales.sale_time)", date('Y'));
         $row = $builder->get()->getRow();
         $data['month_sales'] = (float)($row->total ?? 0);
 
         // 5. Items sold today (distinct items count)
         $builder = $this->db->table('sales_items');
-        $builder->selectCount('DISTINCT sales_items.item_id', 'count');
+        $builder->select("COUNT(DISTINCT {$p}sales_items.item_id) AS count");
         $builder->join('sales', 'sales.sale_id = sales_items.sale_id');
         $builder->where('sales.sale_status', COMPLETED);
-        $builder->where('DATE(sales.sale_time)', date('Y-m-d'));
+        $builder->where("DATE({$p}sales.sale_time)", date('Y-m-d'));
         $row = $builder->get()->getRow();
         $data['items_sold_today'] = (int)($row->count ?? 0);
 
         // 6. Top 5 items this week
         $builder = $this->db->table('sales_items');
-        $builder->select('items.name, SUM(sales_items.quantity_purchased) AS qty, ROUND(SUM(' . $sale_price . '), ' . $decimals . ') AS revenue');
+        $builder->select("{$p}items.name, SUM({$p}sales_items.quantity_purchased) AS qty, ROUND(SUM($sale_price), $decimals) AS revenue");
         $builder->join('sales', 'sales.sale_id = sales_items.sale_id');
         $builder->join('items', 'items.item_id = sales_items.item_id');
         $builder->where('sales.sale_status', COMPLETED);
-        $builder->where('YEARWEEK(sales.sale_time, 1)', 'YEARWEEK(CURDATE(), 1)', false);
+        $builder->where("YEARWEEK({$p}sales.sale_time, 1)", 'YEARWEEK(CURDATE(), 1)', false);
         $builder->groupBy('sales_items.item_id');
         $builder->orderBy('qty', 'DESC');
         $builder->limit(5);
@@ -85,18 +89,18 @@ class Home extends Secure_Controller
 
         // 7. Stock alerts: items with ZERADO or IRREGULAR status
         $builder = $this->db->table('items');
-        $builder->select('items.name, items.reorder_level, item_quantities.quantity, item_quantities.stock_status, item_quantities.location_id');
+        $builder->select("{$p}items.name, {$p}items.reorder_level, {$p}item_quantities.quantity, {$p}item_quantities.stock_status, {$p}item_quantities.location_id");
         $builder->join('item_quantities', 'item_quantities.item_id = items.item_id');
         $builder->where('items.stock_type', HAS_STOCK);
         $builder->where('items.deleted', 0);
-        $builder->where('item_quantities.stock_status IN', [Item_quantity::STOCK_ZERADO, Item_quantity::STOCK_IRREGULAR]);
+        $builder->whereIn('item_quantities.stock_status', [Item_quantity::STOCK_ZERADO, Item_quantity::STOCK_IRREGULAR]);
         $builder->orderBy('item_quantities.stock_status', 'DESC');
         $builder->limit(10);
         $data['stock_alerts'] = $builder->get()->getResult();
 
         // 8. Pending receivables (fiado / conta a receber)
         $builder = $this->db->table('sales_payments');
-        $builder->select('IFNULL(SUM(payment_amount), 0) AS total');
+        $builder->select("IFNULL(SUM({$p}sales_payments.payment_amount), 0) AS total");
         $builder->where('payment_type', lang('Sales.account_receivable'));
         $row = $builder->get()->getRow();
         $data['pending_receivables'] = (float)($row->total ?? 0);

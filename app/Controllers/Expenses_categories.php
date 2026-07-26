@@ -98,7 +98,7 @@ class Expenses_categories extends Secure_Controller    // TODO: Is this class ev
             }
         } else { // Failure
             echo json_encode([
-                'success' => true,
+                'success' => false,
                 'message' => lang('Expenses_categories.error_adding_updating') . ' ' . $expense_category_data['category_name'],
                 'id'      => NEW_ENTRY
             ]);

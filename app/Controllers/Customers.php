@@ -463,6 +463,7 @@ class Customers extends Persons
 
                     ++$i;
                 }
+                fclose($handle);
 
                 if (count($failCodes) > 0) {
                     $message = lang('Customers.csv_import_partially_failed', [count($failCodes), implode(', ', $failCodes)]);

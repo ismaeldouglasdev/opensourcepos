@@ -907,7 +907,10 @@ class Config extends Secure_Controller
             'print_top_margin'              => $this->request->getPost('print_top_margin', FILTER_SANITIZE_NUMBER_INT),
             'print_left_margin'             => $this->request->getPost('print_left_margin', FILTER_SANITIZE_NUMBER_INT),
             'print_bottom_margin'           => $this->request->getPost('print_bottom_margin', FILTER_SANITIZE_NUMBER_INT),
-            'print_right_margin'            => $this->request->getPost('print_right_margin', FILTER_SANITIZE_NUMBER_INT)
+            'print_right_margin'            => $this->request->getPost('print_right_margin', FILTER_SANITIZE_NUMBER_INT),
+            'escpos_enabled'                => $this->request->getPost('escpos_enabled') != null,
+            'escpos_printer'                => $this->request->getPost('escpos_printer'),
+            'escpos_printer_print_receipt'  => $this->request->getPost('escpos_printer_print_receipt') != null
         ];
 
         $success = $this->appconfig->batch_save($batch_save_data);

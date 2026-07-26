@@ -14,6 +14,14 @@ $routes->post('login', 'Login::index');
 $routes->add('no_access/index/(:segment)', 'No_access::index/$1');
 $routes->add('no_access/index/(:segment)/(:segment)', 'No_access::index/$1/$2');
 
+// ═══════════════════════════════════════════════════════════
+//  HOME
+// ═══════════════════════════════════════════════════════════
+$routes->get('home', 'Home::getIndex');
+$routes->get('home/logout', 'Home::getLogout');
+$routes->get('home/changePassword/(:num)', 'Home::getChangePassword/$1');
+$routes->post('home/save/(:num)', 'Home::postSave/$1');
+
 $routes->add('reports/summary_(:any)/(:any)/(:any)', 'Reports::Summary_$1/$2/$3/$4');
 $routes->add('reports/summary_expenses_categories', 'Reports::date_input_only');
 $routes->add('reports/summary_payments', 'Reports::date_input_only');
@@ -40,15 +48,35 @@ $routes->add('reports/specific_employees', 'Reports::specific_employee_input');
 $routes->add('reports/specific_discounts', 'Reports::specific_discount_input');
 $routes->add('reports/specific_suppliers', 'Reports::specific_supplier_input');
 
-$routes->add('sales/quickFinish', 'Sales::postQuickFinish');
-$routes->add('sales/getSaleItems', 'Sales::getSaleItems');
-$routes->add('sales/editForm/(:num)', 'Sales::getEditForm/$1');
-$routes->add('sales/edit/(:num)', 'Sales::getEdit/$1');
+// ═══════════════════════════════════════════════════════════
+//  SALES
+// ═══════════════════════════════════════════════════════════
+$routes->get('sales', 'Sales::getIndex');
+$routes->get('sales/add', 'Sales::getIndex');
+$routes->get('sales/manage', 'Sales::getManage');
+$routes->get('sales/search', 'Sales::getSearch');
+$routes->get('sales/getSaleItems', 'Sales::getSaleItems');
+$routes->get('sales/getPaymentSummary', 'Sales::getPaymentSummary');
+$routes->get('sales/itemSearch', 'Sales::itemSearch');
+$routes->get('sales/editForm/(:num)', 'Sales::getEditForm/$1');
+$routes->get('sales/edit/(:num)', 'Sales::getEdit/$1');
+$routes->get('sales/receipt/(:num)', 'Sales::getReceipt/$1');
+$routes->get('sales/deleteItem/(:num)', 'Sales::getDeleteItem/$1');
+$routes->get('sales/deletePayment/(:segment)', 'Sales::getDeletePayment/$1');
+$routes->get('sales/suspended', 'Sales::getSuspended');
+$routes->get('sales/discardSuspendedSale', 'Sales::getDiscardSuspendedSale');
+$routes->get('sales/removeCustomer', 'Sales::getRemoveCustomer');
+$routes->get('sales/sendPdf/(:num)', 'Sales::getSendPdf/$1');
+$routes->get('sales/sendPdf/(:num)/(:segment)', 'Sales::getSendPdf/$1/$2');
+$routes->get('sales/sendReceipt/(:num)', 'Sales::getSendReceipt/$1');
+$routes->get('sales/invoice/(:num)', 'Sales::getInvoice/$1');
+$routes->get('sales/salesKeyboardHelp', 'Sales::getSalesKeyboardHelp');
+$routes->get('sales/getPaymentSummary/(:num)', 'Sales::getPaymentSummary/$1');
+
+$routes->post('sales/add', 'Sales::postAdd');
+$routes->post('sales/addDiversos', 'Sales::addDiversos');
 $routes->post('sales/save/(:num)', 'Sales::postSave/$1');
-$routes->add('sales/deleteItem/(:num)', 'Sales::getDeleteItem/$1');
-$routes->add('sales/deletePayment/(:num)', 'Sales::getDeletePayment/$1');
 $routes->post('sales/editItem/(:num)', 'Sales::postEditItem/$1');
-$routes->add('sales/manage', 'Sales::getManage');
 $routes->post('sales/delete', 'Sales::delete');
 $routes->post('sales/quickFinish', 'Sales::postQuickFinish');
 $routes->post('sales/suspend', 'Sales::postSuspend');
@@ -66,8 +94,6 @@ $routes->post('sales/changeItemName', 'Sales::postChangeItemName');
 $routes->post('sales/changeItemDescription', 'Sales::postChangeItemDescription');
 $routes->post('sales/restore', 'Sales::restore');
 $routes->post('sales/restore/(:num)', 'Sales::restore/$1');
-$routes->add('sales/getPaymentSummary/(:num)', 'Sales::getPaymentSummary/$1');
-$routes->post('sales/addDiversos', 'Sales::addDiversos');
 
 // ═══════════════════════════════════════════════════════════
 //  ITEMS

@@ -1299,6 +1299,28 @@ class Sales extends Secure_Controller
     }
 
     /**
+     * Selects a customer for the current sale
+     *
+     * @return void
+     * @noinspection PhpUnused
+     */
+    public function postSelectCustomer(): void
+    {
+        $customer_id = (int)$this->request->getPost('customer', FILTER_SANITIZE_NUMBER_INT);
+        if ($this->customer->exists($customer_id)) {
+            $this->sale_lib->set_customer($customer_id);
+            $discount = $this->customer->get_info($customer_id)->discount;
+            $discount_type = $this->customer->get_info($customer_id)->discount_type;
+
+            if ($discount != '') {
+                $this->sale_lib->apply_customer_discount($discount, $discount_type);
+            }
+        }
+
+        $this->_reload();
+    }
+
+    /**
      * Discards the suspended sale. Used in app/Views/sales/quote.php
      *
      * @return void
@@ -1553,7 +1575,7 @@ class Sales extends Secure_Controller
         $sales_taxes = $this->tax_lib->get_taxes($cart);
         $sale_status = COMPLETED;
 
-        $totals = $this->sale_lib->get_totals($sales_taxes[0] ?? null);
+        $totals = $this->sale_lib->get_totals($sales_taxes[0] ?? []);
         $amount_due = $totals['total'];
         $payments_total = $this->sale_lib->get_payments_total();
 

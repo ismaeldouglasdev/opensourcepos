@@ -24,7 +24,6 @@ class Database extends Config
         'failover'    => [],
         'port'         => 3306,
     ];
-    ];
 
     public function __construct()
     {

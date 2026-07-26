@@ -1265,8 +1265,11 @@ function selectPayment(type, lang_key) {
     }
     
     setTimeout(function() {
-        amountInput.focus();
-        amountInput.select();
+        var amountInput = document.getElementById('checkout_amount');
+        if (amountInput) {
+            amountInput.focus();
+            amountInput.select();
+        }
     }, 50);
 }
 

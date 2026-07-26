@@ -173,7 +173,7 @@ class Item_quantity extends Model
     {
         $builder = $this->db->table('item_quantities');
         $builder->join('items', 'items.item_id = item_quantities.item_id');
-        $builder->where('item_quantities.stock_status IN', [self::STOCK_ZERADO, self::STOCK_IRREGULAR]);
+        $builder->whereIn('item_quantities.stock_status', [self::STOCK_ZERADO, self::STOCK_IRREGULAR]);
         $builder->where('items.deleted', 0);
         $builder->where('items.stock_type', HAS_STOCK);
 
