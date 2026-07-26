@@ -32,7 +32,4 @@ body {
     font-size: 15px !important;
 }
 
-/* Payment summary */
-#payment_summary {
-    font-size: 32px !important;
-}
+/* Payment summary - handled by modern.css KPI bar */

@@ -29,53 +29,6 @@
     .expand-btn:hover {
         color: #23527c;
     }
-    #report_summary {
-        display: flex !important;
-        flex-wrap: wrap !important;
-        gap: 10px !important;
-        justify-content: center !important;
-        padding: 15px 0 !important;
-    }
-    .summary_row {
-        flex: 1 1 140px !important;
-        max-width: 200px !important;
-        min-width: 120px !important;
-    }
-    @media (max-width: 768px) {
-        .summary_row {
-            flex: 1 1 45% !important;
-            max-width: none !important;
-            min-width: 100px !important;
-            padding: 8px 12px !important;
-        }
-        #report_summary {
-            gap: 8px !important;
-            padding: 10px 5px !important;
-        }
-    }
-    @media print {
-        #report_summary {
-            display: flex !important;
-            flex-wrap: wrap !important;
-            gap: 15px !important;
-            justify-content: flex-start !important;
-        }
-        .summary_row {
-            flex: 0 0 auto !important;
-            padding: 5px 15px !important;
-            border: 1px solid #ddd !important;
-            margin: 3px !important;
-        }
-    }
-    @media (max-width: 480px) {
-        .summary_row {
-            flex: 1 1 100% !important;
-            max-width: 100% !important;
-        }
-        #payment_summary {
-            font-size: 22px !important;
-        }
-    }
 </style>
 
 <script type="text/javascript">
@@ -238,7 +191,7 @@
     <?= anchor("sales", "<span class=\"glyphicon glyphicon-shopping-cart\">&nbsp;</span>" . lang("Sales.register"), ["class" => "btn btn-info btn-sm pull-right", "id" => "show_sales_button"]) ?>
 </div>
 
-<div id="payment_summary" style="font-size: 28px; margin-bottom: 20px; text-align: center; background: #f5f5f5; padding: 15px; border-radius: 5px;">
+<div id="payment_summary">
     <?= $payment_summary ?>
 </div>
 

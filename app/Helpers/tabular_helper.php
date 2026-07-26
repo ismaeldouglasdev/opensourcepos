@@ -170,42 +170,31 @@ function get_sale_data_last_row(ResultInterface $sales): array
  */
 function get_sales_manage_payments_summary(array $payments): string
 {
-    $payment_icons = [
-        'Dinheiro' => '💵',
-        'Cartão Débito' => '💳',
-        'Cartão Crédito' => '💳',
-        'PIX' => '📱',
-        'Fiado' => '📝'
+    $type_keys = [
+        'Dinheiro' => 'dinheiro',
+        'Cartão Débito' => 'debito',
+        'Cartão Crédito' => 'credito',
+        'PIX' => 'pix',
+        'Fiado' => 'fiado'
     ];
-    
-    $payment_colors = [
-        'Dinheiro' => '#4CAF50',
-        'Cartão Débito' => '#2196F3',
-        'Cartão Crédito' => '#9C27B0',
-        'PIX' => '#00BCD4',
-        'Fiado' => '#FF9800'
-    ];
-    
-    $table = '<div id="report_summary" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; padding:15px 0;">';
+
+    $table = '<div id="report_summary" class="kpi-bar">';
     $total = 0;
 
     foreach ($payments as $key => $payment) {
         $amount = $payment['payment_amount'];
         $total = bcadd($total, $amount);
         $type = $payment['payment_type'];
-        $icon = $payment_icons[$type] ?? '💰';
-        $color = $payment_colors[$type] ?? '#666';
-        $table .= '<div class="summary_row" style="background:' . $color . ' !important; color:white !important; padding:10px 18px; border-radius:8px; min-width:150px; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.2);">';
-        $table .= '<div style="font-size:26px;">' . $icon . '</div>';
-        $table .= '<div style="font-size:12px; opacity:0.9;">' . $type . '</div>';
-        $table .= '<div style="font-size:17px; font-weight:bold;">' . to_currency($amount) . '</div>';
+        $key = $type_keys[$type] ?? 'outro';
+        $table .= '<div class="kpi-item" data-type="' . $key . '">';
+        $table .= '<div class="kpi-label">' . strtoupper($type) . '</div>';
+        $table .= '<div class="kpi-value">' . to_currency($amount) . '</div>';
         $table .= '</div>';
     }
 
-    $table .= '<div class="summary_row" style="background:#333 !important; color:white !important; padding:10px 18px; border-radius:8px; min-width:150px; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.2);">';
-    $table .= '<div style="font-size:26px;">📊</div>';
-    $table .= '<div style="font-size:12px; opacity:0.9;">TOTAL</div>';
-    $table .= '<div style="font-size:17px; font-weight:bold;">' . to_currency($total) . '</div>';
+    $table .= '<div class="kpi-item kpi-total" data-type="total">';
+    $table .= '<div class="kpi-label">TOTAL</div>';
+    $table .= '<div class="kpi-value">' . to_currency($total) . '</div>';
     $table .= '</div>';
     $table .= '</div>';
 

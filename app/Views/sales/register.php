@@ -79,6 +79,7 @@ use App\Models\Employee;
 #payment_details { display: none !important; }
 </style>
 
+<style>
 /* Discount toggle override */
 #register td:nth-child(6) { overflow: hidden; }
 #register td .input-group { display: flex; align-items: center; width: 100%; }

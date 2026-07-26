@@ -889,59 +889,97 @@ code, .font-monospace, pre {
 }
 
 /* ============================================
-   17. SPECIFIC: MANAGE PAGE — KPI Bar (Phase 4)
+   17. KPI BAR — Pagamento Resumo
    ============================================ */
 #payment_summary {
+    margin-bottom: 10px !important;
+}
+
+.kpi-bar {
     background: var(--os-bg) !important;
     border: 1px solid var(--os-border) !important;
     border-radius: var(--os-radius) !important;
     padding: 0 !important;
-    margin-bottom: 10px !important;
-    box-shadow: none !important;
+    margin: 0 !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
     display: flex !important;
     flex-wrap: wrap !important;
     align-items: stretch !important;
     overflow: hidden !important;
 }
 
-#payment_summary .summary_row {
+.kpi-item {
     flex: 1 1 0 !important;
     min-width: 0 !important;
     max-width: none !important;
-    padding: 10px 16px !important;
+    padding: 12px 20px !important;
     background: transparent !important;
     border: none !important;
     border-right: 1px solid var(--os-border-light) !important;
     box-shadow: none !important;
     text-align: center !important;
+    transition: background 0.15s ease !important;
 }
 
-#payment_summary .summary_row:last-child {
+.kpi-item:last-child {
     border-right: none !important;
 }
 
-#payment_summary .summary_row .summary_label {
+.kpi-item:hover {
+    background: var(--os-surface) !important;
+}
+
+.kpi-label {
     font-size: 10px !important;
     text-transform: uppercase !important;
     letter-spacing: 0.08em !important;
     color: var(--os-text-muted) !important;
     font-weight: 600 !important;
-    margin-bottom: 2px !important;
+    margin-bottom: 3px !important;
 }
 
-#payment_summary .summary_row .summary_value {
+.kpi-value {
     font-family: var(--os-font-mono) !important;
     font-size: 16px !important;
     font-weight: 700 !important;
     color: var(--os-text) !important;
+    white-space: nowrap !important;
 }
 
-#payment_summary .summary_row .summary_value.positive {
+.kpi-total .kpi-value {
+    color: var(--os-success) !important;
+    font-size: 17px !important;
+}
+
+.kpi-total .kpi-label {
     color: var(--os-success) !important;
 }
 
-#payment_summary .summary_row .summary_value.negative {
-    color: var(--os-danger) !important;
+@media (max-width: 768px) {
+    .kpi-bar {
+        flex-direction: column !important;
+    }
+    .kpi-item {
+        border-right: none !important;
+        border-bottom: 1px solid var(--os-border-light) !important;
+        padding: 8px 16px !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+    }
+    .kpi-item:last-child {
+        border-bottom: none !important;
+    }
+    .kpi-label {
+        margin-bottom: 0 !important;
+        font-size: 11px !important;
+    }
+    .kpi-value {
+        font-size: 14px !important;
+    }
+    .kpi-total .kpi-value {
+        font-size: 15px !important;
+    }
 }
 
 /* Bootstrap-Table overrides */
@@ -1894,21 +1932,8 @@ td:has(.glyphicon), /* fallback */
 }
 
 /* ============================================
-    58. MANAGE PAGE — KPI Bar + Detail rows (Phase 4)
+    58. MANAGE PAGE — Detail rows + Report Summary
     ============================================ */
-#payment_summary {
-    background: var(--os-bg) !important;
-    border: 1px solid var(--os-border) !important;
-    border-radius: var(--os-radius) !important;
-    padding: 0 !important;
-    margin-bottom: 10px !important;
-    box-shadow: none !important;
-    display: flex !important;
-    flex-wrap: wrap !important;
-    align-items: stretch !important;
-    overflow: hidden !important;
-}
-
 #report_summary {
     display: flex !important;
     flex-wrap: wrap !important;
@@ -1917,19 +1942,15 @@ td:has(.glyphicon), /* fallback */
     margin-bottom: 0 !important;
 }
 
-.summary_row {
+#report_summary .summary_row {
     flex: 1 1 0 !important;
-    max-width: none !important;
     min-width: 0 !important;
     padding: 10px 16px !important;
-    background: transparent !important;
-    border: none !important;
-    border-right: 1px solid var(--os-border-light) !important;
     text-align: center !important;
-    box-shadow: none !important;
+    border-right: 1px solid var(--os-border-light) !important;
 }
 
-.summary_row:last-child {
+#report_summary .summary_row:last-child {
     border-right: none !important;
 }
 

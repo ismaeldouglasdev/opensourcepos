@@ -60,7 +60,7 @@ var summaryVisibility = JSON.parse(safeGetItem('summaryVisibility')) || { cost: 
 
 // Function to apply visibility for cost and profit rows
 function applySummaryVisibility() {
-    var rows = $('#report_summary .summary_row');
+    var rows = $('#report_summary .kpi-item');
     var costRow = rows.eq(rows.length - 2); // Second-to-last row
     var profitRow = rows.eq(rows.length - 1); // Last row
 
