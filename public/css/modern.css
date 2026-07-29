@@ -360,9 +360,14 @@ code, .font-monospace, pre {
 
 .table > tbody > tr > td {
     border-top: 1px solid var(--os-border-light) !important;
+    border-right: 1px solid #edf2f7 !important;
     padding: 5px 10px !important;
     vertical-align: middle !important;
     font-size: 13px !important;
+}
+
+.table > tbody > tr > td:last-child {
+    border-right: none !important;
 }
 
 .table > tbody > tr:hover {
@@ -371,6 +376,61 @@ code, .font-monospace, pre {
 
 .table-striped > tbody > tr:nth-of-type(odd) {
     background: #fafbfc !important;
+}
+
+/* Clear column separation — every cell gets a right border */
+.fixed-table-container td,
+.fixed-table-container thead th {
+    border-right: 1px solid #e2e8f0 !important;
+}
+.fixed-table-container td:last-child,
+.fixed-table-container thead th:last-child {
+    border-right: none !important;
+}
+
+/* Amount columns: right-align monospace for any td containing money values */
+.fixed-table-container td {
+    font-variant-numeric: tabular-nums !important;
+}
+.fixed-table-container td:nth-child(4),
+.fixed-table-container td:nth-child(5),
+.fixed-table-container td:nth-child(6) {
+    font-family: var(--os-font-mono) !important;
+    text-align: right !important;
+    font-weight: 600 !important;
+}
+
+/* Payment type column */
+.fixed-table-container td:nth-child(7) {
+    font-weight: 600 !important;
+    color: var(--os-text) !important;
+}
+
+/* ID column */
+.fixed-table-container td:nth-child(1) {
+    text-align: center !important;
+    font-weight: 700 !important;
+    color: var(--os-text-muted) !important;
+    font-size: 12px !important;
+}
+
+/* Date column */
+.fixed-table-container td:nth-child(2) {
+    font-size: 12px !important;
+    white-space: nowrap !important;
+}
+
+/* Action columns (icons) */
+.fixed-table-container td[style*="text-align"],
+.fixed-table-container td .glyphicon {
+    font-size: 14px !important;
+}
+
+/* Last rows (totals) — stronger border */
+#table tbody tr:last-child td {
+    border-top: 2px solid var(--os-border) !important;
+    font-weight: 700 !important;
+    background: #f8fafc !important;
 }
 
 /* ============================================
