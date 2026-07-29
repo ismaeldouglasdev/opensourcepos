@@ -952,6 +952,73 @@ code, .font-monospace, pre {
     background: var(--os-surface) !important;
 }
 
+/* Payment type colors */
+.kpi-item[data-type="dinheiro"] {
+    background: #f0fdf4 !important;
+    border-bottom: 3px solid #16a34a !important;
+}
+.kpi-item[data-type="dinheiro"] .kpi-value {
+    color: #15803d !important;
+}
+.kpi-item[data-type="dinheiro"] .kpi-label::before {
+    content: "💰 ";
+}
+
+.kpi-item[data-type="debito"] {
+    background: #eff6ff !important;
+    border-bottom: 3px solid #2563eb !important;
+}
+.kpi-item[data-type="debito"] .kpi-value {
+    color: #1e40af !important;
+}
+.kpi-item[data-type="debito"] .kpi-label::before {
+    content: "💳 ";
+}
+
+.kpi-item[data-type="credito"] {
+    background: #f5f3ff !important;
+    border-bottom: 3px solid #7c3aed !important;
+}
+.kpi-item[data-type="credito"] .kpi-value {
+    color: #5b21b6 !important;
+}
+.kpi-item[data-type="credito"] .kpi-label::before {
+    content: "💳 ";
+}
+
+.kpi-item[data-type="pix"] {
+    background: #ecfeff !important;
+    border-bottom: 3px solid #0891b2 !important;
+}
+.kpi-item[data-type="pix"] .kpi-value {
+    color: #0e7490 !important;
+}
+.kpi-item[data-type="pix"] .kpi-label::before {
+    content: "⚡ ";
+}
+
+.kpi-item[data-type="fiado"] {
+    background: #fff7ed !important;
+    border-bottom: 3px solid #ea580c !important;
+}
+.kpi-item[data-type="fiado"] .kpi-value {
+    color: #c2410c !important;
+}
+.kpi-item[data-type="fiado"] .kpi-label::before {
+    content: "📋 ";
+}
+
+.kpi-item[data-type="outro"] {
+    background: #f8fafc !important;
+    border-bottom: 3px solid #64748b !important;
+}
+.kpi-item[data-type="outro"] .kpi-value {
+    color: #475569 !important;
+}
+.kpi-item[data-type="outro"] .kpi-label::before {
+    content: "💵 ";
+}
+
 .kpi-label {
     font-size: 10px !important;
     text-transform: uppercase !important;
@@ -969,13 +1036,20 @@ code, .font-monospace, pre {
     white-space: nowrap !important;
 }
 
+.kpi-total {
+    background: #f0fdf4 !important;
+    border-bottom: 3px solid #16a34a !important;
+}
 .kpi-total .kpi-value {
-    color: var(--os-success) !important;
+    color: #15803d !important;
     font-size: 17px !important;
 }
-
 .kpi-total .kpi-label {
-    color: var(--os-success) !important;
+    color: #15803d !important;
+    font-weight: 700 !important;
+}
+.kpi-total .kpi-label::before {
+    content: "📊 ";
 }
 
 @media (max-width: 768px) {
