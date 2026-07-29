@@ -379,41 +379,30 @@ code, .font-monospace, pre {
 }
 
 /* Clear column separation — every cell gets a right border */
-#table td,
-#table th,
-.fixed-table-container td,
-.fixed-table-container th {
-    border-right: 1px solid #d0d7de !important;
+.bootstrap-table .fixed-table-container .table td {
+    border-right: 1px solid #cbd5e1 !important;
 }
-#table td:last-child,
-#table th:last-child,
-.fixed-table-container td:last-child,
-.fixed-table-container th:last-child {
+.bootstrap-table .fixed-table-container .table td:last-child {
     border-right: none !important;
 }
 
 /* Amount columns: right-align monospace */
-#table td:nth-child(4),
-#table td:nth-child(5),
-#table td:nth-child(6),
-.fixed-table-container td:nth-child(4),
-.fixed-table-container td:nth-child(5),
-.fixed-table-container td:nth-child(6) {
+.bootstrap-table .fixed-table-container .table td:nth-child(4),
+.bootstrap-table .fixed-table-container .table td:nth-child(5),
+.bootstrap-table .fixed-table-container .table td:nth-child(6) {
     font-family: var(--os-font-mono) !important;
     text-align: right !important;
     font-weight: 600 !important;
 }
 
 /* Payment type column: bold */
-#table td:nth-child(7),
-.fixed-table-container td:nth-child(7) {
+.bootstrap-table .fixed-table-container .table td:nth-child(7) {
     font-weight: 600 !important;
     color: var(--os-text) !important;
 }
 
 /* ID column: center */
-#table td:nth-child(1),
-.fixed-table-container td:nth-child(1) {
+.bootstrap-table .fixed-table-container .table td:nth-child(1) {
     text-align: center !important;
     font-weight: 700 !important;
     color: var(--os-text-muted) !important;
@@ -421,8 +410,7 @@ code, .font-monospace, pre {
 }
 
 /* Date column: compact */
-#table td:nth-child(2),
-.fixed-table-container td:nth-child(2) {
+.bootstrap-table .fixed-table-container .table td:nth-child(2) {
     font-size: 12px !important;
     white-space: nowrap !important;
 }
