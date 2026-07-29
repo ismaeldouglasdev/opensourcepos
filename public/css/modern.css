@@ -359,8 +359,8 @@ code, .font-monospace, pre {
 }
 
 .table > tbody > tr > td {
-    border-top: 1px solid var(--os-border-light) !important;
-    border-right: 1px solid #edf2f7 !important;
+    border-top: 1px solid #e2e8f0 !important;
+    border-right: 1px solid #e2e8f0 !important;
     padding: 5px 10px !important;
     vertical-align: middle !important;
     font-size: 13px !important;
@@ -379,19 +379,23 @@ code, .font-monospace, pre {
 }
 
 /* Clear column separation — every cell gets a right border */
+#table td,
+#table th,
 .fixed-table-container td,
-.fixed-table-container thead th {
-    border-right: 1px solid #e2e8f0 !important;
+.fixed-table-container th {
+    border-right: 1px solid #d0d7de !important;
 }
+#table td:last-child,
+#table th:last-child,
 .fixed-table-container td:last-child,
-.fixed-table-container thead th:last-child {
+.fixed-table-container th:last-child {
     border-right: none !important;
 }
 
-/* Amount columns: right-align monospace for any td containing money values */
-.fixed-table-container td {
-    font-variant-numeric: tabular-nums !important;
-}
+/* Amount columns: right-align monospace */
+#table td:nth-child(4),
+#table td:nth-child(5),
+#table td:nth-child(6),
 .fixed-table-container td:nth-child(4),
 .fixed-table-container td:nth-child(5),
 .fixed-table-container td:nth-child(6) {
@@ -400,13 +404,15 @@ code, .font-monospace, pre {
     font-weight: 600 !important;
 }
 
-/* Payment type column */
+/* Payment type column: bold */
+#table td:nth-child(7),
 .fixed-table-container td:nth-child(7) {
     font-weight: 600 !important;
     color: var(--os-text) !important;
 }
 
-/* ID column */
+/* ID column: center */
+#table td:nth-child(1),
 .fixed-table-container td:nth-child(1) {
     text-align: center !important;
     font-weight: 700 !important;
@@ -414,16 +420,11 @@ code, .font-monospace, pre {
     font-size: 12px !important;
 }
 
-/* Date column */
+/* Date column: compact */
+#table td:nth-child(2),
 .fixed-table-container td:nth-child(2) {
     font-size: 12px !important;
     white-space: nowrap !important;
-}
-
-/* Action columns (icons) */
-.fixed-table-container td[style*="text-align"],
-.fixed-table-container td .glyphicon {
-    font-size: 14px !important;
 }
 
 /* Last rows (totals) — stronger border */
