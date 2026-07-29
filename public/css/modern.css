@@ -1511,7 +1511,9 @@ a:focus-visible {
 /* ============================================
     35. FORM HORIZONTAL — Tighter for POS
     ============================================ */
-.form-horizontal .form-group {
+/* Restore Bootstrap negative margins for proper grid alignment in modals.
+   Only the register wrapper form needs zero margins. */
+#register_wrapper .form-horizontal .form-group {
     margin-left: 0 !important;
     margin-right: 0 !important;
 }
