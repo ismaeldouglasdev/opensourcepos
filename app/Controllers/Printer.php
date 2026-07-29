@@ -26,6 +26,7 @@ class Printer extends Secure_Controller
     private Barcode_lib $barcode_lib;
     private Sale $sale;
     private Customer $customer;
+    private Employee $employee;
     private array $config;
 
     public function __construct()
@@ -38,6 +39,7 @@ class Printer extends Secure_Controller
         $this->barcode_lib = new Barcode_lib();
         $this->sale = model(Sale::class);
         $this->customer = model(Customer::class);
+        $this->employee = model(Employee::class);
     }
 
     /**

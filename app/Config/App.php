@@ -157,6 +157,7 @@ class App extends BaseConfig
      * @var list<string>
      */
     public array $supportedLocales = [
+        'pt-BR',
         'ar-EG',
         'ar-LB',
         'az',
@@ -187,7 +188,6 @@ class App extends BaseConfig
         'nl-BE',
         'nl-NL',
         'pl',
-        'pt-BR',
         'ro',
         'ru',
         'sv',

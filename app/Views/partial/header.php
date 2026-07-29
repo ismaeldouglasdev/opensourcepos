@@ -108,7 +108,9 @@ $request = Services::request();
     <link rel="stylesheet" href="<?= base_url('css/modern.css') ?>">
 
     <!-- CSS Acessível para Idosos -->
-    <link rel="stylesheet" href="<?= base_url('resources/css/accessible.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('css/accessible.css') ?>">
+
+    <?= view('partial/tutorial') ?>
 </head>
 
 <body>

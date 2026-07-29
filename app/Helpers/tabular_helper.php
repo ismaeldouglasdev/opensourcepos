@@ -87,6 +87,7 @@ function get_sales_manage_table_headers(): string
     }
 
     $headers[] = ['receipt' => '', 'sortable' => false, 'escape' => false];
+    $headers[] = ['items' => 'Itens', 'sortable' => false, 'escape' => false];
 
     return transform_headers($headers);
 }
@@ -127,6 +128,9 @@ function get_sale_data_row(object $sale): array
         '<span class="glyphicon glyphicon-usd"></span>',
         ['title' => lang('Sales.show_receipt')]
     );
+
+    $row['items'] = '<button class="btn btn-xs btn-items" data-sale-id="' . $sale->sale_id . '" onclick="openSaleItems(event, ' . $sale->sale_id . ')"><span class="glyphicon glyphicon-shopping-cart"></span> Itens</button>';
+
     $row['edit'] = anchor(
         "$controller/edit/$sale->sale_id",
         '<span class="glyphicon glyphicon-edit"></span>',

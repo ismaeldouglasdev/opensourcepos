@@ -9,8 +9,8 @@ body {
     line-height: 1.6 !important;
 }
 
-/* AUMENTAR TODAS AS FONTES */
-*, *::before, *::after {
+/* AUMENTAR TODAS AS FONTES (apenas elementos de texto, sem universal) */
+body, p, span, td, th, li, label, input, select, textarea, .form-control, .btn, .table, .navbar, .dropdown-menu, .modal {
     font-size: 16px !important;
 }
 

@@ -6,6 +6,7 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  */
 $routes->setDefaultController('Login');
+$routes->setAutoRoute(false);
 
 $routes->get('/', 'Login::index');
 $routes->get('login', 'Login::index');
@@ -59,6 +60,7 @@ $routes->get('sales/getSaleItems', 'Sales::getSaleItems');
 $routes->get('sales/getPaymentSummary', 'Sales::getPaymentSummary');
 $routes->get('sales/itemSearch', 'Sales::itemSearch');
 $routes->get('sales/editForm/(:num)', 'Sales::getEditForm/$1');
+$routes->get('sales/row/(:num)', 'Sales::getRow/$1');
 $routes->get('sales/edit/(:num)', 'Sales::getEdit/$1');
 $routes->get('sales/receipt/(:num)', 'Sales::getReceipt/$1');
 $routes->get('sales/deleteItem/(:num)', 'Sales::getDeleteItem/$1');

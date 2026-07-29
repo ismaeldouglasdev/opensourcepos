@@ -166,14 +166,14 @@ class Sales extends Secure_Controller
      */
     public function getRow(int $row_id): void
     {
-        $sale_info = $this->sale->get_info($row_id)->getRowArray();
+        $sale_info = $this->sale->get_info($row_id)->getRow();
 
         if (empty($sale_info)) {
             echo json_encode(['success' => false, 'message' => 'Venda não encontrada']);
             return;
         }
 
-        echo json_encode(get_sale_data_row($sale_info));
+        echo json_encode(get_sale_data_row((object) $sale_info));
     }
 
     /**
@@ -1650,7 +1650,7 @@ class Sales extends Secure_Controller
         $quantity = $this->request->getPost('quantity') ?? '1';
         $description = $this->request->getPost('description') ?? 'Diversos';
         
-        $item_id = '3611';
+        $item_id = $this->config['diversos_item_id'] ?? '3611';
         $item_location = 1;
         $discount = '0';
         $discount_type = 0;

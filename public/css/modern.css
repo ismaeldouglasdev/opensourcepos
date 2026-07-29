@@ -6,6 +6,7 @@
 
 /* --- GOOGLE FONT --- */
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+/* Fallback: system-ui se Google Fonts falhar (ex: sem internet) */
 
 /* --- DESIGN TOKENS (CSS Variables) --- */
 :root {
@@ -66,10 +67,32 @@
    ============================================ */
 body {
     font-family: var(--os-font) !important;
+    font-size: 21px !important;
     background: var(--os-bg) !important;
     color: var(--os-text) !important;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+}
+
+/* Bump core interactive/text elements so user doesn't need to zoom */
+.table, .table td, .table th,
+.form-control, input, select, textarea,
+.btn, .btn-sm, .btn-xs,
+.panel, .panel-body,
+.list-group-item,
+.dropdown-menu, .dropdown-menu li a,
+.nav > li > a,
+.sidebar, .sidebar ul li a,
+.topbar,
+.breadcrumb, .well, .alert,
+#table, #table td, #table th {
+    font-size: 18px !important;
+}
+
+/* Keep loading spinner text compact */
+.fixed-table-loading,
+.fixed-table-loading .loading-text {
+    font-size: 12px !important;
 }
 
 h1, h2, h3, h4, h5, h6 {

@@ -11,23 +11,63 @@
 <?= view("partial/header") ?>
 
 <style>
-    .detail-table {
-        margin: 10px;
-        background: #fff;
+    .btn-items {
+        background: #f0f4f8;
+        border: 1px solid #d0d7de;
+        border-radius: 4px;
+        padding: 3px 8px;
+        font-size: 12px;
+        color: #2c3e50;
+        transition: all 0.15s ease;
+        white-space: nowrap;
     }
-    .detail-row {
-        background: #f9f9f9;
+    .btn-items:hover {
+        background: #dce8f5;
+        border-color: #6c8ebf;
+        color: #1a3a5c;
     }
-    .detail-row td {
-        padding: 10px !important;
+    .btn-items:active {
+        background: #c5d6eb;
     }
-    .expand-btn {
-        cursor: pointer;
-        color: #337ab7;
+
+    /* Modal for sale items */
+    .sale-items-modal .modal-dialog {
+        max-width: 700px;
+    }
+    .sale-items-modal .modal-body {
+        padding: 0;
+    }
+    .sale-items-modal .table {
+        margin-bottom: 0;
+    }
+    .sale-items-modal .table th {
+        background: #f4f6f8;
+        border-bottom: 2px solid #dde2e6;
+        font-weight: 600;
+        font-size: 13px;
+        padding: 10px 12px;
+    }
+    .sale-items-modal .table td {
+        padding: 8px 12px;
         font-size: 14px;
+        border-bottom: 1px solid #eef1f4;
     }
-    .expand-btn:hover {
-        color: #23527c;
+    .sale-items-modal .table tbody tr:hover {
+        background: #f8faff;
+    }
+    .sale-items-modal .modal-header {
+        background: #f4f6f8;
+        border-bottom: 1px solid #dde2e6;
+        padding: 12px 16px;
+    }
+    .sale-items-modal .modal-header h4 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0;
+    }
+    .sale-items-modal .modal-footer {
+        border-top: 1px solid #eef1f4;
+        padding: 10px 16px;
     }
 </style>
 
@@ -73,21 +113,6 @@
             }
         };
         
-        $(document).on('click', '.expand-btn', function() {
-            var btn = $(this);
-            var sale_id = btn.data('sale_id');
-            var row = btn.closest('tr');
-            var nextRow = row.next();
-            
-            if (nextRow.hasClass('detail-row')) {
-                nextRow.remove();
-                btn.removeClass('glyphicon-minus').addClass('glyphicon-plus');
-            } else {
-                btn.removeClass('glyphicon-plus').addClass('glyphicon-minus');
-                loadSaleItems(sale_id, row);
-            }
-        });
-        
         table_support.init({
             resource: "<?= esc($controller_name) ?>",
             headers: <?= $table_headers ?>,
@@ -102,13 +127,6 @@
                     $("#table tbody tr:last td:first").html("");
                     $("#table tbody tr:last").css("font-weight", "bold");
                 }
-                $("#table tbody tr[data-uniqueid]").each(function() {
-                    var sale_id = $(this).data('uniqueid');
-                    var firstCell = $(this).find('td:first');
-                    if (sale_id && sale_id !== '-' && !$(this).find('.expand-btn').length) {
-                        firstCell.prepend('<span class="expand-btn glyphicon glyphicon-plus" data-sale_id="' + sale_id + '"></span> ');
-                    }
-                });
                 if (response.payment_summary) {
                     $("#payment_summary").html(response.payment_summary);
                 }
@@ -127,19 +145,24 @@
         });
     });
 
-    function loadSaleItems(sale_id, row) {
+    function openSaleItems(event, saleId) {
+        event.stopPropagation();
+        var modal = $('#saleItemsModal');
+        var tbody = modal.find('#saleItemsBody');
+        var saleIdLabel = modal.find('#saleItemsSaleId');
+
+        saleIdLabel.text(saleId);
+        tbody.html('<tr><td colspan="5" style="text-align:center;padding:30px;color:#999;">Carregando...</td></tr>');
+        modal.modal('show');
+
         $.ajax({
             url: "<?= site_url('sales/getSaleItems') ?>",
             type: "GET",
-            data: { sale_id: sale_id },
+            data: { sale_id: saleId },
             dataType: 'json',
             success: function(data) {
-                var html = '<tr class="detail-row"><td colspan="9">';
-                html += '<table class="table table-bordered detail-table" style="margin:10px; width:auto;">';
-                html += '<thead><tr><th>Produto</th><th style="text-align:center;">Qtd</th><th style="text-align:right;">Preço Unit.</th><th style="text-align:right;">Total</th></tr></thead>';
-                html += '<tbody>';
-                
                 if (data.length > 0) {
+                    var html = '';
                     $.each(data, function(i, item) {
                         html += '<tr>';
                         html += '<td>' + item.name + '</td>';
@@ -148,16 +171,13 @@
                         html += '<td style="text-align:right;">' + item.total + '</td>';
                         html += '</tr>';
                     });
+                    tbody.html(html);
                 } else {
-                    html += '<tr><td colspan="4" class="text-muted">Sem itens</td></tr>';
+                    tbody.html('<tr><td colspan="4" style="text-align:center;padding:30px;color:#999;">Nenhum item encontrado</td></tr>');
                 }
-                
-                html += '</tbody></table></td></tr>';
-                row.after(html);
             },
             error: function(xhr, status, error) {
-                console.log("Erro:", error, xhr.responseText);
-                row.after('<tr class="detail-row"><td colspan="9"><div class="text-danger" style="padding:10px;">Erro ao carregar: ' + error + '</div></td></tr>');
+                tbody.html('<tr><td colspan="4" style="text-align:center;padding:30px;color:#c00;">Erro ao carregar: ' + error + '</td></tr>');
             }
         });
     }
@@ -166,7 +186,7 @@
         window.print();
     }
 
-    function reprintThermal() {
+    function printReceipt() {
         var rows = $('#table').bootstrapTable('getSelections');
         if (rows.length === 0) {
             $.notify({message: 'Selecione uma venda primeiro'}, {type: 'warning'});
@@ -200,8 +220,8 @@
         <button id="delete" class="btn btn-default btn-sm print_hide">
             <span class="glyphicon glyphicon-trash">&nbsp;</span><?= lang("Common.delete") ?>
         </button>
-        <button id="reprint_thermal" class="btn btn-primary btn-sm print_hide" onclick="reprintThermal()">
-            <span class="glyphicon glyphicon-print">&nbsp;</span>Reimprimir Térmica
+        <button id="print_receipt" class="btn btn-primary btn-sm print_hide" onclick="printReceipt()">
+            <span class="glyphicon glyphicon-print">&nbsp;</span>Imprimir Venda
         </button>
 
         <?= form_input(["name" => "daterangepicker", "class" => "form-control input-sm", "id" => "daterangepicker"]) ?>
@@ -220,6 +240,35 @@
 
 <div id="table_holder">
     <table id="table"></table>
+</div>
+
+<div class="modal fade sale-items-modal" id="saleItemsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Fechar"><span>&times;</span></button>
+                <h4 class="modal-title">Itens da Venda #<span id="saleItemsSaleId"></span></h4>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th style="text-align:center;width:80px;">Qtd</th>
+                            <th style="text-align:right;width:120px;">Preço Unit.</th>
+                            <th style="text-align:right;width:120px;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="saleItemsBody">
+                        <tr><td colspan="4" style="text-align:center;padding:30px;color:#999;">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default btn-sm" data-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <?= view("partial/footer") ?>
