@@ -44,6 +44,35 @@ use App\Models\Employee;
 ?>
 
 <?= view('partial/header') ?>
+<script>
+window._tutorialSteps = [
+    {
+        target: '#item_search',
+        title: 'Buscar Produtos',
+        text: 'Digite o <strong>código de barras</strong> ou <strong>nome</strong> do produto aqui. Use <strong>Enter</strong> para adicionar ao carrinho.'
+    },
+    {
+        target: '#cart_contents',
+        title: 'Carrinho de Compras',
+        text: 'Os itens adicionados aparecem aqui. Você pode <strong>ajustar quantidades</strong>, <strong>aplicar desconto</strong> ou <strong>remover</strong> itens.'
+    },
+    {
+        target: '#select_customer',
+        title: 'Selecionar Cliente',
+        text: 'Opcional: selecione um <strong>cliente</strong> para associar à venda. Útil para vendas fiado ou controle de histórico.'
+    },
+    {
+        target: '#sale_total',
+        title: 'Total da Venda',
+        text: 'Aqui mostra o <strong>total acumulado</strong> da venda. O valor devido é exibido abaixo.'
+    },
+    {
+        target: '#suspend_sale_button',
+        title: 'Suspender / Finalizar',
+        text: 'Use <strong>Suspender</strong> para pausar a venda ou <strong>Finalizar</strong> para concluir e registrar o pagamento.'
+    }
+];
+</script>
 <style>
 .checkout-modal .modal-dialog { max-width: 380px; }
 .checkout-modal .modal-content { max-height: 90vh; overflow: visible; }
