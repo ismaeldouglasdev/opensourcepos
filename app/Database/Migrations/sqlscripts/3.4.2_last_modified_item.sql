@@ -1,1 +1,1 @@
-ALTER TABLE ospos_items ADD COLUMN last_modified DATETIME DEFAULT NULL AFTER pic_filename;
+ALTER TABLE ospos_items ADD COLUMN IF NOT EXISTS last_modified DATETIME DEFAULT NULL AFTER pic_filename;
