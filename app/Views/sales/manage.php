@@ -11,15 +11,17 @@
 <?= view("partial/header") ?>
 
 <style>
-    .bootstrap-table .fixed-table-container .table td {
-        border-right: 1px solid #cbd5e1 !important;
+    #table td,
+    #table th {
+        border-right: 1px solid #94a3b8 !important;
     }
-    .bootstrap-table .fixed-table-container .table td:last-child {
+    #table td:last-child,
+    #table th:last-child {
         border-right: none !important;
     }
-    .bootstrap-table .fixed-table-container .table td:nth-child(4),
-    .bootstrap-table .fixed-table-container .table td:nth-child(5),
-    .bootstrap-table .fixed-table-container .table td:nth-child(6) {
+    #table td:nth-child(4),
+    #table td:nth-child(5),
+    #table td:nth-child(6) {
         font-family: var(--os-font-mono) !important;
         text-align: right !important;
         font-weight: 600 !important;
