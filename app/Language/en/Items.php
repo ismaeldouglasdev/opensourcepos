@@ -117,5 +117,6 @@ return [
     "unit_price_required"                => "Retail Price is a required field.",
     "upc_database"                       => "Barcode Database",
     "update"                             => "Update Item",
+    "last_modified"                      => "Last Modified",
     "use_inventory_menu"                 => "Use Inventory Menu",
 ];

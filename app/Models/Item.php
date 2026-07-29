@@ -155,6 +155,7 @@ class Item extends Model
             $builder->select('MAX(items.reorder_level) AS reorder_level');
             $builder->select('MAX(items.receiving_quantity) AS receiving_quantity');
             $builder->select('MAX(items.pic_filename) AS pic_filename');
+            $builder->select('MAX(items.last_modified) AS last_modified');
             $builder->select('MAX(items.allow_alt_description) AS allow_alt_description');
             $builder->select('MAX(items.is_serialized) AS is_serialized');
             $builder->select('MAX(items.pack_name) AS pack_name');
@@ -425,6 +426,7 @@ class Item extends Model
     public function save_value(array &$item_data, int $item_id = NEW_ENTRY): bool    // TODO: need to bring this in line with parent or change the name
     {
         $builder = $this->db->table('items');
+        $item_data['last_modified'] = date('Y-m-d H:i:s');
 
         if ($item_id < 1 || !$this->exists($item_id, true)) {
             if ($builder->insert($item_data)) {

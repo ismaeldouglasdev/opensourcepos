@@ -116,6 +116,7 @@ return [
     "unit_price_number"                  => "Preço unitário deve ser um número.",
     "unit_price_required"                => "Preço de varejo é um campo obrigatório.",
     "upc_database"                       => "Base de dados UPC",
+    "last_modified"                      => "Última Modificação",
     "update"                             => "Atualizar Item",
     "use_inventory_menu"                 => "Usar Menu Inventário",
 ];

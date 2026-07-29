@@ -417,7 +417,8 @@ function item_headers(): array
         ['company_name'  => lang('Suppliers.company_name')],
         ['cost_price'    => lang('Items.cost_price')],
         ['unit_price'    => lang('Items.unit_price')],
-        ['quantity'      => lang('Items.quantity')]
+        ['quantity'      => lang('Items.quantity')],
+        ['last_modified' => lang('Items.last_modified')]
     ];
 }
 
@@ -500,6 +501,10 @@ function get_item_data_row(object $item): array
 
     $definition_names = $attribute->get_definitions_by_flags($attribute::SHOW_IN_ITEMS);
 
+    $last_modified = !empty($item->last_modified)
+        ? to_datetime(strtotime($item->last_modified))
+        : '-';
+
     $columns = [
         'items.item_id' => $item->item_id,
         'item_number'   => $item->item_number,
@@ -510,7 +515,8 @@ function get_item_data_row(object $item): array
         'unit_price'    => to_currency($item->unit_price),
         'quantity'      => to_quantity_decimals($item->quantity),
         'tax_percents'  => !$tax_percents ? '-' : $tax_percents,
-        'item_pic'      => $image
+        'item_pic'      => $image,
+        'last_modified' => $last_modified
     ];
 
     $icons = [
