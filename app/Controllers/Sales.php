@@ -1388,6 +1388,23 @@ class Sales extends Secure_Controller
     }
 
     /**
+     * @param int $sale_type
+     * @return void
+     */
+    private function change_register_mode(int $sale_type): void
+    {
+        $mode = match ($sale_type) {
+            SALE_TYPE_INVOICE => 'sale_invoice',
+            SALE_TYPE_WORK_ORDER => 'sale_work_order',
+            SALE_TYPE_QUOTE => 'sale_quote',
+            SALE_TYPE_RETURN => 'return',
+            default => 'sale',
+        };
+
+        $this->sale_lib->set_mode($mode);
+    }
+
+    /**
      * Unsuspended sales are now left in the tables and are only removed
      * when they are intentionally cancelled. Used in app/Views/sales/suspended.php.
      *
