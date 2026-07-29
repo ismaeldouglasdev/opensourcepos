@@ -11,6 +11,19 @@
 <?= view("partial/header") ?>
 
 <style>
+    .bootstrap-table .fixed-table-container .table td {
+        border-right: 1px solid #cbd5e1 !important;
+    }
+    .bootstrap-table .fixed-table-container .table td:last-child {
+        border-right: none !important;
+    }
+    .bootstrap-table .fixed-table-container .table td:nth-child(4),
+    .bootstrap-table .fixed-table-container .table td:nth-child(5),
+    .bootstrap-table .fixed-table-container .table td:nth-child(6) {
+        font-family: var(--os-font-mono) !important;
+        text-align: right !important;
+        font-weight: 600 !important;
+    }
     .btn-items {
         background: #f0f4f8;
         border: 1px solid #d0d7de;
