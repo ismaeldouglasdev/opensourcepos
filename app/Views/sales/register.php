@@ -74,8 +74,7 @@ window._tutorialSteps = [
 ];
 </script>
 <style>
-.checkout-modal .modal-content { max-height: 90vh; overflow: visible; }
-.checkout-modal .modal-body { max-height: none; overflow: visible; padding: 10px 15px; }
+.checkout-modal .modal-body { padding: 10px 15px; }
 .checkout-total { font-weight: 600; text-align: center; background: var(--os-primary-light, #e8f8f0); border-radius: var(--os-radius-lg, 12px); margin-bottom: 8px; padding: 8px; font-size: 14px; }
 
 /* Payment list */
@@ -1063,8 +1062,8 @@ if (!empty($editing_sale_id)) {
 <!-- Modal de Checkout com Múltiplos Pagamentos -->
 <style>
 .checkout-modal .modal-dialog { width: 520px !important; max-width: 520px !important; }
-.checkout-modal .modal-content { display: flex; flex-direction: column; max-height: 90vh; }
-.checkout-modal .modal-body { padding: 12px 16px !important; overflow-y: auto !important; overflow-x: hidden !important; flex: 1 1 auto; }
+.checkout-modal .modal-content { border-radius: 12px; }
+.checkout-modal .modal-body { padding: 12px 16px !important; }
 .checkout-modal .payment-list {
     display: flex;
     flex-wrap: wrap;
