@@ -1335,11 +1335,16 @@ function addPayment() {
     
     checkIfCanFinish();
     
-    // Se o pagamento cobriu o total, finalizar direto
+    // Se o pagamento cobriu o total, finalizar direto (exceto Dinheiro — precisa ver troco)
     var novoRestante = getRestante();
     if (novoRestante <= 0.01 && payments_list.length > 0) {
-        finishCheckout();
-        return;
+        var lastPayment = payments_list[payments_list.length - 1];
+        if (lastPayment.type !== '<?= lang("Sales.cash") ?>') {
+            finishCheckout();
+            return;
+        }
+        // Dinheiro: mostra troco, foco no FINALIZAR
+        document.getElementById('finish_checkout_btn').focus();
     }
     
     // Senão, voltar foco pro primeiro botão de pagamento
