@@ -1062,8 +1062,9 @@ if (!empty($editing_sale_id)) {
 <!-- Modal de Checkout com Múltiplos Pagamentos -->
 <style>
 .checkout-modal .modal-dialog { width: 520px !important; max-width: 520px !important; }
-.checkout-modal .modal-content { border-radius: 12px; }
-.checkout-modal .modal-body { padding: 12px 16px !important; }
+.checkout-modal .modal-content { border-radius: 12px; max-height: 85vh; overflow: hidden; display: flex; flex-direction: column; }
+.checkout-modal .modal-body { padding: 12px 16px !important; overflow-y: auto; flex: 1 1 auto; }
+.checkout-modal .modal-footer { padding: 8px 16px; border-top: 1px solid var(--os-border, #e2e6ea); flex-shrink: 0; }
 .checkout-modal .payment-list {
     display: flex;
     flex-wrap: wrap;
@@ -1081,7 +1082,6 @@ if (!empty($editing_sale_id)) {
     margin: 0 !important;
     white-space: nowrap;
 }
-.checkout-finish-btn { flex-shrink: 0; margin-top: 8px; }
 </style>
 <div class="modal fade checkout-modal" id="checkoutModal" tabindex="-1" role="dialog">
     <div class="modal-dialog">
@@ -1121,6 +1121,8 @@ if (!empty($editing_sale_id)) {
                     </div>
                 </div>
                 <div class="troco-display" id="troco_display" style="font-size: 14px; padding: 5px; text-align: center; font-weight: bold;"></div>
+            </div>
+            <div class="modal-footer">
                 <button type="button" class="btn <?= !empty($editing_sale_id) ? 'btn-warning' : 'btn-success' ?> btn-block" id="finish_checkout_btn" onclick="finishCheckout()" disabled>
                     <?= !empty($editing_sale_id) ? 'ATUALIZAR' : 'FINALIZAR' ?>
                 </button>
