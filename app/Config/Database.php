@@ -7,10 +7,10 @@ class Database extends Config
     public string $defaultGroup = 'default';
     public array $default = [
         'DSN'          => '',
-        'hostname'     => env('database.default.hostname', 'localhost'),
-        'username'     => env('database.default.username', 'admin'),
-        'password'     => env('database.default.password', 'Arroz123@'),
-        'database'     => env('database.default.database', 'ospos_test'),
+        'hostname'     => 'localhost',
+        'username'     => 'admin',
+        'password'     => 'Arroz123@',
+        'database'     => 'ospos_test',
         'DBDriver'     => 'MySQLi',
         'DBPrefix'     => 'ospos_',
         'pConnect'     => false,

@@ -1072,9 +1072,9 @@ if (!empty($editing_sale_id)) {
 
 <!-- Modal de Checkout com Múltiplos Pagamentos -->
 <style>
-.checkout-modal .modal-dialog { width: 420px !important; max-width: 420px !important; }
+.checkout-modal .modal-dialog { width: 480px !important; max-width: 480px !important; }
 .checkout-modal .modal-content { display: flex; flex-direction: column; max-height: 90vh; }
-.checkout-modal .modal-body { padding: 10px 12px !important; overflow-y: auto !important; overflow-x: hidden !important; flex: 1 1 auto; }
+.checkout-modal .modal-body { padding: 12px 16px !important; overflow-y: auto !important; overflow-x: hidden !important; flex: 1 1 auto; }
 .checkout-modal .payment-list {
     display: flex;
     flex-wrap: wrap;
@@ -1084,21 +1084,15 @@ if (!empty($editing_sale_id)) {
 }
 .checkout-modal .payment-btn {
     flex: 1 1 calc(50% - 8px);
-    min-width: 120px;
-    max-width: 180px;
-    padding: 8px 6px !important;
-    font-size: 14px !important;
+    min-width: 130px;
+    max-width: 200px;
+    padding: 10px 8px !important;
+    font-size: 15px !important;
     border-radius: 8px !important;
     margin: 0 !important;
     white-space: nowrap;
 }
 .checkout-finish-btn { flex-shrink: 0; margin-top: 8px; }
-</style>
-<style>
-.checkout-modal .modal-dialog { width: 480px !important; max-width: 480px !important; }
-.checkout-modal .modal-body { padding: 10px !important; overflow: hidden !important; }
-.checkout-modal .payment-list { gap: 6px !important; }
-.checkout-modal .payment-btn { padding: 8px 5px !important; font-size: 13px !important; }
 </style>
 <div class="modal fade checkout-modal" id="checkoutModal" tabindex="-1" role="dialog">
     <div class="modal-dialog">
@@ -1335,16 +1329,12 @@ function addPayment() {
     
     checkIfCanFinish();
     
-    // Se o pagamento cobriu o total, finalizar direto (exceto Dinheiro — precisa ver troco)
+    // Se o pagamento cobriu o total, foco no FINALIZAR pra confirmar
     var novoRestante = getRestante();
     if (novoRestante <= 0.01 && payments_list.length > 0) {
-        var lastPayment = payments_list[payments_list.length - 1];
-        if (lastPayment.type !== '<?= lang("Sales.cash") ?>') {
-            finishCheckout();
-            return;
-        }
-        // Dinheiro: mostra troco, foco no FINALIZAR
-        document.getElementById('finish_checkout_btn').focus();
+        setTimeout(function() {
+            document.getElementById('finish_checkout_btn').focus();
+        }, 100);
     }
     
     // Senão, voltar foco pro primeiro botão de pagamento
@@ -1443,6 +1433,17 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 addPayment();
+            }
+        });
+    }
+
+    // Enter no botão FINALIZAR
+    var finishBtn = document.getElementById('finish_checkout_btn');
+    if (finishBtn) {
+        finishBtn.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (!this.disabled) finishCheckout();
             }
         });
     }
