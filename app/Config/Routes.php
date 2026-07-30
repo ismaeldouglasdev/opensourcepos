@@ -439,6 +439,12 @@ $routes->get('reports/get_detailed_sales_row/(:segment)', 'Reports::getGet_detai
 $routes->get('reports/get_detailed_receivings_row/(:segment)', 'Reports::getGet_detailed_receivings_row/$1');
 
 // ═══════════════════════════════════════════════════════════
+//  OFFICE
+// ═══════════════════════════════════════════════════════════
+$routes->get('office', 'Office::getIndex');
+$routes->get('office/logout', 'Office::logout');
+
+// ═══════════════════════════════════════════════════════════
 //  PRINTER
 // ═══════════════════════════════════════════════════════════
 $routes->get('printer/test', 'Printer::getTest');
