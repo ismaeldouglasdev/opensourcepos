@@ -1677,6 +1677,7 @@ class Sales extends Secure_Controller
             PRICE_MODE_STANDARD, null, null, (string)$price, $description
         );
         
+        $this->response->setContentType('application/json');
         echo json_encode(['success' => $result !== false]);
     }
 
