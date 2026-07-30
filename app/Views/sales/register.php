@@ -1318,9 +1318,15 @@ function addPayment() {
     
     checkIfCanFinish();
     
-    // Se o pagamento cobriu o total, foco no FINALIZAR pra confirmar
+    // Se o pagamento cobriu o total
     var novoRestante = getRestante();
     if (novoRestante <= 0.01 && payments_list.length > 0) {
+        var lastType = payments_list[payments_list.length - 1].type;
+        if (lastType !== '<?= lang("Sales.cash") ?>' && lastType !== '<?= lang("Sales.pix") ?>') {
+            finishCheckout();       // Débito/Crédito/Fiado: finaliza direto
+            return;
+        }
+        // Dinheiro/PIX: mostra troco, foco no FINALIZAR pra confirmar
         setTimeout(function() {
             document.getElementById('finish_checkout_btn').focus();
         }, 100);
