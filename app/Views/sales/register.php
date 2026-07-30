@@ -74,7 +74,6 @@ window._tutorialSteps = [
 ];
 </script>
 <style>
-.checkout-modal .modal-dialog { max-width: 380px; }
 .checkout-modal .modal-content { max-height: 90vh; overflow: visible; }
 .checkout-modal .modal-body { max-height: none; overflow: visible; padding: 10px 15px; }
 .checkout-total { font-weight: 600; text-align: center; background: var(--os-primary-light, #e8f8f0); border-radius: var(--os-radius-lg, 12px); margin-bottom: 8px; padding: 8px; font-size: 14px; }
@@ -156,18 +155,9 @@ window._tutorialSteps = [
 </style>
 
 <style>
-.checkout-modal .modal-dialog { max-width: 380px; }
 .checkout-modal .modal-content { border-radius: 10px; }
-.checkout-total { font-weight: bold; text-align: center; background: #f5f5f5; border-radius: 5px; margin-bottom: 8px; padding: 10px 8px; font-size: 28px; }
 .payment-list button { margin-bottom: 2px; height: 34px; font-size: 13px; text-align: center; font-size: 14px; }
-.payment-btn.cash { background: #FF9800; border-color: #FF9800; color: white; }
-.payment-btn.debit { background: #4CAF50; border-color: #4CAF50; color: white; }
-.payment-btn.credit { background: #2196F3; border-color: #2196F3; color: white; }
-.payment-btn.pix { background: #9C27B0; border-color: #9C27B0; color: white; }
-.payment-btn.fiado { background: #f44336; border-color: #f44336; color: white; }
-.payment-btn:hover, .payment-btn.active { opacity: 0.8; box-shadow: 0 0 0 3px #333; }
 .troco-display.negative { background: #ffebee; }
-#btn_finalizar_venda { height: 45px; font-size: 16px; margin-top: 5px; }
 </style>
 
 
@@ -1072,7 +1062,7 @@ if (!empty($editing_sale_id)) {
 
 <!-- Modal de Checkout com Múltiplos Pagamentos -->
 <style>
-.checkout-modal .modal-dialog { width: 480px !important; max-width: 480px !important; }
+.checkout-modal .modal-dialog { width: 520px !important; max-width: 520px !important; }
 .checkout-modal .modal-content { display: flex; flex-direction: column; max-height: 90vh; }
 .checkout-modal .modal-body { padding: 12px 16px !important; overflow-y: auto !important; overflow-x: hidden !important; flex: 1 1 auto; }
 .checkout-modal .payment-list {
