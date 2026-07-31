@@ -468,10 +468,24 @@ function parse_decimals(string $number, ?int $decimals = null): mixed
         return $number;
     }
 
-
     $config = config(OSPOS::class)->settings;
 
-    $fmt = new NumberFormatter($config['number_locale'], NumberFormatter::DECIMAL);
+    // Aceita "." e "," como separador decimal em qualquer locale.
+    // O último separador seguido de 1-2 dígitos é o decimal; o restante é agrupador de milhar.
+    $cleaned = str_replace(' ', '', (string) preg_replace('/[^0-9.,\-]/', '', $number));
+    if ($cleaned !== '') {
+        $last_separator = max(strrpos($cleaned, '.'), strrpos($cleaned, ','));
+        if ($last_separator !== false) {
+            $fraction_digits = strlen($cleaned) - $last_separator - 1;
+            $cleaned = str_replace(['.', ','], '', $cleaned);
+            if ($fraction_digits > 0 && $fraction_digits <= 2) {
+                $cleaned = substr($cleaned, 0, -$fraction_digits) . '.' . substr($cleaned, -$fraction_digits);
+            }
+        }
+        $number = $cleaned;
+    }
+
+    $fmt = new NumberFormatter('en_US', NumberFormatter::DECIMAL);
 
     if (!$decimals) {
         $decimals = intVal($config['currency_decimals']);

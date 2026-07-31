@@ -1114,7 +1114,7 @@ if (!empty($editing_sale_id)) {
                 <div class="form-group" id="amount_group" style="margin: 8px 0; display: none;">
                     <div class="input-group">
                         <span class="input-group-addon" id="payment_type_label">R$</span>
-                        <input type="number" class="form-control" id="checkout_amount" step="0.01" min="0" placeholder="0,00" style="text-align: center;">
+                        <input type="text" class="form-control" id="checkout_amount" inputmode="decimal" placeholder="0,00" style="text-align: center;">
                         <span class="input-group-btn">
                             <button type="button" class="btn btn-primary" id="add_payment_btn" onclick="addPayment()">+</button>
                         </span>
@@ -1180,7 +1180,7 @@ function addDiversos() {
     var valor = $('#diversos_valor').val();
     var quantidade = $('#diversos_qtd').val() || '1';
     
-    if (!valor || isNaN(valor) || parseFloat(valor) <= 0) {
+    if (!valor || parseCurrency(valor) <= 0) {
         alert('Digite um valor válido');
         return;
     }
@@ -1239,20 +1239,44 @@ $('#diversosModal .btn-warning').keypress(function(e) {
     }
 });
 
+function parseCurrency(val) {
+    var s = String(val == null ? '' : val).replace(/[^0-9.,]/g, '').trim();
+    if (!s) return 0;
+    var lastSep = Math.max(s.lastIndexOf('.'), s.lastIndexOf(','));
+    if (lastSep !== -1) {
+        var decimals = s.length - lastSep - 1;
+        if (decimals > 0 && decimals <= 2) {
+            s = s.replace(/[.,]/g, '');
+            s = s.substring(0, s.length - decimals) + '.' + s.substring(s.length - decimals);
+        } else {
+            s = s.replace(/[.,]/g, '');
+        }
+    }
+    var n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+}
+
+function fmtMoney(v) {
+    var s = v.toFixed(2);
+    var parts = s.split('.');
+    var int = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return int + ',' + parts[1];
+}
+
 function openCheckoutModal() {
     var span = document.getElementById('sale_total');
     if (!span) { alert('Nao encontrou sale_total'); return; }
     var totalText = span.textContent || '0';
-    total_venda = parseFloat(totalText.replace(/[^0-9.,]/g, '').replace(',', '.')) || 0;
+    total_venda = parseCurrency(totalText);
     if (total_venda <= 0) { alert('Carrinho vazio'); return; }
     
     payments_list = [];
     payment_type_selected = '';
     
-    document.getElementById('checkout_total').textContent = 'R$ ' + total_venda.toFixed(2).replace('.', ',');
-    document.getElementById('checkout_restante').textContent = 'R$ ' + total_venda.toFixed(2).replace('.', ',');
+    document.getElementById('checkout_total').textContent = 'R$ ' + fmtMoney(total_venda);
+    document.getElementById('checkout_restante').textContent = 'R$ ' + fmtMoney(total_venda);
     document.getElementById('checkout_amount').value = '';
-    document.getElementById('checkout_amount').placeholder = total_venda.toFixed(2).replace('.', ',');
+    document.getElementById('checkout_amount').placeholder = fmtMoney(total_venda);
     document.getElementById('troco_display').textContent = ' ';
     document.getElementById('amount_group').style.display = 'none';
     document.getElementById('payment_summary_list').innerHTML = '';
@@ -1272,11 +1296,11 @@ function selectPayment(type, lang_key) {
     if (type === 'cash') {
         document.getElementById('amount_group').style.display = 'block';
         document.getElementById('payment_type_label').textContent = 'R$';
-        document.getElementById('checkout_amount').placeholder = total_venda.toFixed(2).replace('.', ',');
+        document.getElementById('checkout_amount').placeholder = fmtMoney(total_venda);
     } else {
         document.getElementById('amount_group').style.display = 'block';
         document.getElementById('payment_type_label').textContent = lang_key + ':';
-        document.getElementById('checkout_amount').placeholder = getRestante().toFixed(2).replace('.', ',');
+        document.getElementById('checkout_amount').placeholder = fmtMoney(getRestante());
     }
     
     setTimeout(function() {
@@ -1295,7 +1319,7 @@ function getRestante() {
 
 function addPayment() {
     var amountInput = document.getElementById('checkout_amount');
-    var amount = parseFloat((amountInput ? amountInput.value : '0').replace(',', '.')) || 0;
+    var amount = parseCurrency(amountInput ? amountInput.value : '0');
     var restante = getRestante();
     
     if (amount <= 0) { alert('Informe o valor'); return; }
@@ -1353,7 +1377,7 @@ function updatePaymentSummary() {
     payments_list.forEach(function(p, index) {
         totalPago += p.amount;
         html += '<div class="payment-item" style="display:flex; justify-content:space-between; padding: 5px; background:#e8f5e9; margin-bottom:4px; border-radius:4px;">';
-        html += '<span style="flex:1;">' + p.type + ': <strong>R$ ' + p.amount.toFixed(2).replace('.', ',') + '</strong></span>';
+        html += '<span style="flex:1;">' + p.type + ': <strong>R$ ' + fmtMoney(p.amount) + '</strong></span>';
         html += '<button type="button" class="btn btn-xs btn-danger" onclick="removePayment(' + index + ')" style="padding:2px 8px;">×</button>';
         html += '</div>';
     });
@@ -1362,13 +1386,13 @@ function updatePaymentSummary() {
     
     var restante = total_venda - totalPago;
     var restanteSpan = document.getElementById('checkout_restante');
-    restanteSpan.textContent = 'R$ ' + Math.max(0, restante).toFixed(2).replace('.', ',');
+    restanteSpan.textContent = 'R$ ' + fmtMoney(Math.max(0, restante));
     restanteSpan.style.color = restante > 0 ? '#f44336' : '#4caf50';
     
     var troco = totalPago - total_venda;
     var trocoDisplay = document.getElementById('troco_display');
     if (troco > 0) {
-        trocoDisplay.innerHTML = '<span style="color:#4caf50;">Troco: R$ ' + troco.toFixed(2).replace('.', ',') + '</span>';
+        trocoDisplay.innerHTML = '<span style="color:#4caf50;">Troco: R$ ' + fmtMoney(troco) + '</span>';
     } else {
         trocoDisplay.textContent = ' ';
     }
