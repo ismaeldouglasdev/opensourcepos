@@ -1102,6 +1102,8 @@ if (!empty($editing_sale_id)) {
                     </div>
                 </div>
                 
+                <div class="troco-display" id="troco_display" style="font-size: 16px; min-height: 28px; padding: 5px; text-align: center; font-weight: bold;"></div>
+                
                 <div id="payment_summary_list" style="margin: 5px 0;"></div>
                 
                 <div class="payment-list">
@@ -1120,7 +1122,6 @@ if (!empty($editing_sale_id)) {
                         </span>
                     </div>
                 </div>
-                <div class="troco-display" id="troco_display" style="font-size: 14px; padding: 5px; text-align: center; font-weight: bold;"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn <?= !empty($editing_sale_id) ? 'btn-warning' : 'btn-success' ?> btn-block" id="finish_checkout_btn" onclick="finishCheckout()" disabled>
