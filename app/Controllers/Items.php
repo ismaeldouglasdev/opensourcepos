@@ -721,12 +721,12 @@ class Items extends Secure_Controller
                 echo json_encode(['success' => true, 'message' => $message, 'id' => $item_id]);
             } else {
                 $message = $upload_success ? lang('Items.error_adding_updating') . ' ' . $item_data['name'] : strip_tags($upload_data['error']);
-
+                log_message('error', "items/save item_id=$item_id falhou: $message");
                 echo json_encode(['success' => false, 'message' => $message, 'id' => $item_id]);
             }
         } else {
             $message = lang('Items.error_adding_updating') . ' ' . $item_data['name'];
-
+            log_message('error', "items/save item_id=$item_id falhou: save_value retornou false");
             echo json_encode(['success' => false, 'message' => $message, 'id' => NEW_ENTRY]);
         }
     }

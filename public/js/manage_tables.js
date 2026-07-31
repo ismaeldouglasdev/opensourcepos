@@ -14,12 +14,12 @@
         return function(dlog_ref) {
             const form = $('form', dlog_ref.$modalBody).first();
             const validator = form.data('validator');
-            const submitted = validator && validator.formSubmitted;
 
             btn_id = button_id;
             dialog_ref = dlog_ref;
 
-            if (button_id == 'submit' && (!submitted && btn_id != "btnNew")) {
+            if (button_id == 'submit' && btn_id != "btnNew" && !$('#submit').prop('disabled')) {
+                validator && (validator.formSubmitted = false);
                 form.submit();
                 validator.valid() && $('#submit').prop('disabled', true).css('opacity', 0.5);
             }
@@ -283,6 +283,7 @@
     var submit_handler = function(url) {
         return function (resource, response) {
             var id = response.id !== undefined ? response.id.toString() : "";
+            $('#submit').prop('disabled', false).css('opacity', '');
             if (!response.success) {
                 $.notify($.text(response.message).html(), { type: 'danger' });
             } else {

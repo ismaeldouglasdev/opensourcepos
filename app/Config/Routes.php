@@ -15,6 +15,9 @@ $routes->post('login', 'Login::index');
 $routes->add('no_access/index/(:segment)', 'No_access::index/$1');
 $routes->add('no_access/index/(:segment)/(:segment)', 'No_access::index/$1/$2');
 
+// Guardrails: coleta de erros de JS do browser (sem autenticacao)
+$routes->post('guardrail/js-error', 'Guardrail::jsError');
+
 // ═══════════════════════════════════════════════════════════
 //  HOME
 // ═══════════════════════════════════════════════════════════

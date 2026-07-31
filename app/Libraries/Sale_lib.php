@@ -514,10 +514,12 @@ class Sale_lib
      */
     public function add_payment(string $payment_id, string $payment_amount, int $cash_adjustment = CASH_ADJUSTMENT_FALSE): void
     {
+        $payment_amount = $this->to_bcmath_number($payment_amount);
+
         $payments = $this->get_payments();
         if (isset($payments[$payment_id])) {
             // payment_method already exists, add to payment_amount
-            $payments[$payment_id]['payment_amount'] = bcadd($payments[$payment_id]['payment_amount'], $payment_amount);
+            $payments[$payment_id]['payment_amount'] = bcadd($this->to_bcmath_number($payments[$payment_id]['payment_amount']), $payment_amount);
         } else {
             // Add to existing array
             $payment = [
@@ -593,6 +595,26 @@ class Sale_lib
     }
 
     /**
+     * Convert any numeric value into a well-formed decimal string for bcmath.
+     * bcadd()/bcsub() reject scientific notation ("1.111E+32"), hex, empty
+     * and non-numeric values with a ValueError, so normalize before use.
+     */
+    private function to_bcmath_number(mixed $value): string
+    {
+        if (!is_numeric($value)) {
+            return '0';
+        }
+
+        $float = (float) $value;
+
+        if (is_nan($float) || is_infinite($float)) {
+            return '0';
+        }
+
+        return rtrim(rtrim(sprintf('%.14F', $float), '0'), '.');
+    }
+
+    /**
      * Retrieve the total payments made, excluding any cash adjustments
      * and establish if cash_mode is in play
      */
@@ -603,7 +625,7 @@ class Sale_lib
 
         foreach ($this->get_payments() as $payments) {
             if (!$payments['cash_adjustment']) {
-                $subtotal = bcadd($payments['payment_amount'], $subtotal);
+                $subtotal = bcadd($this->to_bcmath_number($payments['payment_amount']), $subtotal);
             }
             if (lang('Sales.cash') != $payments['payment_type'] && lang('Sales.cash_adjustment') != $payments['payment_type']) {
                 $cash_mode_eligible = CASH_MODE_FALSE;
