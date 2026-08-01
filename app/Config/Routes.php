@@ -123,6 +123,7 @@ $routes->get('items/generateCsvFile', 'Items::getGenerateCsvFile');
 $routes->get('items/csvImport', 'Items::getCsvImport');
 $routes->get('items/getItemKits', 'Items::getIndex');
 $routes->get('items/getInventory', 'Items::getInventory');
+$routes->get('items/checkNumeric', 'Items::getCheckNumeric');
 
 $routes->post('items/save', 'Items::postSave');
 $routes->post('items/save/(:num)', 'Items::postSave/$1');
@@ -222,6 +223,7 @@ $routes->get('config/stockLocations', 'Config::getStockLocations');
 $routes->get('config/dinnerTables', 'Config::getDinnerTables');
 $routes->get('config/ajax_tax_categories', 'Config::ajax_tax_categories');
 $routes->get('config/customerRewards', 'Config::getCustomerRewards');
+$routes->get('config/checkNumeric', 'Config::getCheckNumeric');
 
 $routes->post('config/saveInfo', 'Config::postSaveInfo');
 $routes->post('config/saveGeneral', 'Config::postSaveGeneral');
@@ -305,6 +307,7 @@ $routes->get('expenses/search', 'Expenses::getSearch');
 $routes->get('expenses/row/(:num)', 'Expenses::getRow/$1');
 $routes->get('expenses/view', 'Expenses::getView');
 $routes->get('expenses/view/(:num)', 'Expenses::getView/$1');
+$routes->get('expenses/checkNumeric', 'Expenses::getCheckNumeric');
 
 $routes->post('expenses/save', 'Expenses::postSave');
 $routes->post('expenses/save/(:num)', 'Expenses::postSave/$1');
