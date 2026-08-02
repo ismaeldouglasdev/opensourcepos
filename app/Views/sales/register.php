@@ -1102,29 +1102,29 @@ if (!empty($editing_sale_id)) {
 
 <!-- Modal de Checkout com Múltiplos Pagamentos -->
 <style>
-.checkout-modal .modal-dialog { width: 520px !important; max-width: 520px !important; }
-.checkout-modal .modal-content { border-radius: 12px; max-height: 85vh; overflow: hidden; display: flex; flex-direction: column; }
+.checkout-modal .modal-dialog { width: 760px !important; max-width: 96vw !important; }
+.checkout-modal .modal-content { border-radius: 12px; max-height: 92vh; overflow: hidden; display: flex; flex-direction: column; }
 .checkout-modal .modal-body { padding: 12px 16px !important; overflow-y: auto; flex: 1 1 auto; }
 .checkout-modal .modal-footer { padding: 8px 16px; border-top: 1px solid var(--os-border, #e2e6ea); flex-shrink: 0; }
 .checkout-modal .payment-list {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 8px;
     justify-content: center;
     margin: 10px 0;
 }
 .checkout-modal .payment-btn {
-    flex: 1 1 calc(50% - 8px);
-    min-width: 130px;
-    max-width: 200px;
-    padding: 10px 8px !important;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+    padding: 12px 6px !important;
     font-size: 15px !important;
     border-radius: 8px !important;
     margin: 0 !important;
     white-space: nowrap;
 }
 .checkout-modal .disc-preset {
-    flex: 1;
+    flex: 0 0 auto;
     min-width: 44px;
     font-weight: 600;
 }
@@ -1133,6 +1133,18 @@ if (!empty($editing_sale_id)) {
     color: #fff;
     border-color: #e65100;
 }
+.checkout-modal .discount-section {
+    margin: 10px 0 4px;
+    padding-top: 10px;
+    border-top: 1px dashed #ddd;
+}
+.checkout-modal .discount-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-top: 6px;
+}
+.checkout-modal .discount-row .input-group { flex: 1 1 auto; margin: 0; }
 </style>
 <div class="modal fade checkout-modal" id="checkoutModal" tabindex="-1" role="dialog">
     <div class="modal-dialog">
@@ -1145,18 +1157,18 @@ if (!empty($editing_sale_id)) {
             </div>
             <div class="modal-body">
                 <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: stretch;">
-                    <div class="checkout-total" style="flex: 1; min-width: 0; min-height: 80px; background: #e8f5e9; padding: 10px; border-radius: 6px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+                    <div class="checkout-total" style="flex: 1; min-width: 0; min-height: 64px; background: #e8f5e9; padding: 8px 10px; border-radius: 6px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
                         <strong>TOTAL:</strong><br><span id="checkout_total" style="font-size: 24px; color: #2e7d32; font-weight: bold;">R$ 0,00</span>
                     </div>
-                    <div class="checkout-restante" style="flex: 1; min-width: 0; min-height: 80px; background: #ffebee; padding: 10px; border-radius: 6px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+                    <div class="checkout-restante" style="flex: 1; min-width: 0; min-height: 64px; background: #ffebee; padding: 8px 10px; border-radius: 6px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
                         <strong>RESTANTE:</strong><br><span id="checkout_restante" style="font-size: 24px; color: #c62828; font-weight: bold;">R$ 0,00</span>
                     </div>
                 </div>
                 
-                <div class="troco-display" id="troco_display" style="font-size: 16px; min-height: 28px; padding: 5px; text-align: center; font-weight: bold;"></div>
-                <div id="troco_notes_display" style="min-height: 0; margin: 0 0 6px; text-align: center;"></div>
+                <div class="troco-display" id="troco_display" style="font-size: 16px; min-height: 24px; padding: 4px 5px; text-align: center; font-weight: bold;"></div>
+                <div id="troco_notes_display" style="min-height: 0; margin: 0 0 4px; text-align: center;"></div>
                 
-                <div id="payment_summary_list" style="margin: 5px 0;"></div>
+                <div id="payment_summary_list" style="margin: 4px 0;"></div>
                 
                 <div class="payment-list">
                     <button type="button" class="btn payment-btn cash" id="payment_btn_cash" onclick="selectPayment('cash', '<?= lang("Sales.cash") ?>')">💵 Dinheiro</button>
@@ -1165,7 +1177,7 @@ if (!empty($editing_sale_id)) {
                     <button type="button" class="btn payment-btn pix" id="payment_btn_pix" onclick="selectPayment('pix', '<?= lang("Sales.pix") ?>')">📱 PIX</button>
                     <button type="button" class="btn payment-btn fiado" id="payment_btn_fiado" onclick="selectPayment('fiado', '<?= lang("Sales.account_receivable") ?>')">📝 Fiado</button>
                 </div>
-                <div class="form-group" id="amount_group" style="margin: 8px 0; display: none;">
+                <div class="form-group" id="amount_group" style="margin: 6px 0; display: none;">
                     <div class="input-group">
                         <span class="input-group-addon" id="payment_type_label">R$</span>
                         <input type="text" class="form-control" id="checkout_amount" inputmode="decimal" placeholder="0,00" style="text-align: center;">
@@ -1175,24 +1187,24 @@ if (!empty($editing_sale_id)) {
                     </div>
                 </div>
 
-                <div class="discount-section" style="margin: 10px 0 4px; padding-top: 10px; border-top: 1px dashed #ddd;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <div class="discount-section">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
                         <strong style="font-size:14px;">🏷️ DESCONTO</strong>
                         <span id="discount_value_display" style="color:#e65100; font-weight:bold; font-size:14px;"></span>
                     </div>
-                    <div style="display:flex; gap:6px; margin-bottom:6px;">
+                    <div class="discount-row">
                         <button type="button" class="btn btn-sm btn-default disc-preset" data-disc="5" onclick="applyDiscountPreset(5)">5%</button>
                         <button type="button" class="btn btn-sm btn-default disc-preset" data-disc="10" onclick="applyDiscountPreset(10)">10%</button>
                         <button type="button" class="btn btn-sm btn-default disc-preset" data-disc="15" onclick="applyDiscountPreset(15)">15%</button>
                         <button type="button" class="btn btn-sm btn-default disc-preset" data-disc="20" onclick="applyDiscountPreset(20)">20%</button>
                         <button type="button" class="btn btn-sm btn-default" onclick="removeDiscount()" title="Remover desconto">✕</button>
-                    </div>
-                    <div class="input-group">
-                        <span class="input-group-addon" id="discount_toggle_btn" onclick="toggleDiscountMode()" style="cursor:pointer; user-select:none;" title="Clique para alternar % / R$">%</span>
-                        <input type="text" class="form-control" id="checkout_discount" inputmode="decimal" placeholder="Desconto" style="text-align:center;">
-                        <span class="input-group-btn">
-                            <button type="button" class="btn btn-warning" onclick="applyDiscountInput()">OK</button>
-                        </span>
+                        <div class="input-group">
+                            <span class="input-group-addon" id="discount_toggle_btn" onclick="toggleDiscountMode()" style="cursor:pointer; user-select:none;" title="Clique para alternar % / R$">%</span>
+                            <input type="text" class="form-control" id="checkout_discount" inputmode="decimal" placeholder="Desconto" style="text-align:center;">
+                            <span class="input-group-btn">
+                                <button type="button" class="btn btn-warning" onclick="applyDiscountInput()">OK</button>
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
