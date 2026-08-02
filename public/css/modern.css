@@ -163,6 +163,7 @@ code, .font-monospace, pre {
     color: var(--os-primary) !important;
     background: transparent !important;
     border-bottom-color: var(--os-primary) !important;
+    text-decoration: none !important;
 }
 
 .navbar-default .navbar-nav > .active > a,
@@ -171,6 +172,7 @@ code, .font-monospace, pre {
     color: var(--os-primary) !important;
     background: transparent !important;
     border-bottom-color: var(--os-primary) !important;
+    text-decoration: none !important;
 }
 
 .navbar-default .navbar-nav .stock-badge {
