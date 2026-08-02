@@ -2651,3 +2651,49 @@ body {
     min-width: 110px;
     max-width: 320px;
 }
+
+/* Numeric columns: keep narrow so they don't stretch with dead space */
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-num,
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-num {
+    width: 110px !important;
+    min-width: 0 !important;
+    max-width: 110px !important;
+}
+
+/* Quantity column narrower still */
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-qty,
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-qty {
+    width: 80px !important;
+    min-width: 0 !important;
+    max-width: 80px !important;
+}
+
+/* Header text wraps instead of stretching the numeric column */
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-num {
+    white-space: normal !important;
+}
+
+/* ID column narrow */
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-id,
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-id {
+    width: 50px !important;
+    min-width: 0 !important;
+    max-width: 60px !important;
+}
+
+/* UPC/item number capped (overflow ellipsis) */
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-mono,
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-mono {
+    width: 140px !important;
+    min-width: 0 !important;
+    max-width: 140px !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Category capped, so name gets the leftover space */
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-wrap:not(.items-col-name),
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-wrap:not(.items-col-name) {
+    width: 170px;
+    max-width: 170px;
+}
