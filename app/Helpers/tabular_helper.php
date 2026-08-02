@@ -89,6 +89,7 @@ function get_sales_manage_table_headers(): string
 
     $headers[] = ['receipt' => '', 'sortable' => false, 'escape' => false];
     $headers[] = ['items' => 'Itens', 'sortable' => false, 'escape' => false];
+    $headers[] = ['reopen' => '', 'sortable' => false, 'escape' => false];
 
     return transform_headers($headers);
 }
