@@ -143,7 +143,6 @@ code, .font-monospace, pre {
 
 .navbar-default {
     background: var(--os-surface) !important;
-    border-bottom: 1px solid var(--os-border) !important;
 }
 
 .navbar-default .navbar-nav > li > a {
@@ -158,17 +157,17 @@ code, .font-monospace, pre {
     border-bottom: 2px solid transparent !important;
 }
 
-.navbar-default .navbar-nav > li > a:hover,
-.navbar-default .navbar-nav > li > a:focus {
+.navbar.navbar-default .navbar-nav > li > a:hover,
+.navbar.navbar-default .navbar-nav > li > a:focus {
     color: var(--os-primary) !important;
     background: transparent !important;
     border-bottom-color: var(--os-primary) !important;
     text-decoration: none !important;
 }
 
-.navbar-default .navbar-nav > .active > a,
-.navbar-default .navbar-nav > .active > a:hover,
-.navbar-default .navbar-nav > .active > a:focus {
+.navbar.navbar-default .navbar-nav > .active > a,
+.navbar.navbar-default .navbar-nav > .active > a:hover,
+.navbar.navbar-default .navbar-nav > .active > a:focus {
     color: var(--os-primary) !important;
     background: transparent !important;
     border-bottom-color: var(--os-primary) !important;
