@@ -1442,6 +1442,28 @@ class Sales extends Secure_Controller
     }
 
     /**
+     * Reopen a completed sale in the register so it can be edited
+     * (prices, discounts, add/remove items) and finished as a new sale.
+     * The original completed sale is left intact for reference.
+     */
+    public function postReopen(int $sale_id): void
+    {
+        if (! $this->sale->exists($sale_id)) {
+            $this->session->setFlashdata('error', lang('Sales.unsuccessfully_reopened_sale'));
+
+            redirect('sales/manage');
+
+            return;
+        }
+
+        $this->sale_lib->copy_entire_sale($sale_id);
+        // Clear sale_id so suspend/finish create a NEW sale, not an update of the original
+        $this->session->set('sale_id', NEW_ENTRY);
+
+        redirect('sales');
+    }
+
+    /**
      * Show Keyboard shortcut modal. Used in app/Views/sales/register.php
      *
      * @return void

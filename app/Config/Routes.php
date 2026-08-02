@@ -83,6 +83,7 @@ $routes->get('sales/getPaymentSummary/(:num)', 'Sales::getPaymentSummary/$1');
 $routes->post('sales/add', 'Sales::postAdd');
 $routes->post('sales/addDiversos', 'Sales::addDiversos');
 $routes->post('sales/save/([0-9-]+)', 'Sales::postSave/$1');
+$routes->post('sales/reopen/([0-9-]+)', 'Sales::postReopen/$1');
 $routes->post('sales/editItem/(:num)', 'Sales::postEditItem/$1');
 $routes->post('sales/delete', 'Sales::delete');
 $routes->post('sales/quickFinish', 'Sales::postQuickFinish');

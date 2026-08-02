@@ -143,6 +143,12 @@ function get_sale_data_row(object $sale): array
         ]
     );
 
+    $row['reopen'] = form_open("$controller/reopen/$sale->sale_id", ['class' => 'form-inline', 'style' => 'display:inline']) .
+        '<button type="submit" class="btn btn-xs btn-warning" title="' . lang('Sales.reopen_sale') . '" onclick="return confirm(' . json_encode(lang('Sales.reopen_sale')) . ')">' .
+        '<span class="glyphicon glyphicon-share-alt"></span> ' . lang('Sales.reopen') .
+        '</button>' .
+        form_close();
+
     return $row;
 }
 
