@@ -24,7 +24,7 @@ $routes->post('guardrail/js-error', 'Guardrail::jsError');
 $routes->get('home', 'Home::getIndex');
 $routes->get('home/logout', 'Home::getLogout');
 $routes->get('home/changePassword/(:num)', 'Home::getChangePassword/$1');
-$routes->post('home/save/(:num)', 'Home::postSave/$1');
+$routes->post('home/save/([0-9-]+)', 'Home::postSave/$1');
 $routes->post('home/saveDailyTarget', 'Home::postSaveDailyTarget');
 $routes->get('debtors', 'Debtors::getIndex');
 
@@ -82,7 +82,7 @@ $routes->get('sales/getPaymentSummary/(:num)', 'Sales::getPaymentSummary/$1');
 
 $routes->post('sales/add', 'Sales::postAdd');
 $routes->post('sales/addDiversos', 'Sales::addDiversos');
-$routes->post('sales/save/(:num)', 'Sales::postSave/$1');
+$routes->post('sales/save/([0-9-]+)', 'Sales::postSave/$1');
 $routes->post('sales/editItem/(:num)', 'Sales::postEditItem/$1');
 $routes->post('sales/delete', 'Sales::delete');
 $routes->post('sales/quickFinish', 'Sales::postQuickFinish');
@@ -129,7 +129,7 @@ $routes->get('items/getInventory', 'Items::getInventory');
 $routes->get('items/checkNumeric', 'Items::getCheckNumeric');
 
 $routes->post('items/save', 'Items::postSave');
-$routes->post('items/save/(:num)', 'Items::postSave/$1');
+$routes->post('items/save/([0-9-]+)', 'Items::postSave/$1');
 $routes->post('items/delete', 'Items::postDelete');
 $routes->post('items/bulkUpdate', 'Items::postBulkUpdate');
 $routes->post('items/suggest_search', 'Items::suggest_search');
@@ -152,7 +152,7 @@ $routes->get('customers/csv', 'Customers::getCsv');
 $routes->get('customers/csvImport', 'Customers::getCsvImport');
 
 $routes->post('customers/save', 'Customers::postSave');
-$routes->post('customers/save/(:num)', 'Customers::postSave/$1');
+$routes->post('customers/save/([0-9-]+)', 'Customers::postSave/$1');
 $routes->post('customers/delete', 'Customers::postDelete');
 $routes->post('customers/suggest_search', 'Customers::suggest_search');
 $routes->post('customers/checkEmail', 'Customers::postCheckEmail');
@@ -171,7 +171,7 @@ $routes->get('employees/suggest', 'Employees::getSuggest');
 $routes->get('employees/checkUsername/(:segment)', 'Employees::getCheckUsername/$1');
 
 $routes->post('employees/save', 'Employees::postSave');
-$routes->post('employees/save/(:num)', 'Employees::postSave/$1');
+$routes->post('employees/save/([0-9-]+)', 'Employees::postSave/$1');
 $routes->post('employees/delete', 'Employees::postDelete');
 $routes->post('employees/suggest_search', 'Employees::suggest_search');
 
@@ -186,7 +186,7 @@ $routes->get('suppliers/view/(:num)', 'Suppliers::getView/$1');
 $routes->get('suppliers/suggest', 'Suppliers::getSuggest');
 
 $routes->post('suppliers/save', 'Suppliers::postSave');
-$routes->post('suppliers/save/(:num)', 'Suppliers::postSave/$1');
+$routes->post('suppliers/save/([0-9-]+)', 'Suppliers::postSave/$1');
 $routes->post('suppliers/delete', 'Suppliers::postDelete');
 $routes->post('suppliers/suggest_search', 'Suppliers::suggest_search');
 
@@ -215,7 +215,7 @@ $routes->post('receivings/delete', 'Receivings::postDelete');
 $routes->post('receivings/complete', 'Receivings::postComplete');
 $routes->post('receivings/requisitionComplete', 'Receivings::postRequisitionComplete');
 $routes->post('receivings/save', 'Receivings::postSave');
-$routes->post('receivings/save/(:num)', 'Receivings::postSave/$1');
+$routes->post('receivings/save/([0-9-]+)', 'Receivings::postSave/$1');
 $routes->post('receivings/cancelReceiving', 'Receivings::postCancelReceiving');
 
 // ═══════════════════════════════════════════════════════════
@@ -256,7 +256,7 @@ $routes->get('giftcards/view/(:num)', 'Giftcards::getView/$1');
 $routes->get('giftcards/suggest', 'Giftcards::getSuggest');
 
 $routes->post('giftcards/save', 'Giftcards::postSave');
-$routes->post('giftcards/save/(:num)', 'Giftcards::postSave/$1');
+$routes->post('giftcards/save/([0-9-]+)', 'Giftcards::postSave/$1');
 $routes->post('giftcards/delete', 'Giftcards::postDelete');
 $routes->post('giftcards/suggest_search', 'Giftcards::suggest_search');
 $routes->post('giftcards/checkNumberGiftcard', 'Giftcards::postCheckNumberGiftcard');
@@ -283,7 +283,7 @@ $routes->get('attributes/view/(:num)', 'Attributes::getView/$1');
 $routes->get('attributes/suggestAttribute/(:num)', 'Attributes::getSuggestAttribute/$1');
 
 $routes->post('attributes/save', 'Attributes::postSave');
-$routes->post('attributes/save/(:num)', 'Attributes::postSave/$1');
+$routes->post('attributes/save/([0-9-]+)', 'Attributes::postSave/$1');
 $routes->post('attributes/delete', 'Attributes::postDelete');
 $routes->post('attributes/saveAttributeValue', 'Attributes::postSaveAttributeValue');
 $routes->post('attributes/deleteDropdownAttributeValue', 'Attributes::postDeleteDropdownAttributeValue');
@@ -299,7 +299,7 @@ $routes->get('cash/view/(:num)', 'Cash::getView/$1');
 $routes->get('cash/checkNumeric', 'Cash::getCheckNumeric');
 
 $routes->post('cash/save', 'Cash::postSave');
-$routes->post('cash/save/(:num)', 'Cash::postSave/$1');
+$routes->post('cash/save/([0-9-]+)', 'Cash::postSave/$1');
 $routes->post('cash/delete', 'Cash::postDelete');
 
 // ═══════════════════════════════════════════════════════════
@@ -312,7 +312,7 @@ $routes->get('cashups/view', 'Cashups::getView');
 $routes->get('cashups/view/(:num)', 'Cashups::getView/$1');
 
 $routes->post('cashups/save', 'Cashups::postSave');
-$routes->post('cashups/save/(:num)', 'Cashups::postSave/$1');
+$routes->post('cashups/save/([0-9-]+)', 'Cashups::postSave/$1');
 $routes->post('cashups/delete', 'Cashups::postDelete');
 $routes->post('cashups/ajax_cashup_total', 'Cashups::postAjax_cashup_total');
 
@@ -327,7 +327,7 @@ $routes->get('expenses/view/(:num)', 'Expenses::getView/$1');
 $routes->get('expenses/checkNumeric', 'Expenses::getCheckNumeric');
 
 $routes->post('expenses/save', 'Expenses::postSave');
-$routes->post('expenses/save/(:num)', 'Expenses::postSave/$1');
+$routes->post('expenses/save/([0-9-]+)', 'Expenses::postSave/$1');
 $routes->post('expenses/delete', 'Expenses::postDelete');
 
 // ═══════════════════════════════════════════════════════════
@@ -340,7 +340,7 @@ $routes->get('expenses_categories/view', 'Expenses_categories::getView');
 $routes->get('expenses_categories/view/(:num)', 'Expenses_categories::getView/$1');
 
 $routes->post('expenses_categories/save', 'Expenses_categories::postSave');
-$routes->post('expenses_categories/save/(:num)', 'Expenses_categories::postSave/$1');
+$routes->post('expenses_categories/save/([0-9-]+)', 'Expenses_categories::postSave/$1');
 $routes->post('expenses_categories/delete', 'Expenses_categories::postDelete');
 
 // ═══════════════════════════════════════════════════════════
@@ -354,7 +354,7 @@ $routes->get('item_kits/view/(:num)', 'Item_kits::getView/$1');
 $routes->get('item_kits/generateBarcodes/(:segment)', 'Item_kits::getGenerateBarcodes/$1');
 
 $routes->post('item_kits/save', 'Item_kits::postSave');
-$routes->post('item_kits/save/(:num)', 'Item_kits::postSave/$1');
+$routes->post('item_kits/save/([0-9-]+)', 'Item_kits::postSave/$1');
 $routes->post('item_kits/delete', 'Item_kits::postDelete');
 $routes->post('item_kits/suggest_search', 'Item_kits::suggest_search');
 $routes->post('item_kits/checkItemNumber', 'Item_kits::postCheckItemNumber');
@@ -379,7 +379,7 @@ $routes->get('taxes/ajax_tax_categories', 'Taxes::ajax_tax_categories');
 $routes->get('taxes/ajax_tax_jurisdictions', 'Taxes::ajax_tax_jurisdictions');
 
 $routes->post('taxes/save', 'Taxes::postSave');
-$routes->post('taxes/save/(:num)', 'Taxes::postSave/$1');
+$routes->post('taxes/save/([0-9-]+)', 'Taxes::postSave/$1');
 $routes->post('taxes/delete', 'Taxes::postDelete');
 $routes->post('taxes/suggest_search', 'Taxes::suggest_search');
 $routes->post('taxes/suggest_tax_categories', 'Taxes::suggest_tax_categories');
@@ -397,7 +397,7 @@ $routes->get('tax_categories/view', 'Tax_categories::getView');
 $routes->get('tax_categories/view/(:num)', 'Tax_categories::getView/$1');
 
 $routes->post('tax_categories/save', 'Tax_categories::postSave');
-$routes->post('tax_categories/save/(:num)', 'Tax_categories::postSave/$1');
+$routes->post('tax_categories/save/([0-9-]+)', 'Tax_categories::postSave/$1');
 $routes->post('tax_categories/delete', 'Tax_categories::postDelete');
 
 // ═══════════════════════════════════════════════════════════
@@ -410,7 +410,7 @@ $routes->get('tax_codes/view', 'Tax_codes::getView');
 $routes->get('tax_codes/view/(:num)', 'Tax_codes::getView/$1');
 
 $routes->post('tax_codes/save', 'Tax_codes::postSave');
-$routes->post('tax_codes/save/(:num)', 'Tax_codes::postSave/$1');
+$routes->post('tax_codes/save/([0-9-]+)', 'Tax_codes::postSave/$1');
 $routes->post('tax_codes/delete', 'Tax_codes::postDelete');
 
 // ═══════════════════════════════════════════════════════════
@@ -423,7 +423,7 @@ $routes->get('tax_jurisdictions/view', 'Tax_jurisdictions::getView');
 $routes->get('tax_jurisdictions/view/(:num)', 'Tax_jurisdictions::getView/$1');
 
 $routes->post('tax_jurisdictions/save', 'Tax_jurisdictions::postSave');
-$routes->post('tax_jurisdictions/save/(:num)', 'Tax_jurisdictions::postSave/$1');
+$routes->post('tax_jurisdictions/save/([0-9-]+)', 'Tax_jurisdictions::postSave/$1');
 $routes->post('tax_jurisdictions/delete', 'Tax_jurisdictions::postDelete');
 
 // ═══════════════════════════════════════════════════════════
