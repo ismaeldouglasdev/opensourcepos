@@ -2647,19 +2647,20 @@ body {
 }
 
 /* Wrap columns (name/category) so the table fits without horizontal scroll.
-   Name absorbs the leftover width (max 400px) to avoid dead space at the right. */
+   Name absorbs the leftover width (max 400px, can shrink to 0) to avoid dead
+   space at the right while never forcing a horizontal scroll. */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-wrap {
     white-space: normal !important;
-    min-width: 100px;
+    min-width: 0 !important;
     max-width: 400px;
 }
 
 /* Numeric columns: keep narrow so they don't stretch with dead space */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-num,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-num {
-    width: 110px !important;
+    width: 100px !important;
     min-width: 0 !important;
-    max-width: 110px !important;
+    max-width: 100px !important;
 }
 
 /* Quantity column narrower still */
@@ -2678,17 +2679,17 @@ body {
 /* ID column narrow */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-id,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-id {
-    width: 50px !important;
+    width: 44px !important;
     min-width: 0 !important;
-    max-width: 60px !important;
+    max-width: 50px !important;
 }
 
 /* UPC/item number capped (overflow ellipsis) */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-mono,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-mono {
-    width: 140px !important;
+    width: 120px !important;
     min-width: 0 !important;
-    max-width: 140px !important;
+    max-width: 120px !important;
     overflow: hidden;
     text-overflow: ellipsis;
 }
@@ -2696,8 +2697,8 @@ body {
 /* Category capped, so name gets the leftover space */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-wrap:not(.items-col-name),
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-wrap:not(.items-col-name) {
-    width: 170px;
-    max-width: 170px;
+    width: 150px;
+    max-width: 150px;
 }
 
 /* Header titles wrap fully instead of being cut with ellipsis */
@@ -2719,9 +2720,9 @@ body {
 /* Product image thumbnail column */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-pic {
     text-align: center !important;
-    width: 54px !important;
+    width: 48px !important;
     min-width: 0 !important;
-    max-width: 54px !important;
+    max-width: 48px !important;
 }
 
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-pic img {
