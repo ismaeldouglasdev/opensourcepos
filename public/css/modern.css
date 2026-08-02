@@ -2648,8 +2648,8 @@ body {
 /* Wrap columns (name/category) so the table fits without horizontal scroll */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-wrap {
     white-space: normal !important;
-    min-width: 110px;
-    max-width: 320px;
+    min-width: 100px;
+    max-width: 230px;
 }
 
 /* Numeric columns: keep narrow so they don't stretch with dead space */
