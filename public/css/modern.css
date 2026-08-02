@@ -2697,3 +2697,10 @@ body {
     width: 170px;
     max-width: 170px;
 }
+
+/* Header titles wrap fully instead of being cut with ellipsis */
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table thead th .th-inner {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+}
