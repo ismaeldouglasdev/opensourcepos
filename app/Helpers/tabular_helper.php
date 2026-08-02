@@ -449,9 +449,7 @@ function get_items_manage_table_headers(): string
     // Action columns stay at the front (after the checkbox) so the edit button
     // is always visible without scrolling the wide table horizontally.
     $actions = [
-        ['edit' => '', 'escape' => false],
-        ['inventory' => '', 'escape' => false],
-        ['stock' => '', 'escape' => false]
+        ['edit' => '', 'escape' => false]
     ];
 
     return transform_headers(array_merge($actions, $headers), false, false);
@@ -526,23 +524,6 @@ function get_item_data_row(object $item): array
     ];
 
     $icons = [
-        'inventory' => anchor(
-            "$controller/inventory/$item->item_id",
-            '<span class="glyphicon glyphicon-pushpin"></span>',
-            [
-                'class'           => 'modal-dlg',
-                'data-btn-submit' => lang('Common.submit'),
-                'title'           => lang(ucfirst($controller) . ".count")
-            ]
-        ),
-        'stock'     => anchor(
-            "$controller/countDetails/$item->item_id",
-            '<span class="glyphicon glyphicon-list-alt"></span>',
-            [
-                'class' => 'modal-dlg',
-                'title' => lang(ucfirst($controller) . ".details_count")
-            ]
-        ),
         'edit'      => anchor(
             "$controller/view/$item->item_id",
             '<span class="glyphicon glyphicon-edit"></span>',
