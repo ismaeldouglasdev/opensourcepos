@@ -2601,8 +2601,7 @@ body {
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table {
     white-space: normal !important;
     table-layout: auto !important;
-    width: auto !important;
-    min-width: 0 !important;
+    width: 100% !important;
 }
 
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th,
@@ -2647,11 +2646,12 @@ body {
     text-align: right !important;
 }
 
-/* Wrap columns (name/category) so the table fits without horizontal scroll */
+/* Wrap columns (name/category) so the table fits without horizontal scroll.
+   Name absorbs the leftover width (max 400px) to avoid dead space at the right. */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-wrap {
     white-space: normal !important;
     min-width: 100px;
-    max-width: 230px;
+    max-width: 400px;
 }
 
 /* Numeric columns: keep narrow so they don't stretch with dead space */
@@ -2705,4 +2705,34 @@ body {
     white-space: normal !important;
     overflow: visible !important;
     text-overflow: clip !important;
+}
+
+/* Row hover highlight + sortable header hover */
+#table_holder.items-manage .bootstrap-table .fixed-table-body .table > tbody > tr:hover > td {
+    background-color: var(--os-primary-light) !important;
+}
+
+#table_holder.items-manage .bootstrap-table .fixed-table-container thead th.sortable:hover .th-inner {
+    color: var(--os-primary) !important;
+}
+
+/* Product image thumbnail column */
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-pic {
+    text-align: center !important;
+    width: 54px !important;
+    min-width: 0 !important;
+    max-width: 54px !important;
+}
+
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-pic img {
+    width: 42px !important;
+    height: 42px !important;
+    object-fit: cover !important;
+    border-radius: 6px !important;
+    border: 1px solid var(--os-border) !important;
+}
+
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-pic img:hover {
+    transform: scale(1.15);
+    box-shadow: var(--os-shadow-md) !important;
 }

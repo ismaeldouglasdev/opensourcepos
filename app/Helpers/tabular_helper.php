@@ -414,6 +414,7 @@ function item_headers(): array
         ['items.item_id' => lang('Common.id'), 'class' => 'items-col-id'],
         ['item_number'   => lang('Items.item_number'), 'class' => 'items-col-mono'],
         ['name'          => lang('Items.name'), 'class' => 'items-col-name items-col-wrap'],
+        ['item_pic'      => lang('Items.image'), 'sortable' => false, 'visible' => true, 'class' => 'items-col-pic'],
         ['category'      => lang('Items.category'), 'class' => 'items-col-wrap'],
         ['company_name'  => lang('Suppliers.company_name'), 'visible' => false],
         ['cost_price'    => lang('Items.cost_price'), 'class' => 'items-col-num'],
@@ -439,8 +440,6 @@ function get_items_manage_table_headers(): string
     } else {
         $headers[] = ['tax_percents' => lang('Items.tax_percents'), 'sortable' => false, 'visible' => false];
     }
-
-    $headers[] = ['item_pic' => lang('Items.image'), 'sortable' => false, 'visible' => false];
 
     foreach ($definition_names as $definition_id => $definition_name) {
         $headers[] = [$definition_id => $definition_name, 'sortable' => false, 'visible' => false];

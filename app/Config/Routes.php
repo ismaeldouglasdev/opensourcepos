@@ -120,6 +120,7 @@ $routes->get('items/inventory/(:num)', 'Items::getInventory/$1');
 $routes->get('items/countDetails/(:num)', 'Items::getCountDetails/$1');
 $routes->get('items/attributes/(:num)', 'Items::getAttributes/$1');
 $routes->get('items/removeLogo/(:segment)', 'Items::getRemoveLogo/$1');
+$routes->get('items/PicThumb/(:segment)', 'Items::getPicThumb/$1');
 $routes->get('items/generateBarcodes/(:segment)', 'Items::getGenerateBarcodes/$1');
 $routes->get('items/generateCsvFile', 'Items::getGenerateCsvFile');
 $routes->get('items/csvImport', 'Items::getCsvImport');
