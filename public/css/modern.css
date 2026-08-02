@@ -2601,6 +2601,8 @@ body {
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table {
     white-space: normal !important;
     table-layout: auto !important;
+    width: auto !important;
+    min-width: 0 !important;
 }
 
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th,
