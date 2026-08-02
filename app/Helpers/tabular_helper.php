@@ -448,7 +448,7 @@ function get_items_manage_table_headers(): string
     // Action columns stay at the front (after the checkbox) so the edit button
     // is always visible without scrolling the wide table horizontally.
     $actions = [
-        ['edit' => '', 'escape' => false]
+        ['edit' => '', 'escape' => false, 'class' => 'items-col-edit']
     ];
 
     return transform_headers(array_merge($actions, $headers), false, false);

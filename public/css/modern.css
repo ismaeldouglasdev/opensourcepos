@@ -2647,12 +2647,18 @@ body {
 }
 
 /* Wrap columns (name/category) so the table fits without horizontal scroll.
-   Name absorbs the leftover width (max 400px, can shrink to 0) to avoid dead
-   space at the right while never forcing a horizontal scroll. */
+   The name column has a fixed width: it no longer absorbs leftover space, so
+   it does not blow up with dead space depending on the searched product.
+   Long names wrap within the fixed width. */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-wrap {
     white-space: normal !important;
     min-width: 0 !important;
-    max-width: 400px;
+}
+
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-wrap.items-col-name {
+    width: 260px !important;
+    min-width: 260px !important;
+    max-width: 260px !important;
 }
 
 /* Numeric columns: keep narrow so they don't stretch with dead space */
@@ -2736,4 +2742,20 @@ body {
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-pic img:hover {
     transform: scale(1.15);
     box-shadow: var(--os-shadow-md) !important;
+}
+
+/* Checkbox column: fixed so leftover table space does not stretch it */
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table td.bs-checkbox {
+    width: 32px !important;
+    min-width: 32px !important;
+    max-width: 32px !important;
+}
+
+/* Action (edit) column: narrow, centered, fixed */
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table th.items-col-edit,
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-edit {
+    width: 44px !important;
+    min-width: 0 !important;
+    max-width: 44px !important;
+    text-align: center !important;
 }
