@@ -1607,6 +1607,14 @@ class Sales extends Secure_Controller
         $sales_taxes = $this->tax_lib->get_taxes($cart);
         $sale_status = COMPLETED;
 
+        // Optional sale-wide discount (percent) applied to every cart item
+        $discount_pct = $this->request->getPost('discount_pct');
+        if (!empty($discount_pct)) {
+            $this->sale_lib->apply_cart_discount(parse_decimals($discount_pct));
+            $cart = $this->sale_lib->get_cart();
+            $sales_taxes = $this->tax_lib->get_taxes($cart);
+        }
+
         $totals = $this->sale_lib->get_totals($sales_taxes[0] ?? []);
         $amount_due = $totals['total'];
         $payments_total = $this->sale_lib->get_payments_total();

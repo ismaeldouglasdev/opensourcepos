@@ -1465,6 +1465,32 @@ class Sale_lib
     }
 
     /**
+     * Applies a percentage discount to every item in the cart (sale-wide discount).
+     * @param string $percent discount percentage (0-100)
+     * @return void
+     */
+    public function apply_cart_discount(string $percent): void
+    {
+        if ($percent === '' || $percent <= 0) {
+            return;
+        }
+
+        $items = $this->get_cart();
+
+        foreach ($items as &$item) {
+            $quantity = $item['quantity'];
+            $price = $item['price'];
+
+            $item['discount'] = $percent;
+            $item['discount_type'] = PERCENT;
+            $item['total'] = $this->get_item_total($quantity, $price, $percent, PERCENT);
+            $item['discounted_total'] = $this->get_item_total($quantity, $price, $percent, PERCENT, true);
+        }
+
+        $this->set_cart($items);
+    }
+
+    /**
      * @return string
      */
     public function get_discount(): string

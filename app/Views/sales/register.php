@@ -1123,6 +1123,16 @@ if (!empty($editing_sale_id)) {
     margin: 0 !important;
     white-space: nowrap;
 }
+.checkout-modal .disc-preset {
+    flex: 1;
+    min-width: 44px;
+    font-weight: 600;
+}
+.checkout-modal .disc-preset.active {
+    background: #e65100;
+    color: #fff;
+    border-color: #e65100;
+}
 </style>
 <div class="modal fade checkout-modal" id="checkoutModal" tabindex="-1" role="dialog">
     <div class="modal-dialog">
@@ -1161,6 +1171,27 @@ if (!empty($editing_sale_id)) {
                         <input type="text" class="form-control" id="checkout_amount" inputmode="decimal" placeholder="0,00" style="text-align: center;">
                         <span class="input-group-btn">
                             <button type="button" class="btn btn-primary" id="add_payment_btn" onclick="addPayment()">+</button>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="discount-section" style="margin: 10px 0 4px; padding-top: 10px; border-top: 1px dashed #ddd;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <strong style="font-size:14px;">🏷️ DESCONTO</strong>
+                        <span id="discount_value_display" style="color:#e65100; font-weight:bold; font-size:14px;"></span>
+                    </div>
+                    <div style="display:flex; gap:6px; margin-bottom:6px;">
+                        <button type="button" class="btn btn-sm btn-default disc-preset" data-disc="5" onclick="applyDiscountPreset(5)">5%</button>
+                        <button type="button" class="btn btn-sm btn-default disc-preset" data-disc="10" onclick="applyDiscountPreset(10)">10%</button>
+                        <button type="button" class="btn btn-sm btn-default disc-preset" data-disc="15" onclick="applyDiscountPreset(15)">15%</button>
+                        <button type="button" class="btn btn-sm btn-default disc-preset" data-disc="20" onclick="applyDiscountPreset(20)">20%</button>
+                        <button type="button" class="btn btn-sm btn-default" onclick="removeDiscount()" title="Remover desconto">✕</button>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-addon" id="discount_toggle_btn" onclick="toggleDiscountMode()" style="cursor:pointer; user-select:none;" title="Clique para alternar % / R$">%</span>
+                        <input type="text" class="form-control" id="checkout_discount" inputmode="decimal" placeholder="Desconto" style="text-align:center;">
+                        <span class="input-group-btn">
+                            <button type="button" class="btn btn-warning" onclick="applyDiscountInput()">OK</button>
                         </span>
                     </div>
                 </div>
@@ -1209,6 +1240,9 @@ if (!empty($editing_sale_id)) {
 var payment_type_selected = '';
 var payments_list = [];
 var total_venda = 0;
+var total_venda_original = 0;
+var sale_discount_pct = 0;
+var discount_is_percent = true;
 
 function showDiversosModal() {
     $('#diversos_valor').val('');
@@ -1309,12 +1343,79 @@ function fmtMoney(v) {
     return int + ',' + parts[1];
 }
 
+/* Sale-wide discount applied at checkout */
+function refreshDiscountedTotal() {
+    var discAmount = total_venda_original * (sale_discount_pct / 100);
+    total_venda = Math.max(0, Math.round((total_venda_original - discAmount) * 100) / 100);
+
+    document.getElementById('checkout_total').textContent = 'R$ ' + fmtMoney(total_venda);
+    document.getElementById('checkout_restante').textContent = 'R$ ' + fmtMoney(total_venda);
+    document.getElementById('checkout_amount').placeholder = fmtMoney(total_venda);
+
+    var dd = document.getElementById('discount_value_display');
+    if (dd) dd.textContent = sale_discount_pct > 0 ? ('-R$ ' + fmtMoney(total_venda_original - total_venda)) : '';
+
+    updatePaymentSummary();
+    checkIfCanFinish();
+}
+
+function highlightPreset(pct) {
+    document.querySelectorAll('.disc-preset').forEach(function(b) {
+        b.classList.toggle('active', Math.abs(parseFloat(b.getAttribute('data-disc')) - pct) < 0.001);
+    });
+}
+
+function applyDiscountPreset(pct) {
+    sale_discount_pct = Math.max(0, Math.min(100, pct));
+    var di = document.getElementById('checkout_discount');
+    if (di) di.value = '';
+    refreshDiscountedTotal();
+}
+
+function removeDiscount() {
+    sale_discount_pct = 0;
+    highlightPreset(0);
+    var di = document.getElementById('checkout_discount');
+    if (di) di.value = '';
+    refreshDiscountedTotal();
+}
+
+function toggleDiscountMode() {
+    discount_is_percent = !discount_is_percent;
+    var t = document.getElementById('discount_toggle_btn');
+    if (t) t.textContent = discount_is_percent ? '%' : 'R$';
+}
+
+function applyDiscountInput() {
+    var val = parseCurrency(document.getElementById('checkout_discount').value);
+    if (val <= 0) { alert('Informe o desconto'); return; }
+    if (discount_is_percent) {
+        sale_discount_pct = Math.min(100, val);
+    } else {
+        if (total_venda_original <= 0) return;
+        sale_discount_pct = Math.min(100, val / total_venda_original * 100);
+    }
+    highlightPreset(sale_discount_pct);
+    refreshDiscountedTotal();
+}
+
 function openCheckoutModal() {
     var span = document.getElementById('sale_total');
     if (!span) { alert('Nao encontrou sale_total'); return; }
     var totalText = span.textContent || '0';
     total_venda = parseCurrency(totalText);
     if (total_venda <= 0) { alert('Carrinho vazio'); return; }
+    
+    total_venda_original = total_venda;
+    sale_discount_pct = 0;
+    discount_is_percent = true;
+    highlightPreset(0);
+    var dt = document.getElementById('discount_toggle_btn');
+    if (dt) dt.textContent = '%';
+    var dd = document.getElementById('discount_value_display');
+    if (dd) dd.textContent = '';
+    var di = document.getElementById('checkout_discount');
+    if (di) di.value = '';
     
     payments_list = [];
     payment_type_selected = '';
@@ -1535,7 +1636,8 @@ function finishCheckout() {
         url: '<?= site_url("sales/quickFinish") ?>',
         type: 'POST',
         data: Object.assign(csrfData, {
-            payments_json: paymentsData
+            payments_json: paymentsData,
+            discount_pct: sale_discount_pct || ''
         }),
         dataType: 'json',
         success: function(response) {
@@ -1574,6 +1676,17 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 if (!this.disabled) finishCheckout();
+            }
+        });
+    }
+
+    // Enter no campo de desconto aplica o desconto
+    var discInput = document.getElementById('checkout_discount');
+    if (discInput) {
+        discInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                applyDiscountInput();
             }
         });
     }
