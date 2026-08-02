@@ -2483,12 +2483,12 @@ td.text-right {
     transition: transform 80ms ease !important;
 }
 
-/* Link hover underline */
-a:not(.btn):not(.home-btn):not(.navbar-brand):not([data-toggle="dropdown"]) {
+/* Link hover underline (nav header buttons excluded: they use border-bottom bar) */
+a:not(.btn):not(.home-btn):not(.navbar-brand):not([data-toggle="dropdown"]):not(.navbar-nav > li > a) {
     text-decoration: none !important;
 }
 
-a:not(.btn):not(.home-btn):not(.navbar-brand):not([data-toggle="dropdown"]):hover {
+a:not(.btn):not(.home-btn):not(.navbar-brand):not([data-toggle="dropdown"]):not(.navbar-nav > li > a):hover {
     text-decoration: underline !important;
     text-underline-offset: 2px !important;
 }
