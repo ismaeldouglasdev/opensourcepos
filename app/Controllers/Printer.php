@@ -140,6 +140,50 @@ class Printer extends Secure_Controller
     }
 
     /**
+     * Reprint the most recent completed sale.
+     * POST /printer/quickPrintLast
+     *
+     * @return void
+     * @noinspection PhpUnused
+     */
+    public function postQuickPrintLast(): void
+    {
+        $printerName = $this->config['escpos_printer'] ?? 'TM-T20';
+
+        try {
+            $db = db_connect();
+            $builder = $db->table('sales');
+            $builder->select('MAX(sale_id) AS sale_id');
+            $builder->where('sale_status', COMPLETED);
+            $last = $builder->get()->getRow();
+            $saleId = $last ? (int)$last->sale_id : 0;
+
+            if (!$saleId) {
+                $this->response->setContentType('application/json');
+                echo json_encode(['success' => false, 'message' => 'Nenhuma venda finalizada encontrada.']);
+                return;
+            }
+
+            $saleData = $this->loadSaleData($saleId);
+            if (!$saleData) {
+                $this->response->setContentType('application/json');
+                echo json_encode(['success' => false, 'message' => 'Venda #' . $saleId . ' não encontrada.']);
+                return;
+            }
+
+            $this->thermalPrinter->connect($printerName);
+            $this->thermalPrinter->printReceipt($saleData);
+
+            $this->response->setContentType('application/json');
+            echo json_encode(['success' => true, 'message' => 'Recibo da venda #' . $saleId . ' reimpresso com sucesso.']);
+
+        } catch (\Exception $e) {
+            $this->response->setContentType('application/json');
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * Load sale data for thermal printing.
      */
     private function loadSaleData(int $saleId): ?array

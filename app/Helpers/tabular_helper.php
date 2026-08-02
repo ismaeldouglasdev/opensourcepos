@@ -413,12 +413,12 @@ function item_headers(): array
     return [
         ['items.item_id' => lang('Common.id'), 'class' => 'items-col-id'],
         ['item_number'   => lang('Items.item_number'), 'class' => 'items-col-mono'],
-        ['name'          => lang('Items.name'), 'class' => 'items-col-name'],
-        ['category'      => lang('Items.category')],
-        ['company_name'  => lang('Suppliers.company_name')],
+        ['name'          => lang('Items.name'), 'class' => 'items-col-name items-col-wrap'],
+        ['category'      => lang('Items.category'), 'class' => 'items-col-wrap'],
+        ['company_name'  => lang('Suppliers.company_name'), 'visible' => false],
         ['cost_price'    => lang('Items.cost_price'), 'class' => 'items-col-num'],
         ['unit_price'    => lang('Items.unit_price'), 'class' => 'items-col-num'],
-        ['quantity'      => lang('Items.quantity'), 'class' => 'items-col-num'],
+        ['quantity'      => lang('Items.quantity'), 'class' => 'items-col-num items-col-qty'],
         ['last_modified' => lang('Items.last_modified'), 'visible' => false]
     ];
 }
@@ -435,15 +435,15 @@ function get_items_manage_table_headers(): string
     $headers = item_headers();
 
     if ($config['use_destination_based_tax']) {
-        $headers[] = ['tax_percents' => lang('Items.tax_category'), 'sortable' => false];
+        $headers[] = ['tax_percents' => lang('Items.tax_category'), 'sortable' => false, 'visible' => false];
     } else {
-        $headers[] = ['tax_percents' => lang('Items.tax_percents'), 'sortable' => false];
+        $headers[] = ['tax_percents' => lang('Items.tax_percents'), 'sortable' => false, 'visible' => false];
     }
 
     $headers[] = ['item_pic' => lang('Items.image'), 'sortable' => false, 'visible' => false];
 
     foreach ($definition_names as $definition_id => $definition_name) {
-        $headers[] = [$definition_id => $definition_name, 'sortable' => false];
+        $headers[] = [$definition_id => $definition_name, 'sortable' => false, 'visible' => false];
     }
 
     // Action columns stay at the front (after the checkbox) so the edit button
@@ -955,4 +955,53 @@ function get_controller(): string
     $controller_name = strtolower($router->controllerName());
     $controller_name_parts = explode('\\', $controller_name);
     return end($controller_name_parts);
+}
+
+/**
+ * Get the header for the cash flow tabular view
+ */
+function get_cash_flow_manage_table_headers(): string
+{
+    return transform_headers(cash_flow_headers());
+}
+
+/**
+ * Get the headers for the cash flow table
+ */
+function cash_flow_headers(): array
+{
+    return [
+        ['cash_flow_id' => lang('Cash.id'), 'class' => 'items-col-id'],
+        ['created_at'   => lang('Cash.created_at')],
+        ['type'         => lang('Cash.type')],
+        ['amount'       => lang('Cash.amount'), 'class' => 'items-col-num'],
+        ['employee'     => lang('Cash.employee')],
+        ['note'         => lang('Cash.note')]
+    ];
+}
+
+/**
+ * Get the html data row for the cash flow entry
+ */
+function get_cash_flow_data_row(object $cash_flow): array
+{
+    $controller = get_controller();
+
+    return [
+        'cash_flow_id' => $cash_flow->cash_flow_id,
+        'created_at'   => to_datetime(strtotime($cash_flow->created_at)),
+        'type'         => $cash_flow->type == \App\Models\Cash_flow::TYPE_SANGRIA ? lang('Cash.type_sangria') : lang('Cash.type_suprimento'),
+        'amount'       => to_currency($cash_flow->amount),
+        'employee'     => $cash_flow->first_name . ' ' . $cash_flow->last_name,
+        'note'         => $cash_flow->note ?? '',
+        'edit'         => anchor(
+            "$controller/view/$cash_flow->cash_flow_id",
+            '<span class="glyphicon glyphicon-edit"></span>',
+            [
+                'class'           => 'modal-dlg',
+                'data-btn-submit' => lang('Common.submit'),
+                'title'           => lang(ucfirst($controller) . ".update")
+            ]
+        )
+    ];
 }

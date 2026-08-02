@@ -25,6 +25,8 @@ $routes->get('home', 'Home::getIndex');
 $routes->get('home/logout', 'Home::getLogout');
 $routes->get('home/changePassword/(:num)', 'Home::getChangePassword/$1');
 $routes->post('home/save/(:num)', 'Home::postSave/$1');
+$routes->post('home/saveDailyTarget', 'Home::postSaveDailyTarget');
+$routes->get('debtors', 'Debtors::getIndex');
 
 $routes->add('reports/summary_(:any)/(:any)/(:any)', 'Reports::Summary_$1/$2/$3/$4');
 $routes->add('reports/summary_expenses_categories', 'Reports::date_input_only');
@@ -286,6 +288,20 @@ $routes->post('attributes/saveAttributeValue', 'Attributes::postSaveAttributeVal
 $routes->post('attributes/deleteDropdownAttributeValue', 'Attributes::postDeleteDropdownAttributeValue');
 
 // ═══════════════════════════════════════════════════════════
+//  CASH FLOW (sangria / suprimento)
+// ═══════════════════════════════════════════════════════════
+$routes->get('cash', 'Cash::getIndex');
+$routes->get('cash/search', 'Cash::getSearch');
+$routes->get('cash/row/(:num)', 'Cash::getRow/$1');
+$routes->get('cash/view', 'Cash::getView');
+$routes->get('cash/view/(:num)', 'Cash::getView/$1');
+$routes->get('cash/checkNumeric', 'Cash::getCheckNumeric');
+
+$routes->post('cash/save', 'Cash::postSave');
+$routes->post('cash/save/(:num)', 'Cash::postSave/$1');
+$routes->post('cash/delete', 'Cash::postDelete');
+
+// ═══════════════════════════════════════════════════════════
 //  CASHUPS
 // ═══════════════════════════════════════════════════════════
 $routes->get('cashups', 'Cashups::getIndex');
@@ -456,6 +472,7 @@ $routes->get('office/logout', 'Office::logout');
 $routes->get('printer/test', 'Printer::getTest');
 $routes->get('printer/printReceipt/(:num)', 'Printer::getPrintReceipt/$1');
 $routes->post('printer/quickPrint', 'Printer::postQuickPrint');
+$routes->post('printer/quickPrintLast', 'Printer::postQuickPrintLast');
 
 // ═══════════════════════════════════════════════════════════
 //  REST API

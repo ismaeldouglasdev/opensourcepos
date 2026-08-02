@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'id'                    => "ID",
+    'type'                  => "Tipo",
+    'type_sangria'          => "Sangria",
+    'type_suprimento'       => "Suprimento",
+    'amount'                => "Valor",
+    'amount_required'       => "Informe um valor maior que zero.",
+    'note'                  => "Observação",
+    'employee'              => "Funcionário",
+    'created_at'            => "Data",
+    'new'                   => "Nova Movimentação",
+    'update'                => "Atualizar Movimentação",
+    'successful_adding'     => "Movimentação registrada com sucesso",
+    'successful_updating'   => "Movimentação atualizada com sucesso",
+    'successful_deleted'    => "Movimentação excluída com sucesso",
+    'cannot_be_deleted'     => "Não foi possível excluir a movimentação",
+    'one_or_multiple'       => "movimentação(ões)",
+    'error_adding_updating' => "Erro ao registrar a movimentação",
+    'today_sangria'         => "Sangria hoje",
+    'today_suprimento'      => "Suprimento hoje",
+    'today_balance'         => "Saldo do dia",
+    'confirm_delete'        => "Excluir esta movimentação?",
+];

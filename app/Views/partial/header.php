@@ -9,6 +9,14 @@
 use Config\Services;
 
 $request = Services::request();
+
+// Contador de alertas de estoque para o badge do menu (consulta leve)
+$stock_alert_count = 0;
+try {
+    $stock_alert_count = model(\App\Models\Item_quantity::class)->get_stock_alert_count();
+} catch (\Throwable $e) {
+    $stock_alert_count = 0;
+}
 ?>
 
 <!doctype html>
@@ -155,30 +163,44 @@ $request = Services::request();
                         $is_vendas = ($current == 'sales' && (strpos($current_url, 'sales/add') !== false || strpos($current_url, 'sales/register') !== false));
                         $is_itens = ($current == 'items');
                         $is_clientes = ($current == 'customers');
+                        $is_caixa = ($current == 'cash');
                         ?>
                         <li class="<?= $is_home ? 'active' : '' ?>">
-                            <a href="<?= base_url('home') ?>" style="font-size: 16px;">
+                            <a href="<?= base_url('home') ?>">
                                 🏠 HOME
                             </a>
                         </li>
                         <li class="<?= $is_resumo ? 'active' : '' ?>">
-                            <a href="<?= base_url('sales/manage') ?>" style="font-size: 16px;">
+                            <a href="<?= base_url('sales/manage') ?>">
                                 📊 RESUMO
                             </a>
                         </li>
                         <li class="<?= $is_vendas ? 'active' : '' ?>">
-                            <a href="<?= base_url('sales/add') ?>" style="font-size: 16px;">
+                            <a href="<?= base_url('sales/add') ?>">
                                 💰 VENDAS
                             </a>
                         </li>
+                        <li class="<?= $is_caixa ? 'active' : '' ?>">
+                            <a href="<?= base_url('cash') ?>">
+                                🧮 CAIXA
+                            </a>
+                        </li>
                         <li class="<?= $is_itens ? 'active' : '' ?>">
-                            <a href="<?= base_url('items') ?>" style="font-size: 16px;">
+                            <a href="<?= base_url('items') ?>">
                                 📦 ITENS
+                                <?php if ($stock_alert_count > 0): ?>
+                                    <span class="stock-badge"><?= $stock_alert_count > 99 ? '99+' : $stock_alert_count ?></span>
+                                <?php endif; ?>
                             </a>
                         </li>
                         <li class="<?= $is_clientes ? 'active' : '' ?>">
-                            <a href="<?= base_url('customers') ?>" style="font-size: 16px;">
+                            <a href="<?= base_url('customers') ?>">
                                 👥 CLIENTES
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?= base_url('debtors') ?>">
+                                📝 FIADO
                             </a>
                         </li>
                     </ul>
@@ -195,6 +217,8 @@ $request = Services::request();
                                 <li><a href="<?= site_url('employees') ?>"><span class="glyphicon glyphicon-user"></span> Funcionários</a></li>
                                 <li class="divider"></li>
                                 <li><a href="<?= site_url('sales/manage') ?>"><span class="glyphicon glyphicon-list-alt"></span> Vendas</a></li>
+                                <li><a href="<?= site_url('cash') ?>"><span class="glyphicon glyphicon-piggy-bank"></span> Caixa</a></li>
+                                <li><a href="<?= site_url('debtors') ?>"><span class="glyphicon glyphicon-book"></span> Fiado</a></li>
                                 <li><a href="<?= site_url('reports') ?>"><span class="glyphicon glyphicon-stats"></span> Relatórios</a></li>
                                 <li class="divider"></li>
                                 <li><a href="<?= site_url('config') ?>"><span class="glyphicon glyphicon-cog"></span> Configurações</a></li>

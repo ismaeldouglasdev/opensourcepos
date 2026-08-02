@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'id'                    => "ID",
+    'type'                  => "Type",
+    'type_sangria'          => "Cash withdrawal",
+    'type_suprimento'       => "Cash addition",
+    'amount'                => "Amount",
+    'amount_required'       => "Enter an amount greater than zero.",
+    'note'                  => "Note",
+    'employee'              => "Employee",
+    'created_at'            => "Date",
+    'new'                   => "New Cash Movement",
+    'update'                => "Update Cash Movement",
+    'successful_adding'     => "Cash movement registered successfully",
+    'successful_updating'   => "Cash movement updated successfully",
+    'successful_deleted'    => "Cash movement deleted successfully",
+    'cannot_be_deleted'     => "Could not delete the cash movement",
+    'one_or_multiple'       => "movement(s)",
+    'error_adding_updating' => "Error registering the cash movement",
+    'today_sangria'         => "Cash withdrawals today",
+    'today_suprimento'      => "Cash additions today",
+    'today_balance'         => "Daily balance",
+    'confirm_delete'        => "Delete this cash movement?",
+];

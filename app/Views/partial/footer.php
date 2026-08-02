@@ -21,6 +21,46 @@ use Config\OSPOS;
     </div>
 
     <script>
+    // Beeps sonoros via WebAudio (sem arquivo externo)
+    var beep = (function() {
+        var ctx = null;
+        var ensure = function() {
+            if (!ctx) {
+                var AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) return null;
+                ctx = new AC();
+            }
+            if (ctx.state === 'suspended') ctx.resume();
+            return ctx;
+        };
+        var tone = function(freq, ms, when) {
+            var c = ensure();
+            if (!c) return;
+            var t = c.currentTime + (when || 0);
+            var o = c.createOscillator();
+            var g = c.createGain();
+            o.type = 'sine';
+            o.frequency.value = freq;
+            g.gain.setValueAtTime(0.0001, t);
+            g.gain.exponentialRampToValueAtTime(0.25, t + 0.01);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + ms / 1000);
+            o.connect(g);
+            g.connect(c.destination);
+            o.start(t);
+            o.stop(t + ms / 1000 + 0.05);
+        };
+        return {
+            // item adicionado ao carrinho / leitura ok
+            ok: function() { tone(1200, 90); },
+            // venda finalizada com sucesso
+            success: function() { tone(880, 120); tone(1175, 140, 0.12); },
+            // erro / ação bloqueada
+            error: function() { tone(220, 220); }
+        };
+    })();
+    </script>
+
+    <script>
     document.addEventListener('keydown', function(e) {
         if (e.key === 'F2') {
             var currentPath = window.location.pathname;

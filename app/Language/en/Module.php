@@ -6,6 +6,8 @@ return [
     "attributes"                 => "Attributes",
     "attributes_desc"            => "Add, Update, Delete, and Search attributes.",
     "both"                       => "Both",
+    "cash"                       => "Cash",
+    "cash_desc"                  => "Register cash withdrawals and additions.",
     "cashups"                    => "Cashups",
     "cashups_desc"               => "Add, Update, Delete, and Search Cashups.",
     "config"                     => "Configuration",

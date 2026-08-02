@@ -113,12 +113,12 @@ code, .font-monospace, pre {
     background: var(--os-topbar-bg) !important;
     color: var(--os-topbar-text) !important;
     font-family: var(--os-font) !important;
-    padding: 0.2em 1em !important;
+    padding: 0.5em 1em !important;
     border-bottom: 1px solid rgba(255,255,255,0.06);
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     position: relative;
     z-index: 100;
-    font-size: 13px !important;
+    font-size: 18px !important;
 }
 
 .topbar a {
@@ -138,7 +138,7 @@ code, .font-monospace, pre {
     border: none !important;
     box-shadow: var(--os-shadow-sm) !important;
     margin-bottom: 0 !important;
-    min-height: 42px !important;
+    min-height: 56px !important;
 }
 
 .navbar-default {
@@ -149,11 +149,11 @@ code, .font-monospace, pre {
 .navbar-default .navbar-nav > li > a {
     font-family: var(--os-font) !important;
     font-weight: 600 !important;
-    font-size: 13px !important;
+    font-size: 20px !important;
     text-transform: uppercase !important;
     letter-spacing: 0.05em !important;
     color: var(--os-text-muted) !important;
-    padding: 14px 16px !important;
+    padding: 15px 18px !important;
     transition: color var(--os-transition), background var(--os-transition) !important;
     border-bottom: 2px solid transparent !important;
 }
@@ -171,6 +171,23 @@ code, .font-monospace, pre {
     color: var(--os-primary) !important;
     background: transparent !important;
     border-bottom-color: var(--os-primary) !important;
+}
+
+.navbar-default .navbar-nav .stock-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    margin-left: 6px;
+    border-radius: 10px;
+    background: var(--os-danger);
+    color: #fff;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    line-height: 1;
+    vertical-align: middle;
 }
 
 .navbar-default .navbar-toggle {
@@ -1810,19 +1827,19 @@ button,
 /* Standardize all action bar buttons */
 #title_bar .btn,
 #toolbar .btn {
-    font-size: 12px !important;
-    padding: 6px 12px !important;
-    min-height: 34px !important;
+    font-size: 16px !important;
+    padding: 10px 18px !important;
+    min-height: 46px !important;
     white-space: nowrap !important;
     display: inline-flex !important;
     align-items: center !important;
-    gap: 4px !important;
+    gap: 6px !important;
 }
 
 #title_bar .btn .glyphicon,
 #toolbar .btn .glyphicon {
-    font-size: 11px !important;
-    margin-right: 2px !important;
+    font-size: 15px !important;
+    margin-right: 4px !important;
 }
 
 /* Toolbar filter bar — unified horizontal strip */
@@ -2550,19 +2567,19 @@ body {
 }
 
 .bootstrap-table .table {
-    font-size: 0.8rem;
+    font-size: 1rem;
     white-space: nowrap;
 }
 
 .bootstrap-table .table > thead > tr > th,
 .bootstrap-table .table > tbody > tr > td {
-    padding: 4px 6px;
+    padding: 8px 10px;
     vertical-align: middle;
 }
 
 .bootstrap-table .table > tbody > tr > td .btn {
-    padding: 2px 6px;
-    font-size: 0.75rem;
+    padding: 6px 10px;
+    font-size: 0.95rem;
 }
 
 .bootstrap-table .fixed-table-container {
@@ -2591,18 +2608,18 @@ body {
     text-align: center !important;
     font-weight: 700 !important;
     color: var(--os-text-muted) !important;
-    font-size: 12px !important;
+    font-size: 14px !important;
 }
 
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-mono {
     font-family: var(--os-font-mono) !important;
-    font-size: 12px !important;
+    font-size: 14px !important;
     white-space: nowrap !important;
 }
 
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table td:not(.items-col-num):not(.items-col-mono) {
     font-family: var(--os-font) !important;
-    font-size: 13px !important;
+    font-size: 16px !important;
 }
 
 #table_holder.items-manage .bootstrap-table .fixed-table-container thead th:not(.items-col-num) {
@@ -2615,4 +2632,10 @@ body {
 
 #table_holder.items-manage .bootstrap-table .fixed-table-container thead th.items-col-num {
     text-align: right !important;
+}
+
+/* Wrap columns (name/category) so the table fits without horizontal scroll */
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-wrap {
+    white-space: normal !important;
+    min-width: 140px;
 }

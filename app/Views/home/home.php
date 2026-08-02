@@ -231,6 +231,62 @@ $date_str = $day_name . ', ' . date('d/m/Y');
     border-color: var(--os-primary);
 }
 
+.dash-progress {
+    height: 10px;
+    border-radius: 5px;
+    background: var(--os-surface-muted, rgba(0, 0, 0, 0.06));
+    overflow: hidden;
+}
+
+.dash-progress-bar {
+    height: 100%;
+    border-radius: 5px;
+    background: linear-gradient(90deg, var(--os-primary), #2dd4bf);
+    transition: width 0.5s ease;
+}
+
+.dash-progress-full {
+    background: linear-gradient(90deg, var(--os-success), #34d399);
+}
+
+.hourly-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 110px;
+    padding: 10px 4px 0;
+    overflow-x: auto;
+}
+
+.hourly-col {
+    flex: 1;
+    min-width: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 3px;
+}
+
+.hourly-bar {
+    width: 100%;
+    min-height: 2px;
+    max-width: 22px;
+    border-radius: 3px 3px 0 0;
+    background: linear-gradient(180deg, var(--os-primary), #38bdf8);
+    transition: height 0.4s ease;
+}
+
+.hourly-now {
+    background: linear-gradient(180deg, var(--os-warning), var(--os-danger));
+}
+
+.hourly-label {
+    font-size: 9px;
+    color: var(--os-text-muted);
+    white-space: nowrap;
+}
+
 .dash-alert-dot {
     width: 10px;
     height: 10px;
@@ -385,6 +441,57 @@ $date_str = $day_name . ', ' . date('d/m/Y');
         </div>
     </div>
 
+    <!-- Meta Diária -->
+    <div class="dash-section" id="daily_target_section">
+        <div class="dash-section-title">
+            <span class="glyphicon glyphicon-flag"></span> Meta Diária
+        </div>
+        <?php if ($daily_sales_target > 0): ?>
+        <div style="margin:10px 0 4px;">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">
+                <span style="color:var(--os-text-muted);"><?= to_currency($today_sales) ?> de <?= to_currency($daily_sales_target) ?></span>
+                <strong style="color:<?= $daily_sales_target_pct >= 100 ? 'var(--os-success)' : 'var(--os-warning)' ?>;"><?= $daily_sales_target_pct ?>%</strong>
+            </div>
+            <div class="dash-progress">
+                <div class="dash-progress-bar <?= $daily_sales_target_pct >= 100 ? 'dash-progress-full' : '' ?>" style="width:<?= $daily_sales_target_pct ?>%;"></div>
+            </div>
+        </div>
+        <?php else: ?>
+        <div style="color:var(--os-text-muted);font-size:13px;margin:8px 0;">Defina a meta de vendas do dia para acompanhar o progresso.</div>
+        <?php endif; ?>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:10px;">
+            <input type="text" inputmode="decimal" id="daily_target_input" class="form-control input-sm" style="max-width:220px;" placeholder="Meta em R$ (0 = desativada)" value="<?= $daily_sales_target > 0 ? to_currency_no_money($daily_sales_target) : '' ?>">
+            <button type="button" class="btn btn-primary btn-sm" onclick="saveDailyTarget()">Salvar Meta</button>
+        </div>
+    </div>
+
+    <!-- Vendas por Hora -->
+    <div class="dash-section">
+        <div class="dash-section-title">
+            <span class="glyphicon glyphicon-time"></span>
+            Vendas por Hora (Hoje)
+        </div>
+        <?php if ($hourly_max > 0): ?>
+        <div class="hourly-chart">
+            <?php for ($i = 0; $i < 24; $i++): ?>
+                <?php $bar_h = $hourly_sales[$i] > 0 ? max(4, round($hourly_sales[$i] / $hourly_max * 100)) : 2; ?>
+                <div class="hourly-col" title="<?= str_pad((string)$i, 2, '0', STR_PAD_LEFT) ?>h — <?= to_currency($hourly_sales[$i]) ?>">
+                    <div class="hourly-bar <?= $i === (int)date('G') ? 'hourly-now' : '' ?>" style="height:<?= $bar_h ?>px;"></div>
+                    <?php if ($i % 3 === 0): ?><span class="hourly-label"><?= $i ?>h</span><?php endif; ?>
+                </div>
+            <?php endfor; ?>
+        </div>
+        <div style="text-align:center;color:var(--os-text-muted);font-size:12px;margin-top:6px;">
+            Total hoje: <strong><?= to_currency($today_sales) ?></strong> · Hora mais forte: <strong><?= array_search(max($hourly_sales), $hourly_sales, true) ?>h</strong>
+        </div>
+        <?php else: ?>
+        <div class="dash-empty">
+            <span class="glyphicon glyphicon-info-sign" style="margin-right:6px;"></span>
+            Nenhuma venda registrada hoje ainda.
+        </div>
+        <?php endif; ?>
+    </div>
+
     <?php if ($pending_receivables > 0): ?>
     <div style="text-align:center;margin-bottom:24px;">
         <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border-radius:var(--os-radius);background:rgba(217,119,6,0.08);border:1px solid rgba(217,119,6,0.2);">
@@ -497,6 +604,34 @@ $date_str = $day_name . ', ' . date('d/m/Y');
             window.location.href = tr.getAttribute('data-href');
         });
     });
+
+    function saveDailyTarget() {
+        var input = document.getElementById('daily_target_input');
+        var valor = input.value;
+        var data = {};
+        data['daily_sales_target'] = valor;
+        data['<?= csrf_token() ?>'] = '<?= csrf_hash() ?>';
+
+        jQuery.ajax({
+            url: '<?= site_url("home/saveDailyTarget") ?>',
+            type: 'POST',
+            data: data,
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    beep.ok();
+                    location.reload();
+                } else {
+                    beep.error();
+                    alert('Erro: ' + (response.message || 'Falha ao salvar meta'));
+                }
+            },
+            error: function() {
+                beep.error();
+                alert('Erro de conexão ao salvar meta');
+            }
+        });
+    }
 </script>
 
 <?= view('partial/footer') ?>

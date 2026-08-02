@@ -77,6 +77,12 @@ window._tutorialSteps = [
 .checkout-modal .modal-body { padding: 10px 15px; }
 .checkout-total { font-weight: 600; text-align: center; background: var(--os-primary-light, #e8f8f0); border-radius: var(--os-radius-lg, 12px); margin-bottom: 8px; padding: 8px; font-size: 14px; }
 
+/* Qty stepper */
+.qty-stepper .btn { border-radius: 0; padding: 4px 7px; font-weight: 700; line-height: 1; }
+.qty-stepper .btn:first-child { border-radius: 3px 0 0 3px; }
+.qty-stepper .btn:last-child { border-radius: 0 3px 3px 0; }
+.qty-stepper input { text-align: center; }
+
 /* Payment list */
 .payment-list { margin-bottom: 5px; }
 .payment-list button { margin-bottom: 3px; height: 40px; font-size: 15px; text-align: center; line-height: 22px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: var(--os-radius, 8px) !important; }
@@ -332,7 +338,17 @@ if (!empty($editing_sale_id)) {
                                     echo to_quantity_decimals($item['quantity']);
                                     echo form_hidden('quantity', $item['quantity']);
                                 } else {
-                                    echo form_input(['name' => 'quantity', 'class' => 'form-control input-sm', 'value' => to_quantity_decimals($item['quantity'] ?? 0), 'tabindex' => ++$tabindex, 'onClick' => 'this.select();']);
+                                    ?>
+                                    <div class="input-group qty-stepper">
+                                        <span class="input-group-btn">
+                                            <button type="button" class="btn btn-xs qty-minus" tabindex="-1">−</button>
+                                        </span>
+                                        <?= form_input(['name' => 'quantity', 'class' => 'form-control input-sm', 'value' => to_quantity_decimals($item['quantity'] ?? 0), 'tabindex' => ++$tabindex, 'onClick' => 'this.select();', 'onchange' => 'if(this.value != this.defaultValue) this.form.submit();']) ?>
+                                        <span class="input-group-btn">
+                                            <button type="button" class="btn btn-xs qty-plus" tabindex="-1">+</button>
+                                        </span>
+                                    </div>
+                                <?php
                                 }
                                 ?>
                             </td>
@@ -546,6 +562,12 @@ if (!empty($editing_sale_id)) {
 <?php endif; ?>
 </div>
 
+<div style="margin: 6px 0; display: flex; gap: 8px;">
+    <button type="button" class="btn btn-default btn-block" id="btn_reimprimir_venda" onclick="reprintLastSale()" style="border: 1px solid var(--os-border, #d0d7de);">
+        <span class="glyphicon glyphicon-print"></span> Reimprimir Última Venda
+    </button>
+</div>
+
 <div id="payment_details">
                 <?php if ($payments_cover_total) { // Show Complete sale button instead of Add Payment if there is no amount due left ?>
                     <?= form_open("$controller_name/addPayment", ['id' => 'add_payment_form', 'class' => 'form-horizontal']) ?>
@@ -728,6 +750,24 @@ if (!empty($editing_sale_id)) {
             $.post("<?= site_url('sales/deletePayment/'); ?>" + item_id, redirect);
         });
 
+        $(".qty-plus").click(function() {
+            const $group = $(this).closest('.qty-stepper');
+            const $input = $group.find("input[name='quantity']");
+            let v = parseFloat(($input.val() || '0').replace(',', '.'));
+            if (isNaN(v)) v = 0;
+            $input.val(v + 1);
+            $group.closest('form').submit();
+        });
+
+        $(".qty-minus").click(function() {
+            const $group = $(this).closest('.qty-stepper');
+            const $input = $group.find("input[name='quantity']");
+            let v = parseFloat(($input.val() || '0').replace(',', '.'));
+            if (isNaN(v)) v = 0;
+            $input.val(Math.max(1, v - 1));
+            $group.closest('form').submit();
+        });
+
         $("input[name='item_number']").change(function() {
             var item_id = $(this).parents('tr').find("input[name='item_id']").val();
             var item_number = $(this).val();
@@ -823,6 +863,7 @@ if (!empty($editing_sale_id)) {
                 if ($('#item').autocomplete('widget').is(':visible')) {
                     return false;
                 }
+                beep.ok();
                 document.getElementById('add_item_form').submit();
                 return false;
             }
@@ -1103,6 +1144,7 @@ if (!empty($editing_sale_id)) {
                 </div>
                 
                 <div class="troco-display" id="troco_display" style="font-size: 16px; min-height: 28px; padding: 5px; text-align: center; font-weight: bold;"></div>
+                <div id="troco_notes_display" style="min-height: 0; margin: 0 0 6px; text-align: center;"></div>
                 
                 <div id="payment_summary_list" style="margin: 5px 0;"></div>
                 
@@ -1199,12 +1241,15 @@ function addDiversos() {
         success: function(response) {
             $('#diversosModal').modal('hide');
             if (response.success) {
+                beep.ok();
                 location.reload();
             } else {
+                beep.error();
                 alert(response.message || 'Erro ao adicionar item');
             }
         },
         error: function() {
+            beep.error();
             alert('Erro de conexão');
         }
     });
@@ -1392,11 +1437,38 @@ function updatePaymentSummary() {
     
     var troco = totalPago - total_venda;
     var trocoDisplay = document.getElementById('troco_display');
+    var trocoNotes = document.getElementById('troco_notes_display');
     if (troco > 0) {
         trocoDisplay.innerHTML = '<span style="color:#4caf50;">Troco: R$ ' + fmtMoney(troco) + '</span>';
+        renderChange(troco, trocoNotes);
     } else {
         trocoDisplay.textContent = ' ';
+        trocoNotes.innerHTML = '';
     }
+}
+
+function renderChange(amount, container) {
+    var denominations = [200, 100, 50, 20, 10, 5, 2, 1, 0.50, 0.25, 0.10, 0.05, 0.01];
+    var cents = Math.round(amount * 100);
+    var parts = [];
+    denominations.forEach(function(den) {
+        var d = Math.round(den * 100);
+        if (cents >= d) {
+            var qty = Math.floor(cents / d);
+            cents -= qty * d;
+            parts.push(qty + ' × R$ ' + fmtMoney(den));
+        }
+    });
+    if (parts.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+    var html = '<div style="display:inline-flex;flex-wrap:wrap;gap:4px;justify-content:center;max-width:100%;">';
+    parts.forEach(function(p) {
+        html += '<span class="change-chip" style="background:#f5f5f5;border:1px solid #ddd;border-radius:4px;padding:2px 8px;font-size:12px;color:#333;">' + p + '</span>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
 }
 
 function checkIfCanFinish() {
@@ -1406,6 +1478,39 @@ function checkIfCanFinish() {
 }
 
 var finishingCheckout = false;
+
+function reprintLastSale() {
+    var btn = document.getElementById('btn_reimprimir_venda');
+    btn.disabled = true;
+    var original = btn.innerHTML;
+    btn.innerHTML = 'IMPRIMINDO...';
+
+    jQuery.ajax({
+        url: '<?= site_url("printer/quickPrintLast") ?>',
+        type: 'POST',
+        data: {
+            <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                beep.ok();
+                alert(response.message || 'Venda reimpressa com sucesso!');
+            } else {
+                beep.error();
+                alert('Erro: ' + (response.message || 'Falha ao reimprimir'));
+            }
+        },
+        error: function() {
+            beep.error();
+            alert('Erro de conexão ao reimprimir');
+        },
+        complete: function() {
+            btn.disabled = false;
+            btn.innerHTML = original;
+        }
+    });
+}
 
 function finishCheckout() {
     if (finishingCheckout) return;
@@ -1435,13 +1540,16 @@ function finishCheckout() {
         dataType: 'json',
         success: function(response) {
             if (response.success) {
+                beep.success();
                 window.location.href = '<?= site_url("sales/receipt/") ?>' + response.sale_id;
             } else {
+                beep.error();
                 alert('Erro: ' + (response.message || 'Falha ao finalizar'));
                 location.reload();
             }
         },
         error: function(xhr, status, error) {
+            beep.error();
             alert('Erro de conexão: ' + error);
             location.reload();
         }

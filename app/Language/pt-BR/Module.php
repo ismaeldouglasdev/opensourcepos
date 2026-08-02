@@ -6,6 +6,8 @@ return [
     "attributes"                 => "Atributos",
     "attributes_desc"            => "Adicionar, atualizar, excluir e pesquisar atributos.",
     "both"                       => "Ambos",
+    "cash"                       => "Caixa",
+    "cash_desc"                  => "Registrar sangrias e suprimentos de caixa.",
     "cashups"                    => "Liquidação",
     "cashups_desc"               => "Adicione, atualize, exclua e pesquise as liquidações.",
     "config"                     => "Configurações",

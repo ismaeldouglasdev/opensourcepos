@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\Item_quantity;
 use CodeIgniter\HTTP\RedirectResponse;
+use Config\OSPOS;
 
 class Home extends Secure_Controller
 {
@@ -109,7 +110,55 @@ class Home extends Secure_Controller
         $item_quantity = model(Item_quantity::class);
         $data['stock_alert_count'] = $item_quantity->get_stock_alert_count();
 
+        // 9. Daily sales target (meta diária)
+        $config = config(OSPOS::class)->settings;
+        $data['daily_sales_target'] = (float)($config['daily_sales_target'] ?? 0);
+        $data['daily_sales_target_pct'] = $data['daily_sales_target'] > 0
+            ? min(100, round($data['today_sales'] / $data['daily_sales_target'] * 100))
+            : 0;
+
+        // 10. Sales per hour today (gráfico por hora)
+        $builder = $this->db->table('sales_items');
+        $builder->select("HOUR({$p}sales.sale_time) AS hour, ROUND(SUM($sale_price), $decimals) AS total");
+        $builder->join('sales', 'sales.sale_id = sales_items.sale_id');
+        $builder->where('sales.sale_status', COMPLETED);
+        $builder->where("DATE({$p}sales.sale_time)", date('Y-m-d'));
+        $builder->groupBy("HOUR({$p}sales.sale_time)");
+        $builder->orderBy('hour', 'ASC');
+        $hourly_result = $builder->get()->getResult();
+
+        $hourly = array_fill(0, 24, 0.0);
+        foreach ($hourly_result as $h) {
+            $hourly[(int)$h->hour] = (float)$h->total;
+        }
+        $data['hourly_sales'] = $hourly;
+        $data['hourly_max'] = max(array_values($hourly)) ?: 0;
+
         echo view('home/home', $data);
+    }
+
+    /**
+     * Saves the daily sales target (meta diária). Used in app/Views/home/home.php
+     *
+     * @return void
+     * @noinspection PhpUnused
+     */
+    public function postSaveDailyTarget(): void
+    {
+        $target = parse_decimals($this->request->getPost('daily_sales_target'));
+
+        if ($target === false || $target < 0) {
+            $target = 0;
+        }
+
+        $appconfig = model(\App\Models\Appconfig::class);
+        if ($appconfig->save(['daily_sales_target' => (string)$target])) {
+            $this->response->setContentType('application/json');
+            echo json_encode(['success' => true, 'message' => 'Meta diária atualizada.']);
+        } else {
+            $this->response->setContentType('application/json');
+            echo json_encode(['success' => false, 'message' => 'Erro ao salvar a meta diária.']);
+        }
     }
 
     /**
