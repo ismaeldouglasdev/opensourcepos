@@ -276,8 +276,8 @@ function customer_headers(): array
 {
     return [
         ['people.person_id' => lang('Common.id')],
-        ['last_name'        => lang('Common.last_name')],
         ['first_name'       => lang('Common.first_name')],
+        ['last_name'        => lang('Common.last_name')],
         ['email'            => lang('Common.email')],
         ['phone_number'     => lang('Common.phone_number')],
         ['total'            => lang('Common.total_spent'), 'sortable' => false]
@@ -310,8 +310,8 @@ function get_customer_data_row(object $person, object $stats): array
 
     return [
         'people.person_id' => $person->person_id,
-        'last_name'        => $person->last_name,
         'first_name'       => $person->first_name,
+        'last_name'        => $person->last_name,
         'email'            => empty($person->email) ? '' : mailto($person->email, $person->email),
         'phone_number'     => $person->phone_number,
         'total'            => to_currency($stats->total),

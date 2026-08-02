@@ -133,6 +133,7 @@ class Items extends Secure_Controller
             }
         }
 
+        $this->response->setContentType('application/json');
         echo json_encode(['total' => $total_rows, 'rows' => $data_rows]);
     }
 

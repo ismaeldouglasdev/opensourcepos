@@ -163,7 +163,6 @@ try {
                         $is_vendas = ($current == 'sales' && (strpos($current_url, 'sales/add') !== false || strpos($current_url, 'sales/register') !== false));
                         $is_itens = ($current == 'items');
                         $is_clientes = ($current == 'customers');
-                        $is_caixa = ($current == 'cash');
                         ?>
                         <li class="<?= $is_home ? 'active' : '' ?>">
                             <a href="<?= base_url('home') ?>">
@@ -180,11 +179,6 @@ try {
                                 💰 VENDAS
                             </a>
                         </li>
-                        <li class="<?= $is_caixa ? 'active' : '' ?>">
-                            <a href="<?= base_url('cash') ?>">
-                                🧮 CAIXA
-                            </a>
-                        </li>
                         <li class="<?= $is_itens ? 'active' : '' ?>">
                             <a href="<?= base_url('items') ?>">
                                 📦 ITENS
@@ -196,11 +190,6 @@ try {
                         <li class="<?= $is_clientes ? 'active' : '' ?>">
                             <a href="<?= base_url('customers') ?>">
                                 👥 CLIENTES
-                            </a>
-                        </li>
-                        <li>
-                            <a href="<?= base_url('debtors') ?>">
-                                📝 FIADO
                             </a>
                         </li>
                     </ul>

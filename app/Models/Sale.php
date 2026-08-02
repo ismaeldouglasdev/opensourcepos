@@ -252,6 +252,10 @@ class Sale extends Model
             $builder->where('sales.sale_status = ' . COMPLETED);
         }
 
+        if (!empty($filters['customer_id'])) {
+            $builder->where('sales.customer_id', (int)$filters['customer_id']);
+        }
+
         // TODO: Avoid the double negatives
         if ($filters['only_invoices']) {
             $builder->where('invoice_number IS NOT NULL');
@@ -1546,6 +1550,10 @@ class Sale extends Model
         if ($filters['selected_customer'] != false) {
             $sale_lib = new Sale_lib();
             $builder->where('sales.customer_id', $sale_lib->get_customer());
+        }
+
+        if (!empty($filters['customer_id'])) {
+            $builder->where('sales.customer_id', (int)$filters['customer_id']);
         }
 
 

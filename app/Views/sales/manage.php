@@ -112,11 +112,23 @@ window._tutorialSteps = [
 </style>
 
 <script type="text/javascript">
+    var activeCustomerId = <?= (int)($customer_id ?? 0) ?>;
+    var activeCustomerName = <?= json_encode($customer_name ?? '', JSON_UNESCAPED_UNICODE) ?>;
+
     $(document).ready(function() {
         $("#filters").on("hidden.bs.select", function(e) {
             table_support.refresh();
         });
         <?= view("partial/daterangepicker") ?>
+        if (activeCustomerId > 0) {
+            start_date = "2010-01-01";
+            end_date = "<?= date('Y-m-d') ?>";
+            var _picker = $("#daterangepicker").data("daterangepicker");
+            if (_picker) {
+                _picker.setStartDate(moment("2010-01-01", "YYYY-MM-DD"));
+                _picker.setEndDate(moment("<?= date('Y-m-d') ?>", "YYYY-MM-DD"));
+            }
+        }
         $("#daterangepicker").on("apply.daterangepicker", function(ev, picker) {
             start_date = picker.startDate.format("YYYY-MM-DD");
             end_date = picker.endDate.format("YYYY-MM-DD");
@@ -132,7 +144,8 @@ window._tutorialSteps = [
                 data: {
                     start_date: start_date,
                     end_date: end_date,
-                    filters: filters
+                    filters: filters,
+                    customer: activeCustomerId
                 },
                 dataType: 'json',
                 success: function(response) {
@@ -149,7 +162,8 @@ window._tutorialSteps = [
             return {
                 "start_date": start_date,
                 "end_date": end_date,
-                "filters": $("#filters").val() || []
+                "filters": $("#filters").val() || [],
+                "customer": activeCustomerId
             }
         };
         
@@ -175,6 +189,7 @@ window._tutorialSteps = [
                 params.start_date = start_date;
                 params.end_date = end_date;
                 params.filters = $("#filters").val() || [];
+                params.customer = activeCustomerId;
                 return params;
             },
             columns: {
@@ -241,6 +256,16 @@ window._tutorialSteps = [
 
 <?= view("partial/print_receipt", ["print_after_sale" => false, "selected_printer" => "takings_printer"]) ?>
 
+<?php if (!empty($customer_id)): ?>
+<div id="customer_filter_banner" class="alert alert-info" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;">
+    <span>
+        <span class="glyphicon glyphicon-user" style="margin-right:6px;"></span>
+        Mostrando vendas de: <strong><?= esc($customer_name) ?></strong>
+    </span>
+    <a href="<?= site_url('sales/manage') ?>" class="btn btn-default btn-sm" style="margin-left:12px;">Limpar filtro</a>
+</div>
+<?php endif; ?>
+
 <div id="title_bar" class="print_hide btn-toolbar">
     <button onclick="javascript:printTakingsReport()" class="btn btn-primary btn-sm pull-right" style="margin-right: 5px;">
         <span class="glyphicon glyphicon-print">&nbsp;</span>Imprimir Relatório
@@ -265,7 +290,7 @@ window._tutorialSteps = [
         </button>
 
         <?= form_input(["name" => "daterangepicker", "class" => "form-control input-sm", "id" => "daterangepicker"]) ?>
-        <?= form_hidden("start_date", date("Y-m-d")) ?>
+        <?= form_hidden("start_date", empty($customer_id) ? date("Y-m-d") : "2010-01-01") ?>
         <?= form_hidden("end_date", date("Y-m-d")) ?>
         <?= form_multiselect("filters[]", $filters, $selected_filters, [
             "id"                        => "filters",

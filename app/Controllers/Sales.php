@@ -150,6 +150,19 @@ class Sales extends Secure_Controller
                 'only_invoices' => false,
                 'selected_customer' => false
             ];
+
+            // Optional ?customer=N filter (e.g. from the Fiado/debtors list)
+            $customer_id = (int)($this->request->getGet('customer') ?? 0);
+            if ($customer_id > 0) {
+                $inputs['customer_id'] = $customer_id;
+                $customer_info = model(Customer::class)->get_info($customer_id);
+                $data['customer_id'] = $customer_id;
+                $data['customer_name'] = trim(($customer_info->first_name ?? '') . ' ' . ($customer_info->last_name ?? ''));
+            } else {
+                $data['customer_id'] = 0;
+                $data['customer_name'] = '';
+            }
+
             $payments = $this->sale->get_payments_summary('', $inputs);
             $data['payment_summary'] = get_sales_manage_payments_summary($payments);
 
@@ -1708,7 +1721,12 @@ class Sales extends Secure_Controller
 
         $request_filters = array_fill_keys($this->request->getGet('filters', FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?? [], true);
         $filters = array_merge($filters, $request_filters);
-        
+
+        $customer_id = (int)($this->request->getGet('customer') ?? 0);
+        if ($customer_id > 0) {
+            $filters['customer_id'] = $customer_id;
+        }
+
         $sales = $this->sale->search($search, $filters, $limit, $offset, $sort, $order);
         $total_rows = $this->sale->get_found_rows($search, $filters);
         
@@ -1730,11 +1748,13 @@ class Sales extends Secure_Controller
             'only_pix' => $filters['only_pix'] ?? false,
             'only_account_receivable' => $filters['only_account_receivable'] ?? false,
             'only_invoices' => false,
-            'selected_customer' => false
+            'selected_customer' => false,
+            'customer_id' => $customer_id ?? 0
         ];
         $payments = $this->sale->get_payments_summary('', $inputs);
         $payment_summary = get_sales_manage_payments_summary($payments);
 
+        $this->response->setContentType('application/json');
         echo json_encode(['total' => $total_rows, 'rows' => $data_rows, 'payment_summary' => $payment_summary]);
     }
 
@@ -1743,6 +1763,7 @@ class Sales extends Secure_Controller
         $start_date = $this->request->getGet('start_date', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $end_date = $this->request->getGet('end_date', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $filters = $this->request->getGet('filters', FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?? [];
+        $customer_id = (int)($this->request->getGet('customer') ?? 0);
 
         $inputs = [
             'start_date' => $start_date,
@@ -1753,7 +1774,8 @@ class Sales extends Secure_Controller
             'only_pix' => false,
             'only_account_receivable' => false,
             'only_invoices' => false,
-            'selected_customer' => false
+            'selected_customer' => false,
+            'customer_id' => $customer_id
         ];
 
         if (!empty($filters)) {
@@ -1779,6 +1801,7 @@ class Sales extends Secure_Controller
         $payments = $this->sale->get_payments_summary('', $inputs);
         $payment_summary = get_sales_manage_payments_summary($payments);
 
+        $this->response->setContentType('application/json');
         echo json_encode(['payment_summary' => $payment_summary]);
     }
 }
