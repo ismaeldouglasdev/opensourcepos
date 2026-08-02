@@ -341,8 +341,10 @@ class Sales extends Secure_Controller
                 $data['warning'] = $stock_warning;
             }
         } else {
-            if ($item_id_or_number_or_item_kit_or_receipt == '' || !$this->sale_lib->add_item($item_id_or_number_or_item_kit_or_receipt, $item_location, $quantity, $discount, $discount_type, PRICE_MODE_STANDARD, null, null, $price)) {
+            if ($item_id_or_number_or_item_kit_or_receipt == '') {
                 $data['error'] = lang('Sales.unable_to_add_item');
+            } elseif (!$this->sale_lib->add_item($item_id_or_number_or_item_kit_or_receipt, $item_location, $quantity, $discount, $discount_type, PRICE_MODE_STANDARD, null, null, $price)) {
+                $data['error'] = lang('Sales.item_not_found');
             } else {
                 $data['warning'] = $this->sale_lib->out_of_stock($item_id_or_number_or_item_kit_or_receipt, $item_location);
             }

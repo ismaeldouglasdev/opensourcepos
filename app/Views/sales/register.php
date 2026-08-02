@@ -47,7 +47,7 @@ use App\Models\Employee;
 <script>
 window._tutorialSteps = [
     {
-        target: '#item_search',
+        target: '#item',
         title: 'Buscar Produtos',
         text: 'Digite o <strong>código de barras</strong> ou <strong>nome</strong> do produto aqui. Use <strong>Enter</strong> para adicionar ao carrinho.'
     },

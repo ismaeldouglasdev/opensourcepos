@@ -12,6 +12,30 @@ use App\Models\Employee;
 ?>
 
 <?= view('partial/header') ?>
+<script>
+window._tutorialSteps = [
+    {
+        target: '.search input',
+        title: 'Buscar Produtos',
+        text: 'Digite o <strong>nome</strong>, <strong>código de barras</strong> ou <strong>código</strong> do produto para filtrar a lista.'
+    },
+    {
+        target: '#toolbar',
+        title: 'Ações em Lote',
+        text: 'Use <strong>Excluir</strong> ou <strong>Edição em lote</strong> para alterar vários produtos de uma vez.'
+    },
+    {
+        target: '#table',
+        title: 'Lista de Produtos',
+        text: 'Clique em um produto para <strong>editar</strong>. Marque a caixa para selecionar.'
+    },
+    {
+        target: '.modal-dlg',
+        title: 'Novo Produto',
+        text: 'Clique em <strong>Novo</strong> para cadastrar um produto. Use "Diversos" na venda para itens avulsos.'
+    }
+];
+</script>
 
 <script type="text/javascript">
     $(document).ready(function() {
@@ -85,6 +109,24 @@ use App\Models\Employee;
 
         $(".search input").focus();
     });
+
+    // Open the item edit modal directly when arriving with ?edit_item={id}
+    $(function() {
+        var edit_item = new URLSearchParams(window.location.search).get('edit_item');
+        if (edit_item && /^\d+$/.test(edit_item)) {
+            $('<a/>', {
+                id: 'edit-from-home',
+                class: 'modal-dlg',
+                href: <?= json_encode(esc("$controller_name/view/")) ?> + edit_item,
+                title: <?= json_encode(lang(ucfirst($controller_name) . '.update')) ?>,
+                'data-btn-submit': <?= json_encode(lang('Common.submit')) ?>,
+                style: 'display:none'
+            }).appendTo('body');
+            dialog_support.init('#edit-from-home');
+            $('#edit-from-home').trigger('click');
+            history.replaceState(null, '', <?= json_encode(esc("$controller_name")) ?>);
+        }
+    });
 </script>
 
 <div id="title_bar" class="btn-toolbar print_hide">
@@ -135,7 +177,7 @@ use App\Models\Employee;
     </div>
 </div>
 
-<div id="table_holder">
+<div id="table_holder" class="items-manage">
     <table id="table"></table>
 </div>
 

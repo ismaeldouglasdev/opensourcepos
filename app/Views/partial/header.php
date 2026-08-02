@@ -118,7 +118,10 @@ $request = Services::request();
         <div class="topbar">
             <div class="container">
                 <div class="navbar-left">
-                    <div id="liveclock"><?= date($config['dateformat'] . ' ' . $config['timeformat']) ?></div>
+                    <?php
+                    $dias_semana = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+                    ?>
+                    <div id="liveclock"><?= $dias_semana[(int)date('w')] . ', ' . date($config['dateformat'] . ' ' . $config['timeformat']) ?></div>
                 </div>
 
                 <div class="navbar-right" style="margin: 0;">

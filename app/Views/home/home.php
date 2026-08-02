@@ -167,6 +167,21 @@ $date_str = $day_name . ', ' . date('d/m/Y');
     background: var(--os-surface-hover);
 }
 
+.dash-top-table tbody tr.dash-clickable {
+    cursor: pointer;
+}
+
+.dash-top-table .dash-item-link {
+    color: var(--os-text);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.dash-top-table .dash-item-link:hover {
+    color: var(--os-primary);
+    text-decoration: underline;
+}
+
 .dash-rank {
     width: 24px;
     height: 24px;
@@ -203,14 +218,17 @@ $date_str = $day_name . ', ' . date('d/m/Y');
     border-radius: var(--os-radius);
     padding: 12px 14px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
     box-shadow: var(--os-shadow-sm);
     transition: box-shadow var(--os-transition);
+    text-decoration: none;
+    color: inherit;
 }
 
 .dash-alert-card:hover {
     box-shadow: var(--os-shadow);
+    border-color: var(--os-primary);
 }
 
 .dash-alert-dot {
@@ -218,20 +236,35 @@ $date_str = $day_name . ', ' . date('d/m/Y');
     height: 10px;
     border-radius: 50%;
     flex-shrink: 0;
+    margin-top: 5px;
 }
 
 .dash-alert-dot.zerado   { background: var(--os-warning); }
 .dash-alert-dot.irregular { background: var(--os-danger); }
 
+.dash-alert-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
 .dash-alert-name {
     font-size: 13px;
     font-weight: 600;
     color: var(--os-text);
-    flex: 1;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.dash-alert-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 .dash-alert-status {
@@ -379,9 +412,9 @@ $date_str = $day_name . ', ' . date('d/m/Y');
             </thead>
             <tbody>
                 <?php foreach ($top_items as $i => $item): ?>
-                <tr>
+                <tr class="dash-clickable" data-href="<?= base_url('items?edit_item=' . (int)$item->item_id) ?>">
                     <td><span class="dash-rank"><?= $i + 1 ?></span></td>
-                    <td><?= esc($item->name) ?></td>
+                    <td><a class="dash-item-link" href="<?= base_url('items?edit_item=' . (int)$item->item_id) ?>" title="<?= lang('Items.update') ?>"><?= esc($item->name) ?></a></td>
                     <td style="text-align:right;font-weight:600;"><?= esc((string)$item->qty) ?></td>
                     <td style="text-align:right;font-weight:600;"><?= to_currency($item->revenue) ?></td>
                 </tr>
@@ -418,12 +451,16 @@ $date_str = $day_name . ', ' . date('d/m/Y');
                 $status_class = $is_zerado ? 'zerado' : 'irregular';
                 $status_label = $is_zerado ? 'ZERADO' : 'IRREGULAR';
             ?>
-            <div class="dash-alert-card">
+            <a class="dash-alert-card" href="<?= base_url('items?edit_item=' . (int)$alert->item_id) ?>" title="<?= lang('Items.update') ?> — <?= esc($alert->name) ?>">
                 <span class="dash-alert-dot <?= $status_class ?>"></span>
-                <span class="dash-alert-name" title="<?= esc($alert->name) ?>"><?= esc($alert->name) ?></span>
-                <span class="dash-alert-qty">Qtd: <?= esc((string)$alert->quantity) ?></span>
-                <span class="dash-alert-status <?= $status_class ?>"><?= $status_label ?></span>
-            </div>
+                <span class="dash-alert-info">
+                    <span class="dash-alert-name" title="<?= esc($alert->name) ?>"><?= esc($alert->name) ?></span>
+                    <span class="dash-alert-meta">
+                        <span class="dash-alert-qty">Qtd: <?= esc((string)$alert->quantity) ?></span>
+                        <span class="dash-alert-status <?= $status_class ?>"><?= $status_label ?></span>
+                    </span>
+                </span>
+            </a>
             <?php endforeach; ?>
         </div>
     </div>
@@ -452,5 +489,14 @@ $date_str = $day_name . ', ' . date('d/m/Y');
     </div>
 
 </div>
+
+<script type="text/javascript">
+    document.querySelectorAll('.dash-top-table tbody tr.dash-clickable').forEach(function(tr) {
+        tr.addEventListener('click', function(e) {
+            if (e.target.closest('a')) return;
+            window.location.href = tr.getAttribute('data-href');
+        });
+    });
+</script>
 
 <?= view('partial/footer') ?>

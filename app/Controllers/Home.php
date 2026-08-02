@@ -77,7 +77,7 @@ class Home extends Secure_Controller
 
         // 6. Top 5 items this week
         $builder = $this->db->table('sales_items');
-        $builder->select("{$p}items.name, SUM({$p}sales_items.quantity_purchased) AS qty, ROUND(SUM($sale_price), $decimals) AS revenue");
+        $builder->select("{$p}items.item_id, {$p}items.name, SUM({$p}sales_items.quantity_purchased) AS qty, ROUND(SUM($sale_price), $decimals) AS revenue");
         $builder->join('sales', 'sales.sale_id = sales_items.sale_id');
         $builder->join('items', 'items.item_id = sales_items.item_id');
         $builder->where('sales.sale_status', COMPLETED);
@@ -89,7 +89,7 @@ class Home extends Secure_Controller
 
         // 7. Stock alerts: items with ZERADO or IRREGULAR status
         $builder = $this->db->table('items');
-        $builder->select("{$p}items.name, {$p}items.reorder_level, {$p}item_quantities.quantity, {$p}item_quantities.stock_status, {$p}item_quantities.location_id");
+        $builder->select("{$p}items.item_id, {$p}items.name, {$p}items.reorder_level, {$p}item_quantities.quantity, {$p}item_quantities.stock_status, {$p}item_quantities.location_id");
         $builder->join('item_quantities', 'item_quantities.item_id = items.item_id');
         $builder->where('items.stock_type', HAS_STOCK);
         $builder->where('items.deleted', 0);

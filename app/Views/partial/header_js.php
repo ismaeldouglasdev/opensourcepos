@@ -14,7 +14,9 @@
     clock_tick();
 
     var update_clock = function update_clock() {
-        document.getElementById('liveclock').innerHTML = moment().format("<?= dateformat_momentjs($config['dateformat'] . ' ' . $config['timeformat']) ?>");
+        var now = new Date();
+        var dias_semana = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+        document.getElementById('liveclock').innerHTML = dias_semana[now.getDay()] + ', ' + moment().format("<?= dateformat_momentjs($config['dateformat'] . ' ' . $config['timeformat']) ?>");
     }
 
     $.notifyDefaults({

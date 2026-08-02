@@ -176,7 +176,7 @@
 
 <script>
 (function() {
-    var tutorialSteps = window._tutorialSteps || [];
+    var tutorialSteps = [];
     var current = 0;
     var active = false;
 
@@ -230,7 +230,11 @@
     }
 
     window.startTutorial = function() {
-        if (!tutorialSteps.length) return;
+        tutorialSteps = window._tutorialSteps || [];
+        if (!tutorialSteps.length) {
+            $.notify({message: 'Nenhum tutorial disponível para esta página ainda.'}, {type: 'info'});
+            return;
+        }
         current = 0;
         active = true;
         $('body').addClass('tutorial-active');

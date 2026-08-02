@@ -8,6 +8,26 @@
 
 <?= view('partial/header') ?>
 
+<script>
+window._tutorialSteps = [
+    {
+        target: '.search input',
+        title: 'Buscar Clientes',
+        text: 'Digite <strong>nome</strong>, <strong>CPF/CNPJ</strong> ou <strong>telefone</strong> para filtrar a lista.'
+    },
+    {
+        target: '#table',
+        title: 'Lista de Clientes',
+        text: 'Clique em um cliente para <strong>editar</strong> seus dados. Marque a caixa para selecionar.'
+    },
+    {
+        target: '#title_bar .modal-dlg',
+        title: 'Novo Cliente',
+        text: 'Clique em <strong>Novo</strong> para cadastrar um cliente. Necessário para vendas a prazo/fiado.'
+    }
+];
+</script>
+
 <script type="text/javascript">
     $(document).ready(function() {
         <?= view('partial/bootstrap_tables_locale') ?>

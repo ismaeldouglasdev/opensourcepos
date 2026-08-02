@@ -10,6 +10,31 @@
 
 <?= view("partial/header") ?>
 
+<script>
+window._tutorialSteps = [
+    {
+        target: '#daterangepicker',
+        title: 'Período do Relatório',
+        text: 'Selecione o <strong>intervalo de datas</strong> para filtrar as vendas do resumo.'
+    },
+    {
+        target: '#payment_summary',
+        title: 'Resumo de Pagamentos',
+        text: 'Aqui mostra os <strong>totais por forma de pagamento</strong> no período selecionado.'
+    },
+    {
+        target: '#table',
+        title: 'Lista de Vendas',
+        text: 'Selecione uma venda para ver os <strong>itens</strong> ou <strong>imprimir o recibo</strong>.'
+    },
+    {
+        target: '#print_receipt',
+        title: 'Imprimir Venda',
+        text: 'Com a venda selecionada, clique em <strong>Imprimir Venda</strong> para enviar o recibo à impressora térmica.'
+    }
+];
+</script>
+
 <style>
     #table td,
     #table th {

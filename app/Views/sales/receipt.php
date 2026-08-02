@@ -71,11 +71,8 @@ if (isset($error_message)) {
 </div>
 
 <div class="print_hide" id="control_buttons" style="text-align: right;">
-    <a href="javascript:printdoc();">
-        <div class="btn btn-info btn-sm" id="show_print_button"><?= '<span class="glyphicon glyphicon-print">&nbsp;</span>' . lang('Common.print') ?></div>
-    </a>
     <a href="javascript:void(0);" id="print-receipt-btn">
-        <button class="btn btn-primary btn-sm print_hide"><span class="glyphicon glyphicon-print">&nbsp;</span> <?= lang('Common.print') ?></button>
+        <button class="btn btn-primary btn-sm print_hide"><span class="glyphicon glyphicon-print">&nbsp;</span> Imprimir Nota</button>
     </a>
     <script>
         $(document).ready(function() {

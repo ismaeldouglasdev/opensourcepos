@@ -51,7 +51,8 @@ function transform_headers(array $headers, bool $readonly = false, bool $editabl
             'escape'     => !preg_match("/(edit|phone_number|email|messages|item_pic|customer_name|note)/", key($element)) && !(isset($element['escape']) && !$element['escape']),
             'sortable'   => $element['sortable'] ?? current($element) != '',
             'checkbox'   => $element['checkbox'] ?? false,
-            'class'      => isset($element['checkbox']) || preg_match('(^$|&nbsp)', current($element)) ? 'print_hide' : '',
+            'visible'    => $element['visible'] ?? true,
+            'class'      => $element['class'] ?? (isset($element['checkbox']) || preg_match('(^$|&nbsp)', current($element)) ? 'print_hide' : ''),
             'sorter'     => $element['sorter'] ?? ''
         ];
     }
@@ -63,12 +64,12 @@ function transform_headers(array $headers, bool $readonly = false, bool $editabl
 function sales_headers(): array
 {
     return [
-        ['sale_id'         => lang('Common.id')],
+        ['sale_id'         => lang('Common.id'), 'class' => 'sales-col-id'],
         ['sale_time'       => lang('Sales.sale_time')],
         ['customer_name'   => lang('Customers.customer')],
-        ['amount_due'      => lang('Sales.amount_tendered')],
-        ['amount_tendered' => lang('Sales.amount_due')],
-        ['change_due'      => lang('Sales.change_due')],
+        ['amount_due'      => lang('Sales.amount_tendered'), 'class' => 'sales-col-num'],
+        ['amount_tendered' => lang('Sales.amount_due'), 'class' => 'sales-col-num'],
+        ['change_due'      => lang('Sales.change_due'), 'class' => 'sales-col-num'],
         ['payment_type'    => lang('Sales.payment_type')]
     ];
 }
@@ -410,15 +411,15 @@ function get_supplier_data_row(object $supplier): array
 function item_headers(): array
 {
     return [
-        ['items.item_id' => lang('Common.id')],
-        ['item_number'   => lang('Items.item_number')],
-        ['name'          => lang('Items.name')],
+        ['items.item_id' => lang('Common.id'), 'class' => 'items-col-id'],
+        ['item_number'   => lang('Items.item_number'), 'class' => 'items-col-mono'],
+        ['name'          => lang('Items.name'), 'class' => 'items-col-name'],
         ['category'      => lang('Items.category')],
         ['company_name'  => lang('Suppliers.company_name')],
-        ['cost_price'    => lang('Items.cost_price')],
-        ['unit_price'    => lang('Items.unit_price')],
-        ['quantity'      => lang('Items.quantity')],
-        ['last_modified' => lang('Items.last_modified')]
+        ['cost_price'    => lang('Items.cost_price'), 'class' => 'items-col-num'],
+        ['unit_price'    => lang('Items.unit_price'), 'class' => 'items-col-num'],
+        ['quantity'      => lang('Items.quantity'), 'class' => 'items-col-num'],
+        ['last_modified' => lang('Items.last_modified'), 'visible' => false]
     ];
 }
 
@@ -439,16 +440,21 @@ function get_items_manage_table_headers(): string
         $headers[] = ['tax_percents' => lang('Items.tax_percents'), 'sortable' => false];
     }
 
-    $headers[] = ['item_pic' => lang('Items.image'), 'sortable' => false];
+    $headers[] = ['item_pic' => lang('Items.image'), 'sortable' => false, 'visible' => false];
 
     foreach ($definition_names as $definition_id => $definition_name) {
         $headers[] = [$definition_id => $definition_name, 'sortable' => false];
     }
 
-    $headers[] = ['inventory' => '', 'escape' => false];
-    $headers[] = ['stock' => '', 'escape' => false];
+    // Action columns stay at the front (after the checkbox) so the edit button
+    // is always visible without scrolling the wide table horizontally.
+    $actions = [
+        ['edit' => '', 'escape' => false],
+        ['inventory' => '', 'escape' => false],
+        ['stock' => '', 'escape' => false]
+    ];
 
-    return transform_headers($headers);
+    return transform_headers(array_merge($actions, $headers), false, false);
 }
 
 /**

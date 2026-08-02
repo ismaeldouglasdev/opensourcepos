@@ -26,7 +26,7 @@ class Printer extends Secure_Controller
     private Barcode_lib $barcode_lib;
     private Sale $sale;
     private Customer $customer;
-    private Employee $employee;
+    protected Employee $employee;
     private array $config;
 
     public function __construct()
@@ -188,6 +188,8 @@ class Printer extends Secure_Controller
         $data['quote_number'] = $saleInfo['quote_number'] ?? '';
         $data['sale_status'] = $saleInfo['sale_status'] ?? '';
         $data['barcode'] = $this->barcode_lib->generate_receipt_barcode($data['sale_id']);
+
+        $this->sale_lib->clear_all();
 
         return $data;
     }
