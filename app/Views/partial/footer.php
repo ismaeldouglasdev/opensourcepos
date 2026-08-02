@@ -76,6 +76,7 @@ use Config\OSPOS;
     (function() {
         var GR_URL = '<?= site_url('guardrail/js-error') ?>';
         var lastReport = 0;
+        var recent = {};
         var report = function(data) {
             var now = Date.now();
             if (now - lastReport < 1000) return;
@@ -97,8 +98,29 @@ use Config\OSPOS;
                 }
             } catch (e) {}
         };
+        // Falha HTTP de AJAX: falhas de rede ou status >= 400 (ex.: 404 de rota
+        // quebrada). NAO disparam window.onerror -> o modal "morre" em silencio.
+        var ajaxFailure = function(method, target, status) {
+            if (!target || target.indexOf('/guardrail/') !== -1) return;
+            var key = method + '|' + target + '|' + status;
+            var now = Date.now();
+            if (recent[key] && now - recent[key] < 30000) return;
+            recent[key] = now;
+            report({
+                kind: 'ajax',
+                message: 'ajax ' + (status || 'NET') + ' ' + String(method || '?').toUpperCase() + ' ' + target,
+                source: '',
+                line: 0,
+                col: 0,
+                stack: '',
+                method: method || '',
+                status: status || 0,
+                target: target
+            });
+        };
         window.addEventListener('error', function(e) {
             report({
+                kind: 'js',
                 message: String(e.message || '').slice(0, 500),
                 source: e.filename || '',
                 line: e.lineno || 0,
@@ -109,6 +131,7 @@ use Config\OSPOS;
         window.addEventListener('unhandledrejection', function(e) {
             var r = e.reason;
             report({
+                kind: 'js',
                 message: 'unhandledrejection: ' + String(r && r.message ? r.message : r).slice(0, 500),
                 source: '',
                 line: 0,
@@ -116,6 +139,51 @@ use Config\OSPOS;
                 stack: String(r && r.stack ? r.stack : '').slice(0, 1500)
             });
         });
+
+        // ---- Deteccao de XHR/fetch que falharam ----
+        try {
+            var XHR = window.XMLHttpRequest;
+            if (XHR) {
+                var origOpen = XHR.prototype.open;
+                var origSend = XHR.prototype.send;
+                XHR.prototype.open = function(method, url) {
+                    this.__gr_method = method;
+                    this.__gr_url = url;
+                    return origOpen.apply(this, arguments);
+                };
+                XHR.prototype.send = function() {
+                    var self = this;
+                    var fired = false;
+                    var fire = function(status) {
+                        if (fired) return;
+                        fired = true;
+                        if (status === 0 || status >= 400) {
+                            ajaxFailure(self.__gr_method || '?', self.__gr_url || '', status);
+                        }
+                    };
+                    if (this.addEventListener) {
+                        this.addEventListener('load', function() { fire(self.status); });
+                        this.addEventListener('error', function() { fire(0); });
+                        this.addEventListener('timeout', function() { fire(0); });
+                    }
+                    return origSend.apply(this, arguments);
+                };
+            }
+            var origFetch = window.fetch;
+            if (origFetch) {
+                window.fetch = function(input, init) {
+                    var method = (init && init.method) || (input && input.method) || 'GET';
+                    var url = typeof input === 'string' ? input : (input && input.url) || '';
+                    return origFetch.apply(this, arguments).then(function(res) {
+                        if (!res.ok) ajaxFailure(method, url, res.status);
+                        return res;
+                    }).catch(function(err) {
+                        ajaxFailure(method, url, 0);
+                        throw err;
+                    });
+                };
+            }
+        } catch (e) {}
     })();
     </script>
 </body>

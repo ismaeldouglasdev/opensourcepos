@@ -501,3 +501,7 @@ $routes->group('api', function ($routes) {
     $routes->get('inventory/alerts', 'Api\Inventory::alerts');
     $routes->get('inventory/low', 'Api\Inventory::low');
 });
+
+// 404 com log: POSTs/XHR que nao acharam rota viram incidente no guardrail
+// (ex.: form submit para rota quebrada -> 404 silencioso no modal).
+$routes->set404Override('\App\Controllers\Guardrail::notFound');
