@@ -78,10 +78,11 @@ window._tutorialSteps = [
 .checkout-total { font-weight: 600; text-align: center; background: var(--os-primary-light, #e8f8f0); border-radius: var(--os-radius-lg, 12px); margin-bottom: 8px; padding: 8px; font-size: 14px; }
 
 /* Qty stepper */
-.qty-stepper .btn { border-radius: 0; padding: 3px 5px; font-weight: 700; line-height: 1; font-size: 12px; }
+.qty-stepper { max-width: 108px; }
+.qty-stepper .btn { border-radius: 0; padding: 2px 5px; font-weight: 700; line-height: 1; font-size: 11px; height: 24px; }
 .qty-stepper .btn:first-child { border-radius: 3px 0 0 3px; }
 .qty-stepper .btn:last-child { border-radius: 0 3px 3px 0; }
-.qty-stepper input { text-align: center; min-width: 0; }
+.qty-stepper input { text-align: center; min-width: 0; flex: 0 0 48px !important; width: 48px !important; height: 24px !important; padding: 1px 2px !important; font-size: 12px !important; }
 
 /* Payment list */
 .payment-list { margin-bottom: 5px; }
@@ -136,7 +137,7 @@ window._tutorialSteps = [
 .disc-toggle-btn.active { background: #5cb85c; color: #fff; }
 
 /* Stock status badges */
-.stock-badge { font-size: 11px; padding: 1px 4px; vertical-align: middle; }
+.stock-badge { font-size: 9px; padding: 0 3px; vertical-align: middle; line-height: 1.5; border-radius: 3px; }
 .stock-badge-zerado { background: #f59e0b; color: #000; }
 .stock-badge-irregular { background: #dc2626; color: #fff; }
 
@@ -264,19 +265,18 @@ if (isset($success)) {
             <tr>
                 <th style="width: 4%;"><?= lang('Common.delete') ?></th>
                 <th style="width: 6%;"><?= lang(ucfirst($controller_name) . '.item_number') ?></th>
-                <th style="width: 56%;"><?= lang(ucfirst($controller_name) . '.item_name') ?></th>
+                <th style="width: 58%;"><?= lang(ucfirst($controller_name) . '.item_name') ?></th>
                 <th style="width: 4%;"><?= lang(ucfirst($controller_name) . '.price') ?></th>
-                <th style="width: 5%;"><?= lang(ucfirst($controller_name) . '.quantity') ?></th>
+                <th style="width: 8%;"><?= lang(ucfirst($controller_name) . '.quantity') ?></th>
                 <th style="width: 13%;"><?= lang(ucfirst($controller_name) . '.discount') ?></th>
                 <th style="width: 7%;"><?= lang(ucfirst($controller_name) . '.total') ?></th>
-                <th style="width: 4%;"><?= lang(ucfirst($controller_name) . '.update') ?></th>
             </tr>
         </thead>
 
         <tbody id="cart_contents">
             <?php if (count($cart) == 0) { ?>
                 <tr>
-                    <td colspan="8">
+                    <td colspan="7">
                         <div class="alert alert-dismissible alert-info"><?= lang(ucfirst($controller_name) . '.no_items_in_cart') ?></div>
                     </td>
                 </tr>
@@ -291,6 +291,12 @@ if (isset($success)) {
                                 echo anchor("$controller_name/deleteItem/$line", '<span class="glyphicon glyphicon-trash"></span>');
                                 echo form_hidden('location', (string)$item['item_location']);
                                 echo form_input(['type' => 'hidden', 'name' => 'item_id', 'value' => $item['item_id']]);
+                                if ($item['item_type'] != ITEM_TEMP) {
+                                    echo form_hidden('description', $item['description'] ?? '');
+                                    if (empty($item['is_serialized'])) {
+                                        echo form_hidden('serialnumber', '');
+                                    }
+                                }
                                 ?>
                             </td>
                             <?php if ($item['item_type'] == ITEM_TEMP) { ?>
@@ -393,57 +399,26 @@ if (isset($success)) {
                                 }
                                 ?>
                             </td>
-
-                            <td>
-                                <a href="javascript:document.getElementById('<?= "cart_$line" ?>').submit();" title="<?= lang(ucfirst($controller_name) . '.update') ?>">
-                                    <span class="glyphicon glyphicon-refresh"></span>
-                                </a>
+                        </tr>
+                        <?php if ($item['item_type'] == ITEM_TEMP) { ?>
+                        <tr>
+                            <td><?= form_input(['type' => 'hidden', 'name' => 'item_id', 'value' => $item['item_id']]) ?></td>
+                            <td style="align: center;" colspan="5">
+                                <?= form_input(['name' => 'item_description', 'id' => 'item_description', 'class' => 'form-control input-sm', 'value' => $item['description'], 'tabindex' => ++$tabindex]) ?>
+                            </td>
+                            <td> </td>
+                        </tr>
+                        <?php } elseif ($item['is_serialized']) { ?>
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td style="color: #2F4F4F;">
+                                <?= lang(ucfirst($controller_name) . '.serial') ?>
+                            </td>
+                            <td colspan="5" style="text-align: left;">
+                                <?= form_input(['name' => 'serialnumber', 'class' => 'form-control input-sm', 'value' => $item['serialnumber'], 'onClick' => 'this.select();']) ?>
                             </td>
                         </tr>
-                        <tr>
-                            <?php if ($item['item_type'] == ITEM_TEMP) { ?>
-                                <td><?= form_input(['type' => 'hidden', 'name' => 'item_id', 'value' => $item['item_id']]) ?></td>
-                                <td style="align: center;" colspan="6">
-                                    <?= form_input(['name' => 'item_description', 'id' => 'item_description', 'class' => 'form-control input-sm', 'value' => $item['description'], 'tabindex' => ++$tabindex]) ?>
-                                </td>
-                                <td> </td>
-                            <?php } else { ?>
-                                <td>&nbsp;</td>
-                                <td colspan="2" style="text-align: left;">
-                                    <?php
-                                    if ($item['allow_alt_description']) {
-                                        echo '<span style="color:#2F4F4F;">' . lang(ucfirst($controller_name) . '.description_abbrv') . '</span> ';
-                                        echo form_input(['name' => 'description', 'class' => 'form-control input-sm', 'value' => $item['description'], 'onClick' => 'this.select();']);
-                                    } else {
-                                        if ($item['description'] != '') {
-                                            echo $item['description'];
-                                            echo form_hidden('description', $item['description']);
-                                        } else {
-                                            echo lang(ucfirst($controller_name) . '.no_description');
-                                            echo form_hidden('description', '');
-                                        }
-                                    }
-                                    ?>
-                                </td>
-                                <td>&nbsp;</td>
-                                <td style="color: #2F4F4F;">
-                                    <?php
-                                    if ($item['is_serialized']) {
-                                        echo lang(ucfirst($controller_name) . '.serial');
-                                    }
-                                    ?>
-                                </td>
-                                <td colspan="3" style="text-align: left;">
-                                    <?php
-                                    if ($item['is_serialized']) {
-                                        echo form_input(['name' => 'serialnumber', 'class' => 'form-control input-sm', 'value' => $item['serialnumber'], 'onClick' => 'this.select();']);
-                                    } else {
-                                        echo form_hidden('serialnumber', '');
-                                    }
-                                    ?>
-                                </td>
-                            <?php } ?>
-                        </tr>
+                        <?php } ?>
                     <?= form_close() ?>
             <?php
                 }
@@ -1019,7 +994,7 @@ if (isset($success)) {
         }
 
         $('[name="price"],[name="quantity"],[name="discount"],[name="description"],[name="serialnumber"],[name="discounted_total"]').change(function() {
-            $(this).parents('tr').prevAll('form:first').submit()
+            $(this).closest('form').submit()
         });
 
         // Custom discount toggle

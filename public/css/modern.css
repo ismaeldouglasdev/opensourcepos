@@ -2375,7 +2375,7 @@ td.text-right {
 #register td:nth-child(3),
 #register td:nth-child(4),
 #register td:nth-child(5),
-#register td:nth-child(7) {
+#register td:nth-child(6) {
     font-family: var(--os-font-mono) !important;
     font-variant-numeric: tabular-nums !important;
 }
@@ -2866,8 +2866,8 @@ body {
 }
 
 #register .cart-prod-name {
-    font-weight: 600;
-    font-size: 12px;
+    font-weight: 700;
+    font-size: 15px;
     line-height: 1.25;
     color: #2c3e50;
     max-width: 100%;
