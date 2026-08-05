@@ -78,10 +78,10 @@ window._tutorialSteps = [
 .checkout-total { font-weight: 600; text-align: center; background: var(--os-primary-light, #e8f8f0); border-radius: var(--os-radius-lg, 12px); margin-bottom: 8px; padding: 8px; font-size: 14px; }
 
 /* Qty stepper */
-.qty-stepper .btn { border-radius: 0; padding: 4px 7px; font-weight: 700; line-height: 1; }
+.qty-stepper .btn { border-radius: 0; padding: 3px 5px; font-weight: 700; line-height: 1; font-size: 12px; }
 .qty-stepper .btn:first-child { border-radius: 3px 0 0 3px; }
 .qty-stepper .btn:last-child { border-radius: 0 3px 3px 0; }
-.qty-stepper input { text-align: center; }
+.qty-stepper input { text-align: center; min-width: 0; }
 
 /* Payment list */
 .payment-list { margin-bottom: 5px; }
@@ -114,6 +114,7 @@ window._tutorialSteps = [
 
 <style>
 /* Discount toggle override */
+#register td:nth-child(5),
 #register td:nth-child(6) { overflow: visible; }
 #register td .input-group { display: flex; align-items: center; width: 100%; }
 #register td .input-group .form-control { flex: 1 1 0%; min-width: 0; height: 28px; font-size: 12px; padding: 1px 4px; }
@@ -125,6 +126,8 @@ window._tutorialSteps = [
 #register td .input-group .input-group-btn .bootstrap-toggle .toggle-off { padding-left: 0 !important; text-align: center; }
 #register td .input-group .input-group-btn .bootstrap-toggle .toggle-on.btn { padding-right: 0 !important; }
 #register td .input-group .input-group-btn .bootstrap-toggle .toggle-off.btn { padding-left: 0 !important; }
+
+#register td > .form-control { padding: 1px 4px; height: 28px; font-size: 12px; }
 
 /* Custom discount toggle */
 .disc-toggle { display: inline-flex; border-radius: 4px; overflow: hidden; border: 1px solid #ccc; cursor: pointer; }
@@ -260,10 +263,10 @@ if (isset($success)) {
         <thead>
             <tr>
                 <th style="width: 4%;"><?= lang('Common.delete') ?></th>
-                <th style="width: 10%;"><?= lang(ucfirst($controller_name) . '.item_number') ?></th>
-                <th style="width: 40%;"><?= lang(ucfirst($controller_name) . '.item_name') ?></th>
-                <th style="width: 6%;"><?= lang(ucfirst($controller_name) . '.price') ?></th>
-                <th style="width: 7%;"><?= lang(ucfirst($controller_name) . '.quantity') ?></th>
+                <th style="width: 6%;"><?= lang(ucfirst($controller_name) . '.item_number') ?></th>
+                <th style="width: 56%;"><?= lang(ucfirst($controller_name) . '.item_name') ?></th>
+                <th style="width: 4%;"><?= lang(ucfirst($controller_name) . '.price') ?></th>
+                <th style="width: 5%;"><?= lang(ucfirst($controller_name) . '.quantity') ?></th>
                 <th style="width: 13%;"><?= lang(ucfirst($controller_name) . '.discount') ?></th>
                 <th style="width: 7%;"><?= lang(ucfirst($controller_name) . '.total') ?></th>
                 <th style="width: 4%;"><?= lang(ucfirst($controller_name) . '.update') ?></th>
@@ -296,10 +299,9 @@ if (isset($success)) {
                                     <?= form_input(['name' => 'name', 'id' => 'name', 'class' => 'form-control input-sm', 'value' => $item['name'], 'tabindex' => ++$tabindex]) ?>
                                 </td>
                             <?php } else { ?>
-                                <td><?= esc($item['item_number'] ?? '') ?></td>
-                                <td style="align: center;">
+                                <td colspan="2" class="cart-product-cell" style="align: center;">
                                     <?php
-                                    // Thumbnail do produto (clique abre o modal global)
+                                    // Foto do produto (grande, em cima; clique abre o modal global)
                                     $item_pic = '';
                                     if (!empty($item['pic_filename'])) {
                                         $pic_ext = pathinfo($item['pic_filename'], PATHINFO_EXTENSION);
@@ -310,25 +312,31 @@ if (isset($success)) {
                                             $item_pic = base_url($pic_images[0]);
                                         }
                                     }
-                                    if ($item_pic !== '') {
-                                        echo '<a href="#" class="cart-item-img" data-img-view="' . esc($item_pic, 'attr') . '" data-img-title="' . esc($item['name'] ?? 'Produto', 'attr') . '">'
-                                            . '<img src="' . esc($item_pic, 'attr') . '" alt="' . esc($item['name'] ?? 'Produto', 'attr') . '" style="width:36px;height:36px;object-fit:cover;border-radius:4px;border:1px solid #ddd;vertical-align:middle;margin-right:6px;cursor:zoom-in;">'
-                                            . '</a>';
-                                    }
+                                    $item_name = esc($item['name'] ?? '') . ' ' . implode(' ', [$item['attribute_values'] ?? '', $item['attribute_dtvalues'] ?? '']);
                                     ?>
-                                    <?= esc($item['name'] ?? '') . ' ' . implode(' ', [$item['attribute_values'] ?? '', $item['attribute_dtvalues'] ?? '']) ?>
-                                    <br>
-                                    <?php if (($item['stock_type'] ?? '') == '0'):
-                                        $stock_qty = to_quantity_decimals($item['in_stock'] ?? 0);
-                                        $stock_lbl = $item['stock_name'] ?? '';
-                                        $stk_status = $item['stock_status'] ?? 0;
-                                        echo '[' . $stock_qty . ' ' . lang('Items.stock') . ']';
-                                        if ($stk_status == 2) {
-                                            echo ' <span class="stock-badge stock-badge-irregular" title="Estoque irregular - precisa contagem">IRREGULAR</span>';
-                                        } elseif ($stk_status == 1) {
-                                            echo ' <span class="stock-badge stock-badge-zerado" title="Produto zerado">ZERADO</span>';
-                                        }
-                                    endif; ?>
+                                    <div class="cart-prod">
+                                        <?php if ($item_pic !== '') { ?>
+                                            <a href="#" class="cart-item-img cart-item-img-big" data-img-view="<?= esc($item_pic, 'attr') ?>" data-img-title="<?= esc($item['name'] ?? 'Produto', 'attr') ?>">
+                                                <img src="<?= esc($item_pic, 'attr') ?>" alt="<?= esc($item['name'] ?? 'Produto', 'attr') ?>">
+                                            </a>
+                                        <?php } ?>
+                                        <div class="cart-prod-name"><?= $item_name ?></div>
+                                        <?php if (!empty($item['item_number'])) { ?>
+                                            <div class="cart-prod-code"><?= esc($item['item_number']) ?></div>
+                                        <?php } ?>
+                                        <?php if (($item['stock_type'] ?? '') == '0'):
+                                            $stock_qty = to_quantity_decimals($item['in_stock'] ?? 0);
+                                            $stock_lbl = $item['stock_name'] ?? '';
+                                            $stk_status = $item['stock_status'] ?? 0;
+                                            echo '<div class="cart-prod-stock">[' . $stock_qty . ' ' . lang('Items.stock') . ']';
+                                            if ($stk_status == 2) {
+                                                echo ' <span class="stock-badge stock-badge-irregular" title="Estoque irregular - precisa contagem">IRREGULAR</span>';
+                                            } elseif ($stk_status == 1) {
+                                                echo ' <span class="stock-badge stock-badge-zerado" title="Produto zerado">ZERADO</span>';
+                                            }
+                                            echo '</div>';
+                                        endif; ?>
+                                    </div>
                                 </td>
                             <?php } ?>
 
@@ -401,13 +409,10 @@ if (isset($success)) {
                                 <td> </td>
                             <?php } else { ?>
                                 <td>&nbsp;</td>
-                                <?php if ($item['allow_alt_description']) { ?>
-                                    <td style="color: #2F4F4F;"><?= lang(ucfirst($controller_name) . '.description_abbrv') ?></td>
-                                <?php } ?>
-
                                 <td colspan="2" style="text-align: left;">
                                     <?php
                                     if ($item['allow_alt_description']) {
+                                        echo '<span style="color:#2F4F4F;">' . lang(ucfirst($controller_name) . '.description_abbrv') . '</span> ';
                                         echo form_input(['name' => 'description', 'class' => 'form-control input-sm', 'value' => $item['description'], 'onClick' => 'this.select();']);
                                     } else {
                                         if ($item['description'] != '') {
@@ -428,7 +433,7 @@ if (isset($success)) {
                                     }
                                     ?>
                                 </td>
-                                <td colspan="4" style="text-align: left;">
+                                <td colspan="3" style="text-align: left;">
                                     <?php
                                     if ($item['is_serialized']) {
                                         echo form_input(['name' => 'serialnumber', 'class' => 'form-control input-sm', 'value' => $item['serialnumber'], 'onClick' => 'this.select();']);

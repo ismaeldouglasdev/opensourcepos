@@ -2826,6 +2826,66 @@ body {
     position: relative;
 }
 
+/* ── Produto no carrinho: foto grande em cima + código abaixo ──── */
+#register .cart-product-cell {
+    padding: 8px 6px !important;
+    vertical-align: top !important;
+}
+
+#register .cart-prod {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 2px;
+}
+
+#register .cart-item-img-big {
+    display: block !important;
+    margin: 0 auto 6px !important;
+    line-height: 0;
+}
+
+#register .cart-item-img-big img {
+    width: 110px !important;
+    height: 110px !important;
+    object-fit: cover !important;
+    border-radius: 8px !important;
+    border: 1px solid var(--os-border, #ddd) !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .12);
+    vertical-align: middle !important;
+    cursor: zoom-in !important;
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+
+#register .cart-item-img-big:hover img {
+    transform: scale(1.06);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .28);
+    z-index: 5;
+    position: relative;
+}
+
+#register .cart-prod-name {
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 1.25;
+    color: #2c3e50;
+    max-width: 100%;
+}
+
+#register .cart-prod-code {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 11px;
+    color: #8a8f98;
+    letter-spacing: .3px;
+}
+
+#register .cart-prod-stock {
+    font-size: 11px;
+    color: #6c757d;
+    margin-top: 2px;
+}
+
 /* ── Imagem do formulário de item (items/form) ─────────────────── */
 .fileinput-preview .form-item-img {
     display: block;
