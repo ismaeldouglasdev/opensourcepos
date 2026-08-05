@@ -114,7 +114,7 @@ window._tutorialSteps = [
 
 <style>
 /* Discount toggle override */
-#register td:nth-child(6) { overflow: hidden; }
+#register td:nth-child(6) { overflow: visible; }
 #register td .input-group { display: flex; align-items: center; width: 100%; }
 #register td .input-group .form-control { flex: 1 1 0%; min-width: 0; height: 28px; font-size: 12px; padding: 1px 4px; }
 #register td .input-group .input-group-btn { flex: 0 0 auto; display: flex; align-items: center; }
@@ -177,13 +177,6 @@ if (!empty($warning)) {
 
 if (isset($success)) {
     echo '<div class="alert alert-dismissible alert-success">' . esc($success) . '</div>';
-}
-
-if (!empty($editing_sale_id)) {
-    echo '<div class="alert alert-info" style="text-align:center; margin-bottom:10px;">';
-    echo '<strong>Editando Venda #' . $editing_sale_id . '</strong> - ';
-    echo anchor("sales/manage", "Voltar para lista", ['style' => 'color:#fff;']);
-    echo '</div>';
 }
 ?>
 
@@ -268,11 +261,11 @@ if (!empty($editing_sale_id)) {
             <tr>
                 <th style="width: 4%;"><?= lang('Common.delete') ?></th>
                 <th style="width: 10%;"><?= lang(ucfirst($controller_name) . '.item_number') ?></th>
-                <th style="width: 35%;"><?= lang(ucfirst($controller_name) . '.item_name') ?></th>
-                <th style="width: 9%;"><?= lang(ucfirst($controller_name) . '.price') ?></th>
-                <th style="width: 9%;"><?= lang(ucfirst($controller_name) . '.quantity') ?></th>
+                <th style="width: 40%;"><?= lang(ucfirst($controller_name) . '.item_name') ?></th>
+                <th style="width: 6%;"><?= lang(ucfirst($controller_name) . '.price') ?></th>
+                <th style="width: 7%;"><?= lang(ucfirst($controller_name) . '.quantity') ?></th>
                 <th style="width: 13%;"><?= lang(ucfirst($controller_name) . '.discount') ?></th>
-                <th style="width: 9%;"><?= lang(ucfirst($controller_name) . '.total') ?></th>
+                <th style="width: 7%;"><?= lang(ucfirst($controller_name) . '.total') ?></th>
                 <th style="width: 4%;"><?= lang(ucfirst($controller_name) . '.update') ?></th>
             </tr>
         </thead>
@@ -305,6 +298,24 @@ if (!empty($editing_sale_id)) {
                             <?php } else { ?>
                                 <td><?= esc($item['item_number'] ?? '') ?></td>
                                 <td style="align: center;">
+                                    <?php
+                                    // Thumbnail do produto (clique abre o modal global)
+                                    $item_pic = '';
+                                    if (!empty($item['pic_filename'])) {
+                                        $pic_ext = pathinfo($item['pic_filename'], PATHINFO_EXTENSION);
+                                        $pic_images = $pic_ext == ''
+                                            ? glob("./uploads/item_pics/{$item['pic_filename']}.*")
+                                            : glob("./uploads/item_pics/{$item['pic_filename']}");
+                                        if (sizeof($pic_images) > 0) {
+                                            $item_pic = base_url($pic_images[0]);
+                                        }
+                                    }
+                                    if ($item_pic !== '') {
+                                        echo '<a href="#" class="cart-item-img" data-img-view="' . esc($item_pic, 'attr') . '" data-img-title="' . esc($item['name'] ?? 'Produto', 'attr') . '">'
+                                            . '<img src="' . esc($item_pic, 'attr') . '" alt="' . esc($item['name'] ?? 'Produto', 'attr') . '" style="width:36px;height:36px;object-fit:cover;border-radius:4px;border:1px solid #ddd;vertical-align:middle;margin-right:6px;cursor:zoom-in;">'
+                                            . '</a>';
+                                    }
+                                    ?>
                                     <?= esc($item['name'] ?? '') . ' ' . implode(' ', [$item['attribute_values'] ?? '', $item['attribute_dtvalues'] ?? '']) ?>
                                     <br>
                                     <?php if (($item['stock_type'] ?? '') == '0'):
@@ -510,9 +521,6 @@ if (!empty($editing_sale_id)) {
                     <button class="btn btn-info btn-sm modal-dlg" data-btn-submit="<?= lang('Common.submit') ?>" data-href="<?= "customers/view" ?>" title="<?= lang(ucfirst($controller_name) . ".new_customer") ?>">
                         <span class="glyphicon glyphicon-user">&nbsp;</span><?= lang(ucfirst($controller_name) . ".new_customer") ?>
                     </button>
-                    <button class="btn btn-default btn-sm modal-dlg" id="show_keyboard_help" data-href="<?= esc("$controller_name/salesKeyboardHelp") ?>" title="<?= lang(ucfirst($controller_name) . '.key_title') ?>">
-                        <span class="glyphicon glyphicon-share-alt">&nbsp;</span><?= lang(ucfirst($controller_name) . '.key_help') ?>
-                    </button>
                 </div>
             <?php } ?>
         <?= form_close() ?>
@@ -551,15 +559,9 @@ if (!empty($editing_sale_id)) {
             </table>
 
             <div style="margin: 6px 0;">
-                <?php if (!empty($editing_sale_id)): ?>
-    <button type="button" class="btn btn-warning btn-lg btn-block" id="btn_finalizar_venda" onclick="openCheckoutModal()">
-        <span class="glyphicon glyphicon-pencil"></span> ATUALIZAR VENDA #<?= $editing_sale_id ?>
-    </button>
-<?php else: ?>
     <button type="button" class="btn btn-success btn-lg btn-block" id="btn_finalizar_venda" onclick="openCheckoutModal()">
         <span class="glyphicon glyphicon-shopping-cart"></span> FINALIZAR VENDA (F2)
     </button>
-<?php endif; ?>
 </div>
 
 <div style="margin: 6px 0; display: flex; gap: 8px;">
@@ -1087,9 +1089,6 @@ if (!empty($editing_sale_id)) {
             case 56: // Alt + 8 Finish Quote/Invoice without payment
                 $("#finish_invoice_quote_button").click();
                 break;
-            case 57: // Alt + 9 Open Shortcuts Help Modal
-                $("#show_keyboard_help").click();
-                break;
         }
 
         switch (e.keyCode) {
@@ -1152,7 +1151,7 @@ if (!empty($editing_sale_id)) {
             <div class="modal-header" style="padding: 8px 15px; background: #5cb85c; color: white;">
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
                 <h4 class="modal-title" style="text-align:center; margin:0;">
-                    <?= !empty($editing_sale_id) ? 'ATUALIZAR VENDA' : 'FINALIZAR VENDA' ?>
+                    FINALIZAR VENDA
                 </h4>
             </div>
             <div class="modal-body">
@@ -1209,8 +1208,8 @@ if (!empty($editing_sale_id)) {
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn <?= !empty($editing_sale_id) ? 'btn-warning' : 'btn-success' ?> btn-block" id="finish_checkout_btn" onclick="finishCheckout()" disabled>
-                    <?= !empty($editing_sale_id) ? 'ATUALIZAR' : 'FINALIZAR' ?>
+                <button type="button" class="btn btn-success btn-block" id="finish_checkout_btn" onclick="finishCheckout()" disabled>
+                    FINALIZAR
                 </button>
             </div>
         </div>

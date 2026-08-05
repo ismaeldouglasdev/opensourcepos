@@ -97,11 +97,11 @@ window._tutorialSteps = [
             onLoadSuccess: function(response) {
                 $('a.rollover').imgPreview({
                     imgCSS: {
-                        width: 200
+                        width: 320
                     },
                     distanceFromCursor: {
                         top: 10,
-                        left: -210
+                        left: -330
                     }
                 })
             }

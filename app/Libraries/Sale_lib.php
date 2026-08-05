@@ -1120,6 +1120,7 @@ class Sale_lib
                     'print_option'          => $print_option_selected,
                     'stock_type'            => $stock_type,
                     'item_type'             => $item_type,
+                    'pic_filename'          => $item_info->pic_filename ?? '',
                     'hsn_code'              => $item_info->hsn_code,
                     'tax_category_id'       => $item_info->tax_category_id
                 ]

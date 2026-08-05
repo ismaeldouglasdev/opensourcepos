@@ -72,6 +72,61 @@ use Config\OSPOS;
     });
     </script>
 
+    <!-- Visualizador de imagem em modal (substitui a abertura da imagem em tela cheia) -->
+    <div class="modal fade item-img-modal" id="itemImageViewer" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">&times;</button>
+                    <h4 class="modal-title">Produto</h4>
+                </div>
+                <div class="modal-body text-center" style="padding:0;">
+                    <img id="itemImageViewerImg" src="" alt="Imagem do produto" style="max-width:100%; max-height:80vh; width:auto; height:auto; margin:0 auto; display:block;">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        // Abre a imagem em um modal ao clicar em <a class="rollover"> (tabelas de itens)
+        // em vez de navegar para a imagem em tela cheia.
+        function openImageViewer(src, title) {
+            var img = document.getElementById('itemImageViewerImg');
+            var modal = document.getElementById('itemImageViewer');
+            if (!img || !modal) return;
+            img.src = src;
+            var titleEl = modal.querySelector('.modal-title');
+            if (titleEl && title) titleEl.textContent = title;
+            if (window.jQuery) {
+                jQuery(modal).modal('show');
+            }
+        }
+        // Clique em a.rollover (thumbnail nas tabelas de items/receivings)
+        document.addEventListener('click', function(e) {
+            var a = e.target && e.target.closest ? e.target.closest('a.rollover') : null;
+            if (!a) return;
+            var href = a.getAttribute('href');
+            if (!href) return;
+            e.preventDefault();
+            var img = a.querySelector('img');
+            openImageViewer(href, img && img.getAttribute('alt') ? img.getAttribute('alt') : 'Produto');
+        }, true);
+        // Elementos com data-img-view (imagem do carrinho, form de item)
+        document.addEventListener('click', function(e) {
+            var el = e.target && e.target.closest ? e.target.closest('[data-img-view]') : null;
+            if (!el) return;
+            e.preventDefault();
+            openImageViewer(el.getAttribute('data-img-view'), el.getAttribute('data-img-title') || 'Produto');
+        }, true);
+        window.itemImageViewer = openImageViewer;
+    })();
+    </script>
+
+
     <script>
     (function() {
         var GR_URL = '<?= site_url('guardrail/js-error') ?>';

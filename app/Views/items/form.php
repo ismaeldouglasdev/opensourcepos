@@ -357,9 +357,11 @@
                 <div class="fileinput <?= $logo_exists ? 'fileinput-exists' : 'fileinput-new' ?>" data-provides="fileinput">
                     <div class="fileinput-new thumbnail" style="width: 100px; height: 100px;"></div>
                     <div class="fileinput-preview fileinput-exists thumbnail" style="max-width: 100px; max-height: 100px;">
-                        <img data-src="holder.js/100%x100%" alt="<?= lang('Items.image') ?>"
-                            src="<?= $image_path ?>"
-                            style="max-height: 100%; max-width: 100%;">
+                        <a href="#" class="form-item-img" data-img-view="<?= esc($image_path, 'attr') ?>" data-img-title="<?= esc($item_info->name ?? 'Produto', 'attr') ?>" title="<?= lang('Items.view_image') ?>" style="display:block;">
+                            <img data-src="holder.js/100%x100%" alt="<?= lang('Items.image') ?>"
+                                src="<?= $image_path ?>"
+                                style="max-height: 100%; max-width: 100%; cursor: zoom-in;">
+                        </a>
                     </div>
                     <div>
                         <span class="btn btn-default btn-sm btn-file">

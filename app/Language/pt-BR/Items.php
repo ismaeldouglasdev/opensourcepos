@@ -92,6 +92,7 @@ return [
     "sales_tax_2"                        => "Imposto de venda 2",
     "search_attributes"                  => "pesquisar atributos",
     "select_image"                       => "Selecionar imagem",
+    "view_image"                         => "Ver imagem em tamanho maior",
     "serialized_items"                   => "Serializar Itens",
     "standard"                           => "Padrão",
     "stock"                              => "Estoque",

@@ -92,6 +92,7 @@ return [
     "sales_tax_2"                        => "Sales Tax 2",
     "search_attributes"                  => "Search Attributes",
     "select_image"                       => "Select Image",
+    "view_image"                         => "View image larger",
     "serialized_items"                   => "Serialized Items",
     "standard"                           => "Standard",
     "stock"                              => "Stock",
