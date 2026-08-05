@@ -136,6 +136,7 @@ $routes->post('items/bulkUpdate', 'Items::postBulkUpdate');
 $routes->post('items/suggest_search', 'Items::suggest_search');
 $routes->post('items/attributes/([0-9-]+)', 'Items::postAttributes/$1');
 $routes->post('items/checkItemNumber', 'Items::postCheckItemNumber');
+$routes->post('items/rotateItemImage/(:num)', 'Items::postRotateItemImage/$1');
 $routes->post('items/check_kit_exists', 'Items::check_kit_exists');
 $routes->post('items/saveInventory/(:num)', 'Items::postSaveInventory/$1');
 $routes->post('items/importCsvFile', 'Items::postImportCsvFile');

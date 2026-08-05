@@ -369,6 +369,8 @@
                             <span class="fileinput-exists"><?= lang('Items.change_image') ?></span>
                             <input type="file" name="items_image" accept="image/*">
                         </span>
+                        <button type="button" class="btn btn-default btn-sm rotate-btn fileinput-exists" data-dir="ccw" title="<?= lang('Items.rotate_left') ?>">⟲</button>
+                        <button type="button" class="btn btn-default btn-sm rotate-btn fileinput-exists" data-dir="cw" title="<?= lang('Items.rotate_right') ?>">⟳</button>
                         <a href="#" class="btn btn-default btn-sm fileinput-exists" data-dismiss="fileinput"><?= lang('Items.remove_image') ?></a>
                     </div>
                 </div>
@@ -513,6 +515,28 @@
                 url: '<?= "$controller_name/removeLogo/$item_info->item_id" ?>',
                 dataType: 'json'
             })
+        });
+
+        $('.rotate-btn').click(function(e) {
+            e.preventDefault();
+            var $btn = $(this);
+            $btn.prop('disabled', true);
+            $.ajax({
+                type: 'POST',
+                url: '<?= site_url("items/rotateItemImage/$item_info->item_id") ?>',
+                data: { direction: $btn.data('dir') },
+                dataType: 'json',
+                complete: function() { $btn.prop('disabled', false); },
+                success: function(resp) {
+                    if (resp && resp.success) {
+                        var $img = $('.form-item-img img');
+                        $img.attr('src', resp.url + '?t=' + Date.now());
+                        $('.form-item-img').attr('data-img-view', resp.url);
+                    } else {
+                        alert((resp && resp.message) || '<?= lang('Items.rotate_fail') ?>');
+                    }
+                }
+            });
         });
 
         $.validator.addMethod('valid_chars', function(value, element) {
