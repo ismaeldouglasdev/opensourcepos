@@ -62,9 +62,24 @@
         <?php
         foreach ($cart as $line => $item) {
             if ($item['print_option'] == PRINT_YES) {
+                $item_pic = '';
+                if (!empty($item['pic_filename'])) {
+                    $pic_ext = pathinfo($item['pic_filename'], PATHINFO_EXTENSION);
+                    $pic_images = $pic_ext == ''
+                        ? glob("./uploads/item_pics/{$item['pic_filename']}.*")
+                        : glob("./uploads/item_pics/{$item['pic_filename']}");
+                    if (sizeof($pic_images) > 0) {
+                        $item_pic = base_url($pic_images[0]);
+                    }
+                }
         ?>
                 <tr>
-                    <td><?= esc(ucfirst($item['name'] . ' ' . $item['attribute_values'])) ?></td>
+                    <td>
+                        <?php if ($item_pic !== ''): ?>
+                            <img src="<?= esc($item_pic, 'attr') ?>" alt="<?= esc($item['name'] ?? 'Produto', 'attr') ?>" class="receipt-item-img" data-img-view="<?= esc($item_pic, 'attr') ?>" data-img-title="<?= esc($item['name'] ?? 'Produto', 'attr') ?>">
+                        <?php endif; ?>
+                        <?= esc(ucfirst($item['name'] . ' ' . $item['attribute_values'])) ?>
+                    </td>
                     <td><?= to_currency($item['price']) ?></td>
                     <td><?= to_quantity_decimals($item['quantity']) ?></td>
                     <td class="total-value"><?= to_currency($item[($config['receipt_show_total_discount'] ? 'total' : 'discounted_total')]) ?></td>

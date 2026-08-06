@@ -2787,11 +2787,12 @@ body {
 }
 
 .item-img-modal .modal-body {
-    background: #1a1a1a;
+    background: #fff;
     min-height: 120px;
     display: flex;
     align-items: center;
     justify-content: center;
+    border-bottom: 1px solid var(--os-border, #e2e6ea);
 }
 
 .item-img-modal .modal-body img {
@@ -2884,6 +2885,18 @@ body {
     font-size: 11px;
     color: #6c757d;
     margin-top: 2px;
+}
+
+/* ── Foto do produto na Nota (sales/receipt) ───────────────────── */
+#receipt_items .receipt-item-img {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid var(--os-border, #ddd);
+    vertical-align: middle;
+    margin-right: 8px;
+    cursor: zoom-in;
 }
 
 /* ── Imagem do formulário de item (items/form) ─────────────────── */

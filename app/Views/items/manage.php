@@ -181,4 +181,77 @@ window._tutorialSteps = [
     <table id="table"></table>
 </div>
 
+<script>
+// ── Feedback em tempo real da Loja Capture ───────────────────────────────
+// Mostra um toast + atualiza a grid sempre que uma foto de produto é
+// salva no sistema (write-back feito pelo inventory-service).
+(function() {
+    var wsUrl = 'ws://' + location.hostname + ':8000/v1/store/photo/ws';
+    var pollUrl = 'http://' + location.hostname + ':8000/v1/store/photos/recent';
+    var lastKey = null;
+    var ws = null;
+    var retries = 0;
+    var pollTimer = null;
+
+    function toast(msg, isError) {
+        var $t = $('#photo-toast');
+        if (!$t.length) {
+            $t = $('<div id="photo-toast" style="position:fixed;top:12px;right:12px;z-index:99999;max-width:340px;padding:10px 14px;color:#fff;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.3);font-size:14px;display:none;"></div>').appendTo('body');
+        }
+        $t.css('background', isError ? '#dc3545' : '#28a745').text(msg).fadeIn(150);
+        clearTimeout($t.data('timer'));
+        $t.data('timer', setTimeout(function() { $t.fadeOut(300); }, 4500));
+    }
+
+    function onPhoto(ev) {
+        if (!ev || ev.type !== 'photo') return;
+        var name = ev.product_name || ('produto ' + ev.product_id);
+        var key = (ev.ts || '') + '|' + (ev.product_id || '');
+        if (ev.last !== true && lastKey && key && key <= lastKey) return;
+        lastKey = key;
+        if (ev.status === 'ok') {
+            toast('Foto salva no sistema: ' + name);
+            if (window.table_support && typeof table_support.refresh === 'function') {
+                table_support.refresh();
+            }
+        } else {
+            toast('Erro ao salvar foto: ' + name, true);
+        }
+    }
+
+    function scheduleRetry() {
+        clearTimeout(pollTimer);
+        if (retries < 3) {
+            retries++;
+            setTimeout(connect, retries * 3000);
+        } else {
+            pollTimer = setInterval(function() {
+                try {
+                    fetch(pollUrl + '?limit=3', { cache: 'no-store' })
+                        .then(function(r) { return r.json(); })
+                        .then(function(list) {
+                            if (Array.isArray(list) && list.length) onPhoto({ type: 'photo', ...list[0] });
+                        })
+                        .catch(function() {});
+                } catch (e) {}
+            }, 10000);
+        }
+    }
+
+    function connect() {
+        try {
+            ws = new WebSocket(wsUrl);
+        } catch (e) { scheduleRetry(); return; }
+        ws.onopen = function() { retries = 0; };
+        ws.onmessage = function(e) {
+            try { onPhoto(JSON.parse(e.data)); } catch (err) {}
+        };
+        ws.onclose = function() { scheduleRetry(); };
+        ws.onerror = function() { try { ws.close(); } catch (e) {} };
+    }
+
+    $(function() { connect(); });
+})();
+</script>
+
 <?= view('partial/footer') ?>
