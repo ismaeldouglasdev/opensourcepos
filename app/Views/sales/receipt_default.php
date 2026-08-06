@@ -73,7 +73,7 @@
                     }
                 }
         ?>
-                <tr>
+                <tr class="receipt-item-main">
                     <td>
                         <?php if ($item_pic !== ''): ?>
                             <img src="<?= esc($item_pic, 'attr') ?>" alt="<?= esc($item['name'] ?? 'Produto', 'attr') ?>" class="receipt-item-img" data-img-view="<?= esc($item_pic, 'attr') ?>" data-img-title="<?= esc($item['name'] ?? 'Produto', 'attr') ?>">

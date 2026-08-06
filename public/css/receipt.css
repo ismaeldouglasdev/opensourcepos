@@ -36,12 +36,18 @@
 #receipt_items td {
     position: relative;
     padding: 3px;
-    margin-bottom: 5px;
-
 }
 
-#receipt_items tr {
-    margin-bottom: 5px;
+#receipt_items tr.receipt-item-main td {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+#receipt_items tr.receipt-item-main td:first-child {
+    padding-top: 6px;
+}
+
+#receipt_items tr.receipt-item-main:first-child td:first-child {
+    padding-top: 3px;
 }
 
 #sale_return_policy {
