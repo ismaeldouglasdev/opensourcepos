@@ -109,6 +109,36 @@ window._tutorialSteps = [
         border-top: 1px solid #eef1f4;
         padding: 10px 16px;
     }
+
+    /* Compact table styling to eliminate horizontal scrolling */
+    #table td, #table th {
+        padding: 6px 8px !important;
+        font-size: 12px !important;
+        line-height: 1.2;
+    }
+    
+    /* Reduce padding in action buttons */
+    .btn-items {
+        padding: 2px 6px !important;
+        font-size: 11px !important;
+        white-space: nowrap;
+        margin: 1px;
+    }
+    
+    /* Tighten up modal buttons */
+    .sale-items-modal .modal-title {
+        font-size: 14px !important;
+        font-weight: 600;
+    }
+    
+    /* Align items column for better spacing */
+    #table td:nth-child(4),
+    #table td:nth-child(5),
+    #table td:nth-child(6) {
+        font-family: var(--os-font-mono) !important;
+        text-align: right !important;
+        font-weight: 600 !important;
+    }
 </style>
 
 <script type="text/javascript">
@@ -116,6 +146,12 @@ window._tutorialSteps = [
     var activeCustomerName = <?= json_encode($customer_name ?? '', JSON_UNESCAPED_UNICODE) ?>;
 
     $(document).ready(function() {
+        // Compact the action buttons and hide the edit column to eliminate horizontal scroll
+        $(document).on('click', '#delete, #bulk_edit, #generate_barcodes, .modal-dlg', function() {
+            // Hide the edit column to reduce table width
+            $('#table').bootstrapTable('hideColumn', 'edit');
+        });
+        
         $("#filters").on("hidden.bs.select", function(e) {
             table_support.refresh();
         });
@@ -191,12 +227,8 @@ window._tutorialSteps = [
                 params.filters = $("#filters").val() || [];
                 params.customer = activeCustomerId;
                 return params;
-            },
-            columns: {
-                "invoice": {
-                    align: "center"
-                }
             }
+            // Removed invoice column configuration to eliminate horizontal scrolling
         });
     });
 
