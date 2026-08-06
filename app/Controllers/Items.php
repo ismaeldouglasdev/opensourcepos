@@ -206,6 +206,7 @@ class Items extends Secure_Controller
     {
         $suggestions = $this->item->get_low_sell_suggestions($this->request->getPostGet('name'));
 
+        $this->output->set_content_type('application/json');
         echo json_encode($suggestions);
     }
 
@@ -228,6 +229,7 @@ class Items extends Secure_Controller
     {
         $suggestions = $this->item->get_category_suggestions($this->request->getGet('term'));
 
+        $this->output->set_content_type('application/json');
         echo json_encode($suggestions);
     }
 

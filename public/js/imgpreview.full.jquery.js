@@ -89,7 +89,7 @@
                     .addClass(s.containerLoadingClass)
                     .show();
                 $img
-                    .load(function(){
+                    .on('load', function(){
                         $container.removeClass(s.containerLoadingClass);
                         $img.show();
                         s.onLoad.call($img[0], link);
@@ -100,7 +100,7 @@
             }, function(){
 
                 $container.hide();
-                $img.unbind('load').attr('src','').hide();
+                $img.off('load').attr('src','').hide();
                 s.onHide.call($container[0], this);
 
             });

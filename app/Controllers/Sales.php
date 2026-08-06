@@ -112,12 +112,12 @@ class Sales extends Secure_Controller
      * @return void
      * @noinspection PhpUnused
      */
-    public function getManage(): void
+    public function getManage(): \CodeIgniter\HTTP\RedirectResponse|null
     {
         $person_id = $this->session->get('person_id');
 
         if (!$this->employee->has_grant('reports_sales', $person_id)) {
-            redirect('no_access/sales/reports_sales');
+            return redirect('no_access/sales/reports_sales');
         } else {
             $data['table_headers'] = get_sales_manage_table_headers();
 
@@ -1446,21 +1446,19 @@ class Sales extends Secure_Controller
      * (prices, discounts, add/remove items) and finished as a new sale.
      * The original completed sale is left intact for reference.
      */
-    public function postReopen(int $sale_id): void
+    public function postReopen(int $sale_id): \CodeIgniter\HTTP\RedirectResponse
     {
         if (! $this->sale->exists($sale_id)) {
             $this->session->setFlashdata('error', lang('Sales.unsuccessfully_reopened_sale'));
 
-            redirect('sales/manage');
-
-            return;
+            return redirect('sales/manage');
         }
 
         $this->sale_lib->copy_entire_sale($sale_id);
         // Clear sale_id so suspend/finish create a NEW sale, not an update of the original
         $this->session->set('sale_id', NEW_ENTRY);
 
-        redirect('sales');
+        return redirect('sales');
     }
 
     /**
