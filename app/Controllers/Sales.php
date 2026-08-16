@@ -230,7 +230,7 @@ class Sales extends Secure_Controller
     public function postAddPayment(): void
     {
         $data = [];
-        $payment_type = html_entity_decode($this->request->getPost('payment_type', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
+        $payment_type = html_entity_decode((string) $this->request->getPost('payment_type', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
 
         $rules = ['amount_tendered' => 'trim|required|decimal_locale',];
         $messages = ['amount_tendered' => lang('Sales.must_enter_numeric')];
@@ -1244,7 +1244,7 @@ class Sales extends Secure_Controller
 
         $payment_id = NEW_ENTRY;
         $payment_amount_new = $this->request->getPost('payment_amount_new');
-        $payment_type = html_entity_decode($this->request->getPost('payment_type_new', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
+        $payment_type = html_entity_decode((string) $this->request->getPost('payment_type_new', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
 
         if ($payment_type != PAYMENT_TYPE_UNASSIGNED && !empty($payment_amount_new)) {
             $payment_amount = parse_decimals($payment_amount_new);

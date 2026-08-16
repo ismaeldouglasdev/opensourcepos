@@ -19,6 +19,8 @@ class Item_quantity extends Model
         'stock_status'
     ];
 
+    public ?int $stock_status = null;
+
     const STOCK_OK = 0;
     const STOCK_ZERADO = 1;
     const STOCK_IRREGULAR = 2;
