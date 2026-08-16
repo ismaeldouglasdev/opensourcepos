@@ -112,12 +112,12 @@ class Sales extends Secure_Controller
      * @return void
      * @noinspection PhpUnused
      */
-    public function getManage(): \CodeIgniter\HTTP\RedirectResponse|null
+    public function getManage(): void
     {
         $person_id = $this->session->get('person_id');
 
         if (!$this->employee->has_grant('reports_sales', $person_id)) {
-            return redirect('no_access/sales/reports_sales');
+            redirect('no_access/sales/reports_sales');
         } else {
             $data['table_headers'] = get_sales_manage_table_headers();
 
@@ -230,7 +230,7 @@ class Sales extends Secure_Controller
     public function postAddPayment(): void
     {
         $data = [];
-        $payment_type = $this->request->getPost('payment_type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $payment_type = html_entity_decode($this->request->getPost('payment_type', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
 
         $rules = ['amount_tendered' => 'trim|required|decimal_locale',];
         $messages = ['amount_tendered' => lang('Sales.must_enter_numeric')];
@@ -1213,9 +1213,9 @@ class Sales extends Secure_Controller
         $number_of_payments = $this->request->getPost('number_of_payments', FILTER_SANITIZE_NUMBER_INT);
         for ($i = 0; $i < $number_of_payments; ++$i) {
             $payment_id = $this->request->getPost("payment_id_$i", FILTER_SANITIZE_NUMBER_INT);
-            $payment_type = $this->request->getPost("payment_type_$i", FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $payment_type = $this->request->getPost("payment_type_$i", FILTER_SANITIZE_SPECIAL_CHARS);
             $payment_amount = parse_decimals($this->request->getPost("payment_amount_$i"));
-            $refund_type = $this->request->getPost("refund_type_$i", FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $refund_type = $this->request->getPost("refund_type_$i", FILTER_SANITIZE_SPECIAL_CHARS);
             $cash_refund = parse_decimals($this->request->getPost("refund_amount_$i"));
 
             $cash_adjustment = $payment_type == lang('Sales.cash_adjustment') ? CASH_ADJUSTMENT_TRUE : CASH_ADJUSTMENT_FALSE;
@@ -1244,7 +1244,7 @@ class Sales extends Secure_Controller
 
         $payment_id = NEW_ENTRY;
         $payment_amount_new = $this->request->getPost('payment_amount_new');
-        $payment_type = $this->request->getPost('payment_type_new', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $payment_type = html_entity_decode($this->request->getPost('payment_type_new', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
 
         if ($payment_type != PAYMENT_TYPE_UNASSIGNED && !empty($payment_amount_new)) {
             $payment_amount = parse_decimals($payment_amount_new);
@@ -1446,19 +1446,21 @@ class Sales extends Secure_Controller
      * (prices, discounts, add/remove items) and finished as a new sale.
      * The original completed sale is left intact for reference.
      */
-    public function postReopen(int $sale_id): \CodeIgniter\HTTP\RedirectResponse
+    public function postReopen(int $sale_id): void
     {
         if (! $this->sale->exists($sale_id)) {
             $this->session->setFlashdata('error', lang('Sales.unsuccessfully_reopened_sale'));
 
-            return redirect('sales/manage');
+            redirect('sales/manage');
+
+            return;
         }
 
         $this->sale_lib->copy_entire_sale($sale_id);
         // Clear sale_id so suspend/finish create a NEW sale, not an update of the original
         $this->session->set('sale_id', NEW_ENTRY);
 
-        return redirect('sales');
+        redirect('sales');
     }
 
     /**
