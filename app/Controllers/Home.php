@@ -30,38 +30,47 @@ class Home extends Secure_Controller
             . " THEN {$p}sales_items.quantity_purchased * {$p}sales_items.item_unit_price - ROUND({$p}sales_items.quantity_purchased * {$p}sales_items.item_unit_price * {$p}sales_items.discount / 100, $decimals)"
             . " ELSE {$p}sales_items.quantity_purchased * ({$p}sales_items.item_unit_price - {$p}sales_items.discount) END";
 
+        // Amount actually received per sale — mirrors the sales/manage payments summary
+        // (SUM(payment_amount - cash_refund) over positive payments). This keeps the
+        // dashboard totals consistent with sales/manage even when a sale is underpaid.
+        $pay_amount = "IFNULL({$p}sales_payments.payment_amount, 0) - IFNULL({$p}sales_payments.cash_refund, 0)";
+
         // 1. Today's sales total
-        $builder = $this->db->table('sales_items');
-        $builder->select("ROUND(SUM($sale_price), $decimals) AS total");
-        $builder->join('sales', 'sales.sale_id = sales_items.sale_id');
+        $builder = $this->db->table('sales_payments');
+        $builder->select("ROUND(SUM($pay_amount), $decimals) AS total");
+        $builder->join('sales', 'sales.sale_id = sales_payments.sale_id');
         $builder->where('sales.sale_status', COMPLETED);
+        $builder->where('sales_payments.payment_amount >', 0);
         $builder->where("DATE({$p}sales.sale_time)", date('Y-m-d'));
         $row = $builder->get()->getRow();
         $data['today_sales'] = (float)($row->total ?? 0);
 
         // 2. Yesterday's sales total
-        $builder = $this->db->table('sales_items');
-        $builder->select("ROUND(SUM($sale_price), $decimals) AS total");
-        $builder->join('sales', 'sales.sale_id = sales_items.sale_id');
+        $builder = $this->db->table('sales_payments');
+        $builder->select("ROUND(SUM($pay_amount), $decimals) AS total");
+        $builder->join('sales', 'sales.sale_id = sales_payments.sale_id');
         $builder->where('sales.sale_status', COMPLETED);
+        $builder->where('sales_payments.payment_amount >', 0);
         $builder->where("DATE({$p}sales.sale_time)", date('Y-m-d', strtotime('-1 day')));
         $row = $builder->get()->getRow();
         $data['yesterday_sales'] = (float)($row->total ?? 0);
 
         // 3. This week's sales total
-        $builder = $this->db->table('sales_items');
-        $builder->select("ROUND(SUM($sale_price), $decimals) AS total");
-        $builder->join('sales', 'sales.sale_id = sales_items.sale_id');
+        $builder = $this->db->table('sales_payments');
+        $builder->select("ROUND(SUM($pay_amount), $decimals) AS total");
+        $builder->join('sales', 'sales.sale_id = sales_payments.sale_id');
         $builder->where('sales.sale_status', COMPLETED);
+        $builder->where('sales_payments.payment_amount >', 0);
         $builder->where("YEARWEEK({$p}sales.sale_time, 1)", 'YEARWEEK(CURDATE(), 1)', false);
         $row = $builder->get()->getRow();
         $data['week_sales'] = (float)($row->total ?? 0);
 
         // 4. This month's sales total
-        $builder = $this->db->table('sales_items');
-        $builder->select("ROUND(SUM($sale_price), $decimals) AS total");
-        $builder->join('sales', 'sales.sale_id = sales_items.sale_id');
+        $builder = $this->db->table('sales_payments');
+        $builder->select("ROUND(SUM($pay_amount), $decimals) AS total");
+        $builder->join('sales', 'sales.sale_id = sales_payments.sale_id');
         $builder->where('sales.sale_status', COMPLETED);
+        $builder->where('sales_payments.payment_amount >', 0);
         $builder->where("MONTH({$p}sales.sale_time)", date('m'));
         $builder->where("YEAR({$p}sales.sale_time)", date('Y'));
         $row = $builder->get()->getRow();
@@ -118,10 +127,11 @@ class Home extends Secure_Controller
             : 0;
 
         // 10. Sales per hour today (gráfico por hora)
-        $builder = $this->db->table('sales_items');
-        $builder->select("HOUR({$p}sales.sale_time) AS hour, ROUND(SUM($sale_price), $decimals) AS total");
-        $builder->join('sales', 'sales.sale_id = sales_items.sale_id');
+        $builder = $this->db->table('sales_payments');
+        $builder->select("HOUR({$p}sales.sale_time) AS hour, ROUND(SUM($pay_amount), $decimals) AS total");
+        $builder->join('sales', 'sales.sale_id = sales_payments.sale_id');
         $builder->where('sales.sale_status', COMPLETED);
+        $builder->where('sales_payments.payment_amount >', 0);
         $builder->where("DATE({$p}sales.sale_time)", date('Y-m-d'));
         $builder->groupBy("HOUR({$p}sales.sale_time)");
         $builder->orderBy('hour', 'ASC');
