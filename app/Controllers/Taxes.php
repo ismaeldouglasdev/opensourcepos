@@ -116,7 +116,6 @@ class Taxes extends Secure_Controller
         $search = $this->request->getPost('term');
         $suggestions = $this->tax_category->get_tax_category_suggestions($search);
 
-        $this->output->set_content_type('application/json');
         echo json_encode($suggestions);
     }
 

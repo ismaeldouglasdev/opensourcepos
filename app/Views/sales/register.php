@@ -114,6 +114,15 @@ window._tutorialSteps = [
 </style>
 
 <style>
+/* Cart product photo */
+.cart-prod { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.cart-item-img-big { display: block; line-height: 0; }
+.cart-item-img-big img { width: 72px; height: 72px; object-fit: contain; border-radius: 4px; border: 1px solid #ddd; background: #fff; }
+.cart-item-img-big:hover img { transform: scale(1.05); }
+.cart-prod-name { font-size: 14px; font-weight: bold; line-height: 1.15; text-align: center; }
+.cart-prod-code { font-family: monospace; font-size: 11px; color: #666; }
+.cart-prod-stock { font-size: 11px; color: #555; }
+
 /* Discount toggle override */
 #register td:nth-child(5),
 #register td:nth-child(6) { overflow: visible; }
@@ -349,7 +358,7 @@ if (isset($success)) {
                             <td>
                                 <?php
                                 if ($items_module_allowed && $change_price) {
-                                    echo form_input(['name' => 'price', 'class' => 'form-control input-sm', 'value' => to_currency_no_money($item['price']), 'tabindex' => ++$tabindex, 'onClick' => 'this.select();']);
+                                    echo form_input(['name' => 'price', 'class' => 'form-control input-sm', 'value' => to_currency_no_money($item['price']), 'tabindex' => ++$tabindex, 'onClick' => 'this.select();', 'onchange' => 'if(this.value != this.defaultValue) this.form.submit();']);
                                 } else {
                                     echo to_currency($item['price']);
                                     echo form_hidden('price', to_currency_no_money($item['price']));
@@ -380,7 +389,7 @@ if (isset($success)) {
 
                             <td>
                                 <div class="input-group">
-                                    <?= form_input(['name' => 'discount', 'class' => 'form-control input-sm', 'value' => $item['discount_type'] ? to_currency_no_money($item['discount']) : to_decimals($item['discount']), 'tabindex' => ++$tabindex, 'onClick' => 'this.select();']) ?>
+                                    <?= form_input(['name' => 'discount', 'class' => 'form-control input-sm', 'value' => $item['discount_type'] ? to_currency_no_money($item['discount']) : to_decimals($item['discount']), 'tabindex' => ++$tabindex, 'onClick' => 'this.select();', 'onchange' => 'if(this.value != this.defaultValue) this.form.submit();']) ?>
                                     <span class="input-group-btn">
                                         <span class="disc-toggle" data-line="<?= $line ?>">
                                             <button type="button" class="disc-toggle-btn <?= $item['discount_type'] == 1 ? 'active' : '' ?>" data-val="1"><?= $config['currency_symbol'] ?></button>
@@ -393,7 +402,7 @@ if (isset($success)) {
                             <td>
                                 <?php
                                 if (($item['item_type'] ?? '') == ITEM_AMOUNT_ENTRY) {
-                                    echo form_input(['name' => 'discounted_total', 'class' => 'form-control input-sm', 'value' => to_currency_no_money($item['discounted_total'] ?? 0), 'tabindex' => ++$tabindex, 'onClick' => 'this.select();']);
+                                    echo form_input(['name' => 'discounted_total', 'class' => 'form-control input-sm', 'value' => to_currency_no_money($item['discounted_total'] ?? 0), 'tabindex' => ++$tabindex, 'onClick' => 'this.select();', 'onchange' => 'if(this.value != this.defaultValue) this.form.submit();']);
                                 } else {
                                     echo to_currency($item['discounted_total'] ?? 0);
                                 }
@@ -501,6 +510,9 @@ if (isset($success)) {
                     <button class="btn btn-info btn-sm modal-dlg" data-btn-submit="<?= lang('Common.submit') ?>" data-href="<?= "customers/view" ?>" title="<?= lang(ucfirst($controller_name) . ".new_customer") ?>">
                         <span class="glyphicon glyphicon-user">&nbsp;</span><?= lang(ucfirst($controller_name) . ".new_customer") ?>
                     </button>
+                    <button class="btn btn-default btn-sm modal-dlg" id="show_keyboard_help" data-href="<?= esc("$controller_name/salesKeyboardHelp") ?>" title="<?= lang(ucfirst($controller_name) . '.key_title') ?>">
+                        <span class="glyphicon glyphicon-share-alt">&nbsp;</span><?= lang(ucfirst($controller_name) . '.key_help') ?>
+                    </button>
                 </div>
             <?php } ?>
         <?= form_close() ?>
@@ -539,9 +551,15 @@ if (isset($success)) {
             </table>
 
             <div style="margin: 6px 0;">
+    <?php if (!empty($editing_sale_id)): ?>
+    <button type="button" class="btn btn-warning btn-lg btn-block" id="btn_finalizar_venda" onclick="openCheckoutModal()">
+        <span class="glyphicon glyphicon-pencil"></span> ATUALIZAR VENDA #<?= $editing_sale_id ?>
+    </button>
+<?php else: ?>
     <button type="button" class="btn btn-success btn-lg btn-block" id="btn_finalizar_venda" onclick="openCheckoutModal()">
         <span class="glyphicon glyphicon-shopping-cart"></span> FINALIZAR VENDA (F2)
     </button>
+<?php endif; ?>
 </div>
 
 <div style="margin: 6px 0; display: flex; gap: 8px;">
@@ -832,6 +850,7 @@ if (isset($success)) {
 
         $('#item').on('keydown', function(e) {
             if (e.which == 13) {
+                clearTimeout(itemScanTimer);
                 var valor = $(this).val().trim().toLowerCase();
                 if (valor === '1' || valor === 'diversos') {
                     e.preventDefault();
@@ -848,6 +867,45 @@ if (isset($success)) {
                 beep.ok();
                 document.getElementById('add_item_form').submit();
                 return false;
+            }
+        });
+
+        // Auto-add ao escanear: só quando o campo é preenchido de uma vez,
+        // em rajada rápida (típico de leitor de código de barras, que manda
+        // todos os dígitos em milissegundos). Digitação manual com pausa
+        // entre teclas (>100ms) NÃO dispara — aguarda o Enter para não
+        // "adicionar" um código incompleto no meio da digitação.
+        var itemScanTimer = null;
+        var itemScanStart = 0;
+        var itemScanLastKey = 0;
+        var itemScanManual = false;
+        $('#item').on('input', function() {
+            var now = Date.now();
+            var val = $(this).val();
+            if (!val) {
+                // campo zerado: começa nova "entrada"
+                itemScanStart = 0;
+                itemScanLastKey = 0;
+                itemScanManual = false;
+                return;
+            }
+            if (itemScanLastKey === 0) {
+                itemScanStart = now;
+            } else if (now - itemScanLastKey > 100) {
+                itemScanManual = true;
+            }
+            itemScanLastKey = now;
+
+            clearTimeout(itemScanTimer);
+            var v = val.trim();
+            if (v.length >= 6 && /^[0-9]+$/.test(v) && !itemScanManual) {
+                itemScanTimer = setTimeout(function() {
+                    var total = Date.now() - itemScanStart;
+                    if ($('#item').val().trim() === v && total <= 700) {
+                        beep.ok();
+                        document.getElementById('add_item_form').submit();
+                    }
+                }, 250);
             }
         });
 
@@ -993,7 +1051,7 @@ if (isset($success)) {
             }
         }
 
-        $('[name="price"],[name="quantity"],[name="discount"],[name="description"],[name="serialnumber"],[name="discounted_total"]').change(function() {
+        $('[name="description"],[name="serialnumber"]').change(function() {
             $(this).closest('form').submit()
         });
 
@@ -1068,6 +1126,9 @@ if (isset($success)) {
                 break;
             case 56: // Alt + 8 Finish Quote/Invoice without payment
                 $("#finish_invoice_quote_button").click();
+                break;
+            case 57: // Alt + 9 Open Shortcuts Help Modal
+                $("#show_keyboard_help").click();
                 break;
         }
 

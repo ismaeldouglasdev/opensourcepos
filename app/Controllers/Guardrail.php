@@ -90,7 +90,9 @@ class Guardrail extends BaseController
         }
 
         $this->response->setStatusCode(404);
-        echo '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>404 - Não encontrado</title></head>'
-            . '<body><h1>404</h1><p>Página não encontrada.</p></body></html>';
+        $this->response->setBody(
+            '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>404 - Não encontrado</title></head>'
+            . '<body><h1>404</h1><p>Página não encontrada.</p></body></html>'
+        );
     }
 }

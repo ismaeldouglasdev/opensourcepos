@@ -82,11 +82,10 @@ function get_sales_manage_table_headers(): string
     $headers = sales_headers();
     $config = config(OSPOS::class)->settings;
 
-    // Removed invoice columns to eliminate horizontal scrolling
-    // if ($config['invoice_enable']) {
-    //     $headers[] = ['invoice_number' => lang('Sales.invoice_number')];
-    //     $headers[] = ['invoice' => '', 'sortable' => false, 'escape' => false];
-    // }
+    if ($config['invoice_enable']) {
+        $headers[] = ['invoice_number' => lang('Sales.invoice_number')];
+        $headers[] = ['invoice' => '', 'sortable' => false, 'escape' => false];
+    }
 
     $headers[] = ['receipt' => '', 'sortable' => false, 'escape' => false];
     $headers[] = ['items' => 'Itens', 'sortable' => false, 'escape' => false];
@@ -113,18 +112,18 @@ function get_sale_data_row(object $sale): array
         'payment_type'    => $sale->payment_type
     ];
 
-    // Removed invoice columns to eliminate horizontal scrolling
-    // $config = config(OSPOS::class)->settings;
-    // if ($config['invoice_enable']) {
-    //     $row['invoice_number'] = $sale->invoice_number;
-    //     $row['invoice'] = empty($sale->invoice_number)
-    //         ? '-'
-    //         : anchor(
-    //             "$controller/invoice/$sale->sale_id",
-    //             '<span class="glyphicon glyphicon-list-alt"></span>',
-    //             ['title' => lang('Sales.show_invoice')]
-    //         );
-    // }
+    $config = config(OSPOS::class)->settings;
+
+    if ($config['invoice_enable']) {
+        $row['invoice_number'] = $sale->invoice_number;
+        $row['invoice'] = empty($sale->invoice_number)
+            ? '-'
+            : anchor(
+                "$controller/invoice/$sale->sale_id",
+                '<span class="glyphicon glyphicon-list-alt"></span>',
+                ['title' => lang('Sales.show_invoice')]
+            );
+    }
 
     $row['receipt'] = anchor(
         "$controller/receipt/$sale->sale_id",
