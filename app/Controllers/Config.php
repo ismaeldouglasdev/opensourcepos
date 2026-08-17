@@ -438,6 +438,7 @@ class Config extends Secure_Controller
         $fmt->setSymbol(NumberFormatter::CURRENCY_SYMBOL, $currency_symbol);
         $number_local_example = $fmt->format(1234567890.12300);
 
+        $this->response->setContentType('application/json');
         echo json_encode([
             'success'               => $number_local_example != false,
             'save_number_locale'    => $save_number_locale,
