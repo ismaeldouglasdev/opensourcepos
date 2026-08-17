@@ -211,6 +211,7 @@ class Employees extends Persons
     public function getCheckUsername($employee_id): void
     {
         $exists = $this->employee->username_exists($employee_id, $this->request->getGet('username'));
+        $this->response->setContentType('application/json');
         echo !$exists ? 'true' : 'false';
     }
 }

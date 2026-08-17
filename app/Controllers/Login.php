@@ -69,6 +69,6 @@ class Login extends BaseController
             }
         }
 
-        return redirect()->to('home');
+        return redirect()->to('sales/add');
     }
 }

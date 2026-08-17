@@ -248,6 +248,7 @@ class Item_kits extends Secure_Controller
     public function postCheckItemNumber(): void
     {
         $exists = $this->item_kit->item_number_exists($this->request->getPost('item_kit_number', FILTER_SANITIZE_FULL_SPECIAL_CHARS), $this->request->getPost('item_kit_id', FILTER_SANITIZE_NUMBER_INT));
+        $this->response->setContentType('application/json');
         echo !$exists ? 'true' : 'false';
     }
 

@@ -1485,6 +1485,7 @@ class Sales extends Secure_Controller
         $sale_id = $this->request->getPost('sale_id', FILTER_SANITIZE_NUMBER_INT);
         $invoice_number = $this->request->getPost('invoice_number', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $exists = !empty($invoice_number) && $this->sale->check_invoice_number_exists($invoice_number, $sale_id);
+        $this->response->setContentType('application/json');
         echo !$exists ? 'true' : 'false';
     }
 

@@ -539,6 +539,9 @@
                             table_support.handle_submit('<?= 'items' ?>', response, stay_open);
                             init_validation();
                         },
+                        error: function() {
+                            $('#submit').prop('disabled', false).css('opacity', '');
+                        },
                         dataType: 'json'
                     });
                 },

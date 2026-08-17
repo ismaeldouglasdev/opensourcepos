@@ -19,9 +19,10 @@
             dialog_ref = dlog_ref;
 
             if (button_id == 'submit' && btn_id != "btnNew" && !$('#submit').prop('disabled')) {
-                validator && (validator.formSubmitted = false);
+                if (validator) {
+                    validator.formSubmitted = false;
+                }
                 form.submit();
-                validator.valid() && $('#submit').prop('disabled', true).css('opacity', 0.5);
             }
             return false;
         }
@@ -86,6 +87,9 @@
                         var node = $('<div></div>');
                         $.get($link.attr('href') || $link.data('href'), function(data) {
                             node.html(data);
+                            node.find('script').each(function() {
+                                $.globalEval(this.textContent || this.text);
+                            });
                         });
                         return node;
                     })

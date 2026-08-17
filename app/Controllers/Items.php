@@ -592,7 +592,7 @@ class Items extends Secure_Controller
         $upload_data = $this->upload_image();
         $upload_success = empty($upload_data['error']);
 
-        $raw_receiving_quantity = $this->request->getPost('receiving_quantity');
+        $raw_receiving_quantity = $this->request->getPost('receiving_quantity') ?? '';
 
         $receiving_quantity = parse_quantity($raw_receiving_quantity);
         $item_type = $this->request->getPost('item_type') === null ? ITEM : intval($this->request->getPost('item_type'));
@@ -605,13 +605,13 @@ class Items extends Secure_Controller
 
         $cost_price = parse_decimals($this->request->getPost('cost_price'));
         $unit_price = parse_decimals($this->request->getPost('unit_price'));
-        $reorder_level = parse_quantity($this->request->getPost('reorder_level'));
+        $reorder_level = parse_quantity($this->request->getPost('reorder_level') ?? '');
         $qty_per_pack = parse_quantity($this->request->getPost('qty_per_pack') ?? '');
 
         // Save item data
         $item_data = [
             'name'                  => $this->request->getPost('name'),
-            'description'           => $this->request->getPost('description'),
+            'description'           => $this->request->getPost('description') ?? '',
             'category'              => $this->request->getPost('category'),
             'item_type'             => $item_type,
             'stock_type'            => $this->request->getPost('stock_type') === null ? HAS_STOCK : intval($this->request->getPost('stock_type')),
@@ -650,6 +650,8 @@ class Items extends Secure_Controller
 
         $employee_id = $this->employee->get_logged_in_employee_info()->person_id;
 
+        $this->response->setContentType('application/json');
+
         if ($this->item->save_value($item_data, $item_id)) {
             $success = true;
             $new_item = false;
@@ -663,16 +665,17 @@ class Items extends Secure_Controller
 
             if (!$use_destination_based_tax) {
                 $items_taxes_data = [];
-                $tax_names = $this->request->getPost('tax_names');
-                $tax_percents = $this->request->getPost('tax_percents');
+                $tax_names = (array)($this->request->getPost('tax_names') ?? []);
+                $tax_percents = (array)($this->request->getPost('tax_percents') ?? []);
 
                 $tax_name_index = 0;
 
                 foreach ($tax_percents as $tax_percent) {
                     $tax_percentage = parse_tax($tax_percent);
+                    $tax_name = trim((string)($tax_names[$tax_name_index] ?? ''));
 
-                    if (is_numeric($tax_percentage)) {
-                        $items_taxes_data[] = ['name' => $tax_names[$tax_name_index], 'percent' => $tax_percentage];
+                    if (is_numeric($tax_percentage) && strlen($tax_name) > 0) {
+                        $items_taxes_data[] = ['name' => $tax_name, 'percent' => $tax_percentage];
                     }
 
                     $tax_name_index++;
@@ -683,7 +686,7 @@ class Items extends Secure_Controller
             // Save item quantity
             $stock_locations = $this->stock_location->get_undeleted_all()->getResultArray();
             foreach ($stock_locations as $location) {
-                $updated_quantity = parse_quantity($this->request->getPost('quantity_' . $location['location_id']));
+                $updated_quantity = parse_quantity($this->request->getPost('quantity_' . $location['location_id']) ?? '');
 
                 if ($item_data['item_type'] == ITEM_TEMP) {
                     $updated_quantity = 0;
@@ -708,7 +711,7 @@ class Items extends Secure_Controller
                         'trans_user'      => $employee_id,
                         'trans_location'  => $location['location_id'],
                         'trans_comment'   => lang('Items.manually_editing_of_quantity'),
-                        'trans_inventory' => $updated_quantity - $item_quantity->quantity
+                        'trans_inventory' => (int)$updated_quantity - (int)$item_quantity->quantity
                     ];
 
                     $success &= $this->inventory->insert($inv_data, false);
@@ -786,6 +789,7 @@ class Items extends Secure_Controller
     {
         $exists = $this->item->item_number_exists($this->request->getPost('item_number'), $this->request->getPost('item_id'));
 
+        $this->response->setContentType('application/json');
         echo !$exists ? 'true' : 'false';
     }
 
@@ -801,6 +805,7 @@ class Items extends Secure_Controller
         } else {
             $exists = false;
         }
+        $this->response->setContentType('application/json');
         echo !$exists ? 'true' : 'false';
     }
 
@@ -843,7 +848,7 @@ class Items extends Secure_Controller
         $item_quantity_data = [
             'item_id'     => $item_id,
             'location_id' => $location_id,
-            'quantity'    => $item_quantity->quantity + parse_quantity($this->request->getPost('newquantity'))
+            'quantity'    => $item_quantity->quantity + parse_quantity($this->request->getPost('newquantity') ?? '')
         ];
 
         if ($this->item_quantity->save_value($item_quantity_data, $item_id, $location_id)) {

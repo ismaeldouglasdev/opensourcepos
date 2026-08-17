@@ -322,6 +322,7 @@ class Customers extends Persons
 
         $exists = $this->customer->check_email_exists($email, $person_id);
 
+        $this->response->setContentType('application/json');
         echo !$exists ? 'true' : 'false';
     }
 
@@ -335,6 +336,7 @@ class Customers extends Persons
     {
         $exists = $this->customer->check_account_number_exists($this->request->getPost('account_number'), $this->request->getPost('person_id', FILTER_SANITIZE_NUMBER_INT));
 
+        $this->response->setContentType('application/json');
         echo !$exists ? 'true' : 'false';
     }
 

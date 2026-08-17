@@ -465,7 +465,7 @@ function parse_tax(string $number): mixed
 function parse_decimals(string $number, ?int $decimals = null): mixed
 {
     if (empty($number)) {
-        return $number;
+        return 0;
     }
 
     $config = config(OSPOS::class)->settings;

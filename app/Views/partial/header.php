@@ -85,7 +85,7 @@ try {
         <script src="resources/js/bootstrap-toggle-1c7a19a049.js"></script>
         <script src="resources/js/clipboard-908af414ab.js"></script>
         <script src="resources/js/imgpreview-1db063409f.full.jquery.js"></script>
-        <script src="resources/js/manage_tables-9b98d5573a.js"></script>
+        <script src="resources/js/manage_tables-9b98d5573a-v2.js"></script>
         <script src="resources/js/nominatim-89be77a11a.autocomplete.js"></script>
         <!-- endinject -->
     <?php else : ?>
