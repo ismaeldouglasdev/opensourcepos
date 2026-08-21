@@ -81,6 +81,7 @@ $routes->get('sales/salesKeyboardHelp', 'Sales::getSalesKeyboardHelp');
 $routes->get('sales/getPaymentSummary/(:num)', 'Sales::getPaymentSummary/$1');
 
 $routes->post('sales/add', 'Sales::postAdd');
+$routes->post('sales/addAjax', 'Sales::addAjax');
 $routes->post('sales/addDiversos', 'Sales::addDiversos');
 $routes->post('sales/save/([0-9-]+)', 'Sales::postSave/$1');
 $routes->post('sales/reopen/([0-9-]+)', 'Sales::postReopen/$1');

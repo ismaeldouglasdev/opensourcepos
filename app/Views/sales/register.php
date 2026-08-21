@@ -812,42 +812,159 @@ if (isset($success)) {
 
         $('#item').focus();
 
-        // Autocomplete com opção "Diversos"
+        // === POS AUTOCOMPLETE — Rich dropdown + AJAX add ===
+        var CURRENCY_SYMBOL = '<?= esc($config["currency_symbol"]) ?>';
+
+        function posFmtMoney(v) {
+            var n = parseFloat(v) || 0;
+            var s = n.toFixed(2).replace('.', ',');
+            s = s.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            return CURRENCY_SYMBOL + ' ' + s;
+        }
+
+        function posHighlight(text, term) {
+            if (!term) return text;
+            var re = new RegExp('(' + term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+            return text.replace(re, '<strong>$1</strong>');
+        }
+
+        function posStockBadge(qty, status) {
+            if (status === 'in_stock') {
+                return '<span class="pos-stock pos-stock-ok">' + qty + ' em estoque</span>';
+            } else if (status === 'out_of_stock') {
+                return '<span class="pos-stock pos-stock-zero">Sem estoque</span>';
+            } else {
+                return '<span class="pos-stock pos-stock-neg">Estoque negativo</span>';
+            }
+        }
+
+        function posItemThumb(pic) {
+            if (!pic) return '<div class="pos-thumb pos-thumb-empty"><span class="glyphicon glyphicon-shopping-cart"></span></div>';
+            var ext = pic.split('.').pop().toLowerCase();
+            var base = '<?= base_url("uploads/item_pics/") ?>';
+            return '<img class="pos-thumb" src="' + base + encodeURIComponent(pic) + '" alt="" onerror="this.parentNode.innerHTML=\'<span class=\\\'glyphicon glyphicon-shopping-cart\\\'></span>\'" loading="lazy">';
+        }
+
+        // AJAX submit — avoids full page reload
+        var posAjaxPending = false;
+        function posAjaxAdd(itemId) {
+            if (posAjaxPending) return;
+            posAjaxPending = true;
+            $.ajax({
+                url: '<?= esc("$controller_name/addAjax") ?>',
+                type: 'POST',
+                dataType: 'json',
+                data: { item: itemId },
+                success: function(res) {
+                    posAjaxPending = false;
+                    if (res.error) {
+                        $.notify({ message: res.error }, { type: 'danger', timer: 2000 });
+                    }
+                    if (res.warning) {
+                        $.notify({ message: res.warning }, { type: 'warning', timer: 3000 });
+                    }
+                    if (res.cart_html !== undefined) {
+                        $('#cart_contents').html(res.cart_html);
+                        // Update totals section
+                        var $totals = $('#sale_totals');
+                        if (res.totals_html) $totals.html(res.totals_html);
+                        // Update payment section
+                        var $pay = $('#payment_totals');
+                        if (res.payments_html) {
+                            if ($pay.length) $pay.html(res.payments_html);
+                            else $pay.closest('.panel-body').find('#payment_totals').html(res.payments_html);
+                        }
+                        // Update buttons
+                        if (res.buttons_html) {
+                            $('div:has(> #btn_finalizar_venda)').first().html(res.buttons_html);
+                        }
+                        // Re-init qty steppers and discount toggles for new rows
+                        if (typeof initQtySteppers === 'function') initQtySteppers();
+                        if (typeof initDiscountToggles === 'function') initDiscountToggles();
+                    }
+                    $('#item').val('').focus();
+                },
+                error: function() {
+                    posAjaxPending = false;
+                    // Fallback: submit form normally
+                    document.getElementById('add_item_form').submit();
+                }
+            });
+        }
+
         $('#item').autocomplete({
             source: function(request, response) {
                 var term = request.term.trim().toLowerCase();
-                
                 $.ajax({
                     url: "<?= esc("$controller_name/itemSearch") ?>",
                     dataType: "json",
                     data: { term: term },
                     success: function(data) {
                         if (term === '1' || term === 'diversos') {
-                            data.unshift({
-                                label: '💰 DIVERSOS',
-                                value: '1',
-                                item_id: 'DIVERSOS'
-                            });
+                            data.unshift({ type: 'diversos', label: 'DIVERSOS', value: '1' });
                         }
                         response(data);
                     }
                 });
             },
-            minChars: 0,
+            minLength: 0,
             autoFocus: false,
-            delay: 200,
-            select: function(a, ui) {
-                if (ui.item.item_id === 'DIVERSOS') {
+            delay: 150,
+            open: function() {
+                $(this).autocomplete('widget').addClass('pos-autocomplete');
+            },
+            // Custom dropdown rendering
+            _renderItem: function(ul, item) {
+                if (item.type === 'diversos') {
+                    return $('<li class="pos-ac-diversos"><div><span class="glyphicon glyphicon-plus-sign"></span> DIVERSOS — Preço avulso</div></li>')
+                        .appendTo(ul);
+                }
+                if (item.type === 'category') {
+                    return $('<li class="pos-ac-category"><div><span class="glyphicon glyphicon-tag"></span> ' + posHighlight(item.label, this.term) + ' <span class="pos-ac-hint">categoria</span></div></li>')
+                        .appendTo(ul);
+                }
+                if (item.type === 'supplier') {
+                    return $('<li class="pos-ac-supplier"><div><span class="glyphicon glyphicon-briefcase"></span> ' + posHighlight(item.label, this.term) + ' <span class="pos-ac-hint">fornecedor</span></div></li>')
+                        .appendTo(ul);
+                }
+                // Regular item
+                var nameHtml = posHighlight(item.name || item.label, this.term);
+                var codeHtml = item.item_number ? '<span class="pos-ac-code">' + posHighlight(item.item_number, this.term) + '</span>' : '';
+                var stockHtml = posStockBadge(item.stock_qty, item.stock_status);
+                var priceHtml = '<span class="pos-ac-price">' + posFmtMoney(item.unit_price) + '</span>';
+                var catHtml = item.category ? '<span class="pos-ac-cat">' + item.category + '</span>' : '';
+
+                var html = '<div class="pos-ac-row">'
+                    + posItemThumb(item.pic_filename)
+                    + '<div class="pos-ac-info">'
+                    + '<div class="pos-ac-name">' + nameHtml + catHtml + '</div>'
+                    + '<div class="pos-ac-meta">' + codeHtml + stockHtml + '</div>'
+                    + '</div>'
+                    + '<div class="pos-ac-right">' + priceHtml + '</div>'
+                    + '</div>';
+
+                return $('<li></li>').data('item.autocomplete', item).append(html).appendTo(ul);
+            },
+            select: function(e, ui) {
+                if (ui.item.type === 'diversos') {
                     showDiversosModal();
                     $(this).val('');
                     return false;
                 }
-                $(this).val(ui.item.value);
-                document.getElementById('add_item_form').submit();
+                if (ui.item.type === 'category' || ui.item.type === 'supplier') {
+                    // Refine search with this term
+                    $(this).val(ui.item.label);
+                    $(this).autocomplete('search', ui.item.label);
+                    return false;
+                }
+                // Add item via AJAX (no page reload)
+                beep.ok();
+                posAjaxAdd(ui.item.value);
                 return false;
             }
         });
 
+        // Enter key
         $('#item').on('keydown', function(e) {
             if (e.which == 13) {
                 clearTimeout(itemScanTimer);
@@ -858,23 +975,17 @@ if (isset($success)) {
                     $(this).val('');
                     return false;
                 }
-                // Se o menu do autocomplete estiver aberto, não submete
-                // o formulário com o texto digitado — deixa o autocomplete
-                // cuidar da seleção via callback select.
                 if ($('#item').autocomplete('widget').is(':visible')) {
                     return false;
                 }
                 beep.ok();
-                document.getElementById('add_item_form').submit();
+                // Submit via AJAX
+                posAjaxAdd($(this).val().trim());
                 return false;
             }
         });
 
-        // Auto-add ao escanear: só quando o campo é preenchido de uma vez,
-        // em rajada rápida (típico de leitor de código de barras, que manda
-        // todos os dígitos em milissegundos). Digitação manual com pausa
-        // entre teclas (>100ms) NÃO dispara — aguarda o Enter para não
-        // "adicionar" um código incompleto no meio da digitação.
+        // Barcode scanner auto-add: rapid numeric burst (>=6 digits, <700ms total, <100ms between keys)
         var itemScanTimer = null;
         var itemScanStart = 0;
         var itemScanLastKey = 0;
@@ -883,7 +994,6 @@ if (isset($success)) {
             var now = Date.now();
             var val = $(this).val();
             if (!val) {
-                // campo zerado: começa nova "entrada"
                 itemScanStart = 0;
                 itemScanLastKey = 0;
                 itemScanManual = false;
@@ -903,7 +1013,7 @@ if (isset($success)) {
                     var total = Date.now() - itemScanStart;
                     if ($('#item').val().trim() === v && total <= 700) {
                         beep.ok();
-                        document.getElementById('add_item_form').submit();
+                        posAjaxAdd(v);
                     }
                 }, 250);
             }

@@ -1697,8 +1697,228 @@ class Sales extends Secure_Controller
 
     public function itemSearch(): void
     {
-        $suggestions = $this->item->get_search_suggestions($this->request->getGet('term'), ['is_deleted' => false, 'search_custom' => false], false, 25);
-        echo json_encode($suggestions);
+        $this->response->setContentType('application/json');
+
+        $term = $this->request->getGet('term');
+        if (empty($term)) {
+            echo json_encode([]);
+            return;
+        }
+
+        $location = $this->sale_lib->get_sale_location();
+        $results = $this->item->get_search_results_structured($term, (int) $location, 15);
+        echo json_encode($results);
+    }
+
+    /**
+     * Add item to cart via AJAX — returns JSON with updated cart HTML + totals.
+     */
+    public function addAjax(): void
+    {
+        $this->response->setContentType('application/json');
+        $data = ['success' => false, 'error' => '', 'warning' => ''];
+
+        $discount = $this->config['default_sales_discount'];
+        $discount_type = $this->config['default_sales_discount_type'];
+
+        $customer_id = $this->sale_lib->get_customer();
+        if ($customer_id != NEW_ENTRY) {
+            $customer_info = $this->customer->get_info($customer_id);
+            if ($customer_info->discount != '') {
+                $discount = $customer_info->discount;
+                $discount_type = $customer_info->discount_type;
+            }
+        }
+
+        $item_id = $this->request->getPost('item', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $this->token_lib->parse_barcode($quantity, $price, $item_id);
+        $mode = $this->sale_lib->get_mode();
+        $quantity = ($mode == 'return') ? -$quantity : $quantity;
+        $item_location = $this->sale_lib->get_sale_location();
+
+        $added = false;
+
+        if ($mode == 'return' && $this->sale->is_valid_receipt($item_id)) {
+            $this->sale_lib->return_entire_sale($item_id);
+            $added = true;
+        } elseif ($this->item_kit->is_valid_item_kit($item_id)) {
+            $pieces = explode(' ', $item_id);
+            $item_kit_id = (count($pieces) > 1) ? $pieces[1] : $item_id;
+            $item_kit_info = $this->item_kit->get_info($item_kit_id);
+            $kit_item_id = $item_kit_info->kit_item_id;
+            $kit_price_option = $item_kit_info->price_option;
+            $kit_print_option = $item_kit_info->print_option;
+
+            if ($discount_type == $item_kit_info->kit_discount_type) {
+                if ($item_kit_info->kit_discount > $discount) {
+                    $discount = $item_kit_info->kit_discount;
+                }
+            } else {
+                $discount = $item_kit_info->kit_discount;
+                $discount_type = $item_kit_info->kit_discount_type;
+            }
+
+            if (!empty($kit_item_id)) {
+                $this->sale_lib->add_item($kit_item_id, $item_location, $quantity, $discount, $discount_type, PRICE_MODE_KIT, $kit_price_option, $kit_print_option, $price);
+            }
+
+            $stock_warning = null;
+            if ($this->sale_lib->add_item_kit($item_id, $item_location, $discount, $discount_type, $kit_price_option, $kit_print_option, $stock_warning)) {
+                $added = true;
+                if ($stock_warning != null) {
+                    $data['warning'] = $stock_warning;
+                }
+            }
+        } else {
+            if ($item_id == '') {
+                $data['error'] = lang('Sales.unable_to_add_item');
+            } elseif (!$this->sale_lib->add_item($item_id, $item_location, $quantity, $discount, $discount_type, PRICE_MODE_STANDARD, null, null, $price)) {
+                $data['error'] = lang('Sales.item_not_found');
+            } else {
+                $added = true;
+                $warning = $this->sale_lib->out_of_stock($item_id, $item_location);
+                if ($warning) {
+                    $data['warning'] = $warning;
+                }
+            }
+        }
+
+        if (!$added && empty($data['error'])) {
+            $data['error'] = lang('Sales.unable_to_add_item');
+        }
+
+        // Render the cart HTML fragments via output buffering
+        ob_start();
+        echo view('sales/register', $this->_build_reload_data($data));
+        $full_html = ob_get_clean();
+
+        // Extract cart tbody
+        preg_match('/<tbody id="cart_contents">(.*)<\/tbody>/s', $full_html, $cart_match);
+        $cart_html = $cart_match[1] ?? '';
+
+        // Extract sale totals
+        preg_match('/<table class="sales_table_100" id="sale_totals">(.*)<\/table>/s', $full_html, $totals_match);
+        $totals_html = $totals_match[1] ?? '';
+
+        // Extract payment totals (may not exist if cart is empty)
+        $payments_html = '';
+        if (preg_match('/<table class="sales_table_100" id="payment_totals">(.*)<\/table>/s', $full_html, $pay_match)) {
+            $payments_html = $pay_match[1];
+        }
+
+        // Extract buttons area
+        $buttons_html = '';
+        if (preg_match('/<div style="margin: 6px 0;">(.*)<div style="margin: 6px 0; display: flex;/s', $full_html, $btn_match)) {
+            $buttons_html = $btn_match[1];
+        }
+
+        $data['success'] = $added;
+        $data['cart_html'] = $cart_html;
+        $data['totals_html'] = $totals_html;
+        $data['payments_html'] = $payments_html;
+        $data['buttons_html'] = $buttons_html;
+
+        echo json_encode($data);
+    }
+
+    /**
+     * Build the data array needed by the register view (extracted from _reload).
+     */
+    private function _build_reload_data(array $extra = []): array
+    {
+        $sale_id = $this->session->get('sale_id');
+        if ($sale_id == '') {
+            $sale_id = NEW_ENTRY;
+            $this->session->set('sale_id', NEW_ENTRY);
+        }
+        $cash_rounding = $this->sale_lib->reset_cash_rounding();
+
+        $data = $extra;
+        $data['cash_rounding'] = $cash_rounding;
+        $data['cart'] = $this->sale_lib->get_cart();
+        $customer_info = $this->_load_customer_data($this->sale_lib->get_customer(), $data, true);
+
+        $data['modes'] = $this->sale_lib->get_register_mode_options();
+        $data['mode'] = $this->sale_lib->get_mode();
+        $data['selected_table'] = $this->sale_lib->get_dinner_table();
+        $data['empty_tables'] = $this->sale_lib->get_empty_tables($data['selected_table']);
+        $data['stock_locations'] = $this->stock_location->get_allowed_locations('sales');
+        $data['stock_location'] = $this->sale_lib->get_sale_location();
+        $data['tax_exclusive_subtotal'] = $this->sale_lib->get_subtotal(true, true);
+        $tax_details = $this->tax_lib->get_taxes($data['cart']);
+        $data['taxes'] = $tax_details[0];
+        $data['discount'] = $this->sale_lib->get_discount();
+        $data['payments'] = $this->sale_lib->get_payments();
+
+        $totals = $this->sale_lib->get_totals($tax_details[0]);
+        $data['item_count'] = $totals['item_count'];
+        $data['total_units'] = $totals['total_units'];
+        $data['subtotal'] = $totals['subtotal'];
+        $data['total'] = $totals['total'];
+        $data['payments_total'] = $totals['payment_total'];
+        $data['payments_cover_total'] = $totals['payments_cover_total'];
+
+        $cash_mode = $this->session->get('cash_mode');
+        $data['cash_mode'] = $cash_mode;
+        $data['prediscount_subtotal'] = $totals['prediscount_subtotal'];
+        $data['cash_total'] = $totals['cash_total'];
+        $data['non_cash_total'] = $totals['total'];
+        $data['cash_amount_due'] = $totals['cash_amount_due'];
+        $data['non_cash_amount_due'] = $totals['amount_due'];
+
+        $data['selected_payment_type'] = $this->sale_lib->get_payment_type();
+
+        if ($data['cash_mode'] && ($data['selected_payment_type'] == lang('Sales.cash') || $data['payments_total'] > 0)) {
+            $data['total'] = $totals['cash_total'];
+            $data['amount_due'] = $totals['cash_amount_due'];
+        } else {
+            $data['total'] = $totals['total'];
+            $data['amount_due'] = $totals['amount_due'];
+        }
+
+        $data['amount_change'] = $data['amount_due'] * -1;
+        $data['comment'] = $this->sale_lib->get_comment();
+        $data['email_receipt'] = $this->sale_lib->is_email_receipt();
+
+        if ($customer_info && $this->config['customer_reward_enable']) {
+            $data['payment_options'] = $this->sale->get_payment_options(true, true);
+        } else {
+            $data['payment_options'] = $this->sale->get_payment_options();
+        }
+
+        $data['items_module_allowed'] = $this->employee->has_grant('items', $this->employee->get_logged_in_employee_info()->person_id);
+        $data['change_price'] = $this->employee->has_grant('sales_change_price', $this->employee->get_logged_in_employee_info()->person_id);
+
+        $temp_invoice_number = $this->sale_lib->get_invoice_number();
+        $invoice_format = $this->config['sales_invoice_format'];
+        if ($temp_invoice_number == null || $temp_invoice_number == '') {
+            $temp_invoice_number = $this->token_lib->render($invoice_format, [], false);
+        }
+        $data['invoice_number'] = $temp_invoice_number;
+        $data['print_after_sale'] = $this->sale_lib->is_print_after_sale();
+        $data['price_work_orders'] = $this->sale_lib->is_price_work_orders();
+        $data['pos_mode'] = $data['mode'] == 'sale' || $data['mode'] == 'return';
+        $data['quote_number'] = $this->sale_lib->get_quote_number();
+        $data['work_order_number'] = $this->sale_lib->get_work_order_number();
+
+        if ($this->sale_lib->get_mode() == 'sale_invoice') {
+            $data['mode_label'] = lang('Sales.invoice');
+            $data['customer_required'] = lang('Sales.customer_required');
+        } elseif ($this->sale_lib->get_mode() == 'sale_quote') {
+            $data['mode_label'] = lang('Sales.quote');
+            $data['customer_required'] = lang('Sales.customer_required');
+        } elseif ($this->sale_lib->get_mode() == 'sale_work_order') {
+            $data['mode_label'] = lang('Sales.work_order');
+            $data['customer_required'] = lang('Sales.customer_required');
+        } elseif ($this->sale_lib->get_mode() == 'return') {
+            $data['mode_label'] = lang('Sales.return');
+            $data['customer_required'] = lang('Sales.customer_optional');
+        } else {
+            $data['mode_label'] = lang('Sales.receipt');
+            $data['customer_required'] = lang('Sales.customer_optional');
+        }
+
+        return $data;
     }
 
     public function addDiversos(): void

@@ -727,6 +727,138 @@ class Item extends Model
         return array_unique($suggestions, SORT_REGULAR);
     }
 
+    /**
+     * Structured search for POS autocomplete — returns items with stock, photo, price.
+     *
+     * @param string $search
+     * @param int $location_id
+     * @param int $limit
+     * @return array
+     */
+    public function get_search_results_structured(string $search, int $location_id = 1, int $limit = 15): array
+    {
+        $results = [];
+        $seen = [];
+        $non_kit = [ITEM, ITEM_AMOUNT_ENTRY];
+
+        // Query 1: search by NAME (highest relevance)
+        $builder = $this->db->table('items');
+        $builder->select('items.item_id, items.name, items.item_number, items.unit_price, items.pic_filename, items.category');
+        $builder->select('COALESCE(iq.quantity, 0) AS stock_qty', false);
+        $builder->join('item_quantities iq', 'iq.item_id = items.item_id AND iq.location_id = ' . (int) $location_id, 'left');
+        $builder->where('items.deleted', false);
+        $builder->whereIn('items.item_type', $non_kit);
+        $builder->like('items.name', $search);
+        $builder->orderBy('items.name', 'asc');
+        $builder->limit($limit);
+
+        foreach ($builder->get()->getResult() as $row) {
+            if (!in_array($row->item_id, $seen, true)) {
+                $seen[] = $row->item_id;
+                $results[] = $this->_format_structured_result($row);
+            }
+        }
+
+        // Query 2: search by BARCODE / item_number
+        $builder = $this->db->table('items');
+        $builder->select('items.item_id, items.name, items.item_number, items.unit_price, items.pic_filename, items.category');
+        $builder->select('COALESCE(iq.quantity, 0) AS stock_qty', false);
+        $builder->join('item_quantities iq', 'iq.item_id = items.item_id AND iq.location_id = ' . (int) $location_id, 'left');
+        $builder->where('items.deleted', false);
+        $builder->whereIn('items.item_type', $non_kit);
+        $builder->like('items.item_number', $search);
+        $builder->orderBy('items.item_number', 'asc');
+        $builder->limit($limit);
+
+        foreach ($builder->get()->getResult() as $row) {
+            if (!in_array($row->item_id, $seen, true)) {
+                $seen[] = $row->item_id;
+                $results[] = $this->_format_structured_result($row);
+            }
+        }
+
+        // Query 3: search by DESCRIPTION (lower relevance)
+        $builder = $this->db->table('items');
+        $builder->select('items.item_id, items.name, items.item_number, items.unit_price, items.pic_filename, items.category');
+        $builder->select('COALESCE(iq.quantity, 0) AS stock_qty', false);
+        $builder->join('item_quantities iq', 'iq.item_id = items.item_id AND iq.location_id = ' . (int) $location_id, 'left');
+        $builder->where('items.deleted', false);
+        $builder->whereIn('items.item_type', $non_kit);
+        $builder->like('items.description', $search);
+        $builder->orderBy('items.name', 'asc');
+        $builder->limit($limit);
+
+        foreach ($builder->get()->getResult() as $row) {
+            if (!in_array($row->item_id, $seen, true)) {
+                $seen[] = $row->item_id;
+                $results[] = $this->_format_structured_result($row);
+            }
+        }
+
+        // Categories (selecting one refines the search)
+        $builder = $this->db->table('items');
+        $builder->select('category');
+        $builder->where('deleted', false);
+        $builder->distinct();
+        $builder->like('category', $search);
+        $builder->orderBy('category', 'asc');
+        $builder->limit(5);
+
+        foreach ($builder->get()->getResult() as $row) {
+            $results[] = [
+                'type' => 'category',
+                'label' => $row->category,
+                'value' => null,
+            ];
+        }
+
+        // Suppliers
+        $builder = $this->db->table('suppliers');
+        $builder->select('company_name');
+        $builder->where('deleted', false);
+        $builder->like('company_name', $search);
+        $builder->distinct();
+        $builder->orderBy('company_name', 'asc');
+        $builder->limit(5);
+
+        foreach ($builder->get()->getResult() as $row) {
+            $results[] = [
+                'type' => 'supplier',
+                'label' => $row->company_name,
+                'value' => null,
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * Format a single structured search result for the POS autocomplete.
+     */
+    private function _format_structured_result(object $row): array
+    {
+        $stock = (int) ($row->stock_qty ?? 0);
+        if ($stock > 0) {
+            $stock_status = 'in_stock';
+        } elseif ($stock == 0) {
+            $stock_status = 'out_of_stock';
+        } else {
+            $stock_status = 'negative';
+        }
+
+        return [
+            'type' => 'item',
+            'value' => (string) $row->item_id,
+            'label' => $row->name . ($row->item_number ? ' | ' . $row->item_number : '') . ' [' . to_currency_no_money($row->unit_price) . ']',
+            'name' => $row->name,
+            'item_number' => $row->item_number ?? '',
+            'unit_price' => (float) $row->unit_price,
+            'pic_filename' => $row->pic_filename ?? '',
+            'stock_qty' => $stock,
+            'stock_status' => $stock_status,
+            'category' => $row->category ?? '',
+        ];
+    }
 
     /**
      * @param string $search
