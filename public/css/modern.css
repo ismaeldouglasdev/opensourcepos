@@ -2811,9 +2811,14 @@ body {
 .pos-ac-row {
     display: flex !important;
     align-items: center !important;
-    gap: 10px !important;
-    padding: 6px 8px !important;
-    min-height: 52px !important;
+    gap: 12px !important;
+    padding: 10px 12px !important;
+    min-height: 64px !important;
+}
+
+/* Divider between result rows */
+.pos-autocomplete .ui-menu-item + .ui-menu-item {
+    border-top: 1px solid var(--os-border-light) !important;
 }
 
 .pos-ac-info {
@@ -2830,8 +2835,8 @@ body {
 
 /* Thumbnail */
 .pos-thumb {
-    width: 42px !important;
-    height: 42px !important;
+    width: 48px !important;
+    height: 48px !important;
     border-radius: 6px !important;
     object-fit: cover !important;
     border: 1px solid var(--os-border-light) !important;
@@ -2849,15 +2854,15 @@ body {
 
 /* Name line */
 .pos-ac-name {
-    font-weight: 600 !important;
-    font-size: 14px !important;
+    font-weight: 700 !important;
+    font-size: 16px !important;
     color: var(--os-text) !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
+    gap: 8px !important;
 }
 
 .pos-ac-name strong {
@@ -2868,61 +2873,70 @@ body {
 
 /* Category inline badge */
 .pos-ac-cat {
-    font-size: 10px !important;
-    font-weight: 500 !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
     color: var(--os-text-light) !important;
     background: var(--os-bg) !important;
-    padding: 1px 5px !important;
-    border-radius: 3px !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
     white-space: nowrap !important;
 }
 
 /* Top-seller badge (empty search) */
 .pos-ac-top {
-    font-size: 10px !important;
+    font-size: 11px !important;
     font-weight: 700 !important;
-    color: #b45309 !important;
+    color: #92400e !important;
     background: #fef3c7 !important;
-    padding: 1px 5px !important;
-    border-radius: 3px !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
     white-space: nowrap !important;
 }
 
 .pos-ac-top .glyphicon {
-    font-size: 9px !important;
+    font-size: 10px !important;
 }
 
-/* Meta line (barcode + stock) */
+/* Meta line (barcode + stock) — separated from the name for readability */
 .pos-ac-meta {
     display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
-    margin-top: 2px !important;
-    font-size: 12px !important;
+    gap: 8px !important;
+    margin-top: 6px !important;
+    font-size: 13px !important;
 }
 
+/* Barcode chip — high-contrast blue so the code stands out from the name */
 .pos-ac-code {
     font-family: var(--os-font-mono) !important;
-    color: var(--os-text-muted) !important;
-    font-size: 11px !important;
-    letter-spacing: 0.02em !important;
+    color: #1e40af !important;
+    background: #dbeafe !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.04em !important;
+    padding: 2px 8px !important;
+    border-radius: 4px !important;
+    white-space: nowrap !important;
 }
 
-/* Price */
+/* Price — biggest element on the right, high-contrast green chip */
 .pos-ac-price {
     font-family: var(--os-font-mono) !important;
-    font-weight: 700 !important;
-    font-size: 14px !important;
-    color: var(--os-primary-dark) !important;
+    font-weight: 800 !important;
+    font-size: 18px !important;
+    color: #166534 !important;
+    background: #dcfce7 !important;
+    padding: 4px 10px !important;
+    border-radius: 6px !important;
     white-space: nowrap !important;
 }
 
 /* Stock badge */
 .pos-stock {
-    font-size: 10px !important;
-    font-weight: 600 !important;
-    padding: 1px 5px !important;
-    border-radius: 3px !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    padding: 2px 7px !important;
+    border-radius: 4px !important;
     white-space: nowrap !important;
 }
 

@@ -897,7 +897,9 @@ if (isset($success)) {
                         if (typeof initQtySteppers === 'function') initQtySteppers();
                         if (typeof initDiscountToggles === 'function') initDiscountToggles();
                     }
+                    $('#item').autocomplete('close');
                     $('#item').val('').focus();
+                    if (typeof posResetScanState === 'function') posResetScanState();
                 },
                 error: function() {
                     posAjaxPending = false;
@@ -982,6 +984,7 @@ if (isset($success)) {
                     return false;
                 }
                 // Add item via AJAX (no page reload)
+                window._posItemSelectedAt = Date.now();
                 beep.ok();
                 posAjaxAdd(ui.item.value);
                 return false;
@@ -999,47 +1002,71 @@ if (isset($success)) {
                     $(this).val('');
                     return false;
                 }
-                if ($('#item').autocomplete('widget').is(':visible')) {
+                var $menu = $('#item').autocomplete('widget');
+                var menuVisible = $menu.is(':visible');
+                var entryHighlighted = menuVisible && $menu.find('.ui-menu-item-wrapper.ui-state-active').length > 0;
+                if (entryHighlighted) {
+                    // Let the autocomplete's own handler select the highlighted
+                    // entry; select() sets _posItemSelectedAt for the guard below.
+                    window._posItemSelectedAt = Date.now();
+                    return false;
+                }
+                // Menu open but nothing highlighted (e.g. scanner Enter or direct
+                // confirm): add what was typed instead of swallowing the key.
+                if (Date.now() - (window._posItemSelectedAt || 0) < 250) {
                     return false;
                 }
                 beep.ok();
-                // Submit via AJAX
                 posAjaxAdd($(this).val().trim());
                 return false;
             }
         });
 
-        // Barcode scanner auto-add: rapid numeric burst (>=6 digits, <700ms total, <100ms between keys)
+        // Barcode scanner auto-add.
+        // Detection: numeric value >= 6 digits followed by an input silence of ~220 ms.
+        // The burst clock restarts on deletion or pause > 400 ms, so there is no
+        // sticky "manual typing" flag that could get stuck and block scanning.
         var itemScanTimer = null;
-        var itemScanStart = 0;
-        var itemScanLastKey = 0;
-        var itemScanManual = false;
+        var scanLastLen = 0;
+        var scanBurstStart = 0;
+        var scanLastInputAt = 0;
+        function resetScanState() {
+            if (itemScanTimer) { clearTimeout(itemScanTimer); itemScanTimer = null; }
+            scanLastLen = 0;
+            scanBurstStart = 0;
+            scanLastInputAt = 0;
+        }
+        window.posResetScanState = resetScanState;
+
         $('#item').on('input', function() {
             var now = Date.now();
-            var val = $(this).val();
-            if (!val) {
-                itemScanStart = 0;
-                itemScanLastKey = 0;
-                itemScanManual = false;
-                return;
-            }
-            if (itemScanLastKey === 0) {
-                itemScanStart = now;
-            } else if (now - itemScanLastKey > 100) {
-                itemScanManual = true;
-            }
-            itemScanLastKey = now;
+            var len = $(this).val().length;
 
             clearTimeout(itemScanTimer);
-            var v = val.trim();
-            if (v.length >= 6 && /^[0-9]+$/.test(v) && !itemScanManual) {
+
+            if (len === 0) {
+                resetScanState();
+                return;
+            }
+            if (len < scanLastLen || (scanLastInputAt && now - scanLastInputAt > 400)) {
+                scanBurstStart = now;
+            }
+            if (!scanBurstStart) {
+                scanBurstStart = now;
+            }
+            scanLastLen = len;
+            scanLastInputAt = now;
+
+            var v = $(this).val().trim();
+            if (/^[0-9]{6,}$/.test(v)) {
                 itemScanTimer = setTimeout(function() {
-                    var total = Date.now() - itemScanStart;
-                    if ($('#item').val().trim() === v && total <= 700) {
+                    var cur = $('#item').val().trim();
+                    var elapsed = Date.now() - scanBurstStart;
+                    if (cur === v && elapsed <= 1000) {
                         beep.ok();
                         posAjaxAdd(v);
                     }
-                }, 250);
+                }, 220);
             }
         });
 
