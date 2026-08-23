@@ -963,6 +963,9 @@ if (isset($success)) {
                         if (typeof initQtySteppers === 'function') initQtySteppers();
                         if (typeof initDiscountToggles === 'function') initDiscountToggles();
                     }
+                    // Suppress any late autocomplete response from reopening
+                    // the menu right after we cleared the field.
+                    window._posSuppressMenuUntil = Date.now() + 900;
                     $('#item').autocomplete('close');
                     $('#item').val('').focus();
                     if (typeof posResetScanState === 'function') posResetScanState();
@@ -1026,8 +1029,7 @@ if (isset($success)) {
 
         // Custom dropdown rendering — must be attached to the widget INSTANCE
         // (passing _renderItem as an option is silently ignored by jQuery UI).
-        $('#item').autocomplete('instance')._renderItem = function(ul, item) {
-            if (item.type === 'diversos') {
+        $('#item').autocomplete('instance')._renderItem = function(ul, item) {            if (item.type === 'diversos') {
                 return $('<li class="pos-ac-diversos"><div><span class="glyphicon glyphicon-plus-sign"></span> DIVERSOS — Preço avulso</div></li>')
                     .appendTo(ul);
             }
@@ -1058,6 +1060,15 @@ if (isset($success)) {
 
             return $('<li></li>').data('item.autocomplete', item).append(html).appendTo(ul);
         };
+
+        // After an item is added the field is cleared and kept focused; a late
+        // itemSearch response can reopen the menu — force-close during the
+        // suppression window set by posAjaxAdd.
+        $('#item').on('autocompleteopen', function() {
+            if (Date.now() < (window._posSuppressMenuUntil || 0)) {
+                $(this).autocomplete('close');
+            }
+        });
 
         // Enter key
         $('#item').on('keydown', function(e) {
