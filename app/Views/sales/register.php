@@ -78,11 +78,32 @@ window._tutorialSteps = [
 .checkout-total { font-weight: 600; text-align: center; background: var(--os-primary-light, #e8f8f0); border-radius: var(--os-radius-lg, 12px); margin-bottom: 8px; padding: 8px; font-size: 14px; }
 
 /* Qty stepper */
-.qty-stepper { max-width: 108px; }
-.qty-stepper .btn { border-radius: 0; padding: 2px 5px; font-weight: 700; line-height: 1; font-size: 11px; height: 24px; }
-.qty-stepper .btn:first-child { border-radius: 3px 0 0 3px; }
-.qty-stepper .btn:last-child { border-radius: 0 3px 3px 0; }
-.qty-stepper input { text-align: center; min-width: 0; flex: 0 0 48px !important; width: 48px !important; height: 24px !important; padding: 1px 2px !important; font-size: 12px !important; }
+.qty-stepper { max-width: 130px; }
+/* Hardened against accessible.css generic .btn (padding 12x24/min-height 50):
+   scoped #register raises specificity and every property is !important */
+#register .qty-stepper .btn {
+    padding: 2px 6px !important;
+    min-height: 0 !important;
+    height: 34px !important;
+    width: 38px !important;
+    font-size: 18px !important;
+    line-height: 1 !important;
+    font-weight: 700 !important;
+    border-radius: 4px !important;
+    box-shadow: none !important;
+}
+#register .qty-stepper .btn:first-child { border-radius: 4px 0 0 4px !important; }
+#register .qty-stepper .btn:last-child { border-radius: 0 4px 4px 0 !important; }
+#register .qty-stepper input {
+    text-align: center !important;
+    min-width: 0 !important;
+    flex: 0 0 58px !important;
+    width: 58px !important;
+    height: 34px !important;
+    min-height: 0 !important;
+    padding: 2px 4px !important;
+    font-size: 16px !important;
+}
 
 /* Payment list */
 .payment-list { margin-bottom: 5px; }
@@ -141,7 +162,22 @@ window._tutorialSteps = [
 
 /* Custom discount toggle */
 .disc-toggle { display: inline-flex; border-radius: 4px; overflow: hidden; border: 1px solid #ccc; cursor: pointer; }
-.disc-toggle-btn { padding: 3px 7px; font-size: 11px; font-weight: 700; border: none; cursor: pointer; background: #f0f0f0; color: #888; line-height: 1; min-width: 22px; text-align: center; transition: background 0.15s, color 0.15s; }
+/* Hardened vs accessible.css generic .btn blow-up */
+.disc-toggle-btn {
+    padding: 6px 9px !important;
+    font-size: 13px !important;
+    min-height: 0 !important;
+    height: 34px !important;
+    font-weight: 700 !important;
+    border: none !important;
+    cursor: pointer;
+    background: #f0f0f0;
+    color: #888;
+    line-height: 1 !important;
+    min-width: 30px !important;
+    text-align: center;
+    transition: background 0.15s, color 0.15s;
+}
 .disc-toggle-btn:hover { background: #e0e0e0; }
 .disc-toggle-btn.active { background: #5cb85c; color: #fff; }
 
@@ -297,7 +333,7 @@ if (isset($success)) {
                         <tr>
                             <td>
                                 <?php
-                                echo anchor("$controller_name/deleteItem/$line", '<span class="glyphicon glyphicon-trash"></span>');
+                                echo anchor("$controller_name/deleteItem/$line", '<span class="glyphicon glyphicon-trash"></span>', ['class' => 'delete_item_button', 'data-item-id' => $line]);
                                 echo form_hidden('location', (string)$item['item_location']);
                                 echo form_input(['type' => 'hidden', 'name' => 'item_id', 'value' => $item['item_id']]);
                                 if ($item['item_type'] != ITEM_TEMP) {
@@ -642,7 +678,7 @@ if (isset($success)) {
                         <tbody id="payment_contents">
                             <?php foreach ($payments as $payment_id => $payment) { ?>
                                 <tr>
-                                    <td><?= anchor("$controller_name/deletePayment/". base64_encode($payment_id), '<span class="glyphicon glyphicon-trash"></span>') ?></td>
+                                    <td><?= anchor("$controller_name/deletePayment/". base64_encode($payment_id), '<span class="glyphicon glyphicon-trash"></span>', ['class' => 'delete_payment_button', 'data-payment-id' => base64_encode($payment_id)]) ?></td>
                                     <td><?= $payment['payment_type'] ?></td>
                                     <td style="text-align: right;"><?= to_currency($payment['payment_amount']) ?></td>
                                 </tr>
@@ -738,12 +774,14 @@ if (isset($success)) {
             $.post("<?= site_url('sales/removeCustomer'); ?>", redirect);
         });
 
-        $(document).on('click', '.delete_item_button', function() {
+        $(document).on('click', '.delete_item_button', function(e) {
+            e.preventDefault();
             const item_id = $(this).data('item-id');
             $.post("<?= site_url('sales/deleteItem/'); ?>" + item_id, redirect);
         });
 
-        $(document).on('click', '.delete_payment_button', function() {
+        $(document).on('click', '.delete_payment_button', function(e) {
+            e.preventDefault();
             const item_id = $(this).data('payment-id');
             $.post("<?= site_url('sales/deletePayment/'); ?>" + item_id, redirect);
         });
@@ -1290,8 +1328,8 @@ if (isset($success)) {
             $(this).closest('form').submit()
         });
 
-        // Custom discount toggle
-        $('.disc-toggle-btn').click(function() {
+        // Custom discount toggle (delegated — cart HTML is replaced by AJAX add)
+        $(document).on('click', '.disc-toggle-btn', function() {
             var $group = $(this).closest('.disc-toggle');
             var line = $group.data('line');
             var val = $(this).data('val');
