@@ -42,7 +42,14 @@
                         'class' => 'form-control input-sm',
                         'value' => $item_info->item_number
                     ]) ?>
+                    <span class="input-group-btn">
+                        <button type="button" id="barcode_web_lookup" class="btn btn-default btn-sm" title="Buscar nome e imagem do produto na internet pelo código" style="height: 30px;">
+                            <span class="glyphicon glyphicon-globe"></span> Internet
+                        </button>
+                    </span>
                 </div>
+                <input type="hidden" name="internet_image_url" id="internet_image_url" value="">
+                <img id="internet_image_preview" src="" alt="" style="display:none; max-height:64px; margin-top:5px; border-radius:4px; border:1px solid var(--os-border-light,#ccc);">
             </div>
         </div>
 
@@ -625,4 +632,49 @@
 
         init_validation();
     });
+
+    // --- Barcode web lookup (Open Food / Products / Beauty Facts) ---
+    function itemWebLookup(manual) {
+        var code = $('#item_number').val().trim();
+        if (!/^[0-9]{6,14}$/.test(code)) {
+            if (manual) {
+                $.notify({ message: 'Digite um código de barras numérico (6 a 14 dígitos) antes de buscar.' }, { type: 'warning', timer: 3500 });
+            }
+            return;
+        }
+        var $btn = $('#barcode_web_lookup');
+        $btn.prop('disabled', true);
+        $.getJSON('<?= esc('items/barcodeLookup') ?>/' + code, function(res) {
+            if (!res || !res.found) {
+                if (manual) {
+                    $.notify({ message: 'Produto não encontrado nas bases abertas (alimentos, produtos e beleza).' }, { type: 'info', timer: 4000 });
+                }
+                return;
+            }
+            var full = res.name;
+            if (res.brand && full.toLowerCase().indexOf(res.brand.toLowerCase()) === -1) {
+                full += ' ' + res.brand;
+            }
+            if (res.quantity && full.toLowerCase().indexOf(res.quantity.toLowerCase()) === -1) {
+                full += ' ' + res.quantity;
+            }
+            if (!$('#name').val()) {
+                $('#name').val(full);
+            }
+            $('#internet_image_url').val(res.image_url || '');
+            if (res.image_url) {
+                $('#internet_image_preview').attr('src', res.image_url).show();
+            }
+            $.notify({ message: 'Dados encontrados (' + res.source + '): ' + full + (res.image_url ? ' — a imagem será anexada ao salvar.' : '') }, { type: 'success', timer: 6000 });
+        }).always(function() {
+            $btn.prop('disabled', false);
+        });
+    }
+
+    $('#barcode_web_lookup').on('click', function() { itemWebLookup(true); });
+
+<?php if ($item_info->item_id == NEW_ENTRY && preg_match('/^\d{6,}$/', trim((string) $item_info->item_number))): ?>
+    // New item opened with a barcode already set (e.g. unknown scan from sales): auto-lookup
+    itemWebLookup(false);
+<?php endif; ?>
 </script>

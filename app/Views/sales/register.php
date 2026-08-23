@@ -994,39 +994,6 @@ if (isset($success)) {
             open: function() {
                 $(this).autocomplete('widget').addClass('pos-autocomplete');
             },
-            // Custom dropdown rendering
-            _renderItem: function(ul, item) {
-                if (item.type === 'diversos') {
-                    return $('<li class="pos-ac-diversos"><div><span class="glyphicon glyphicon-plus-sign"></span> DIVERSOS — Preço avulso</div></li>')
-                        .appendTo(ul);
-                }
-                if (item.type === 'category') {
-                    return $('<li class="pos-ac-category"><div><span class="glyphicon glyphicon-tag"></span> ' + posHighlight(item.label, this.term) + ' <span class="pos-ac-hint">categoria</span></div></li>')
-                        .appendTo(ul);
-                }
-                if (item.type === 'supplier') {
-                    return $('<li class="pos-ac-supplier"><div><span class="glyphicon glyphicon-briefcase"></span> ' + posHighlight(item.label, this.term) + ' <span class="pos-ac-hint">fornecedor</span></div></li>')
-                        .appendTo(ul);
-                }
-                // Regular item
-                var nameHtml = posHighlight(item.name || item.label, this.term);
-                var codeHtml = item.item_number ? '<span class="pos-ac-code">' + posHighlight(item.item_number, this.term) + '</span>' : '';
-                var stockHtml = posStockBadge(item.stock_qty, item.stock_status);
-                var priceHtml = '<span class="pos-ac-price">' + posFmtMoney(item.unit_price) + '</span>';
-                var catHtml = item.category ? '<span class="pos-ac-cat">' + posEscapeHtml(item.category) + '</span>' : '';
-                var topHtml = item.is_top ? '<span class="pos-ac-top"><span class="glyphicon glyphicon-fire"></span> MAIS VENDIDO</span>' : '';
-
-                var html = '<div class="pos-ac-row">'
-                    + posItemThumb(item.pic_filename)
-                    + '<div class="pos-ac-info">'
-                    + '<div class="pos-ac-name">' + nameHtml + topHtml + catHtml + '</div>'
-                    + '<div class="pos-ac-meta">' + codeHtml + stockHtml + '</div>'
-                    + '</div>'
-                    + '<div class="pos-ac-right">' + priceHtml + '</div>'
-                    + '</div>';
-
-                return $('<li></li>').data('item.autocomplete', item).append(html).appendTo(ul);
-            },
             select: function(e, ui) {
                 if (ui.item.type === 'diversos') {
                     showDiversosModal();
@@ -1046,6 +1013,41 @@ if (isset($success)) {
                 return false;
             }
         });
+
+        // Custom dropdown rendering — must be attached to the widget INSTANCE
+        // (passing _renderItem as an option is silently ignored by jQuery UI).
+        $('#item').autocomplete('instance')._renderItem = function(ul, item) {
+            if (item.type === 'diversos') {
+                return $('<li class="pos-ac-diversos"><div><span class="glyphicon glyphicon-plus-sign"></span> DIVERSOS — Preço avulso</div></li>')
+                    .appendTo(ul);
+            }
+            if (item.type === 'category') {
+                return $('<li class="pos-ac-category"><div><span class="glyphicon glyphicon-tag"></span> ' + posHighlight(item.label, this.term) + ' <span class="pos-ac-hint">categoria</span></div></li>')
+                    .appendTo(ul);
+            }
+            if (item.type === 'supplier') {
+                return $('<li class="pos-ac-supplier"><div><span class="glyphicon glyphicon-briefcase"></span> ' + posHighlight(item.label, this.term) + ' <span class="pos-ac-hint">fornecedor</span></div></li>')
+                    .appendTo(ul);
+            }
+            // Regular item
+            var nameHtml = posHighlight(item.name || item.label, this.term);
+            var codeHtml = item.item_number ? '<span class="pos-ac-code">' + posHighlight(item.item_number, this.term) + '</span>' : '';
+            var stockHtml = posStockBadge(item.stock_qty, item.stock_status);
+            var priceHtml = '<span class="pos-ac-price">' + posFmtMoney(item.unit_price) + '</span>';
+            var catHtml = item.category ? '<span class="pos-ac-cat">' + posEscapeHtml(item.category) + '</span>' : '';
+            var topHtml = item.is_top ? '<span class="pos-ac-top"><span class="glyphicon glyphicon-fire"></span> MAIS VENDIDO</span>' : '';
+
+            var html = '<div class="pos-ac-row">'
+                + posItemThumb(item.pic_filename)
+                + '<div class="pos-ac-info">'
+                + '<div class="pos-ac-name">' + nameHtml + topHtml + catHtml + '</div>'
+                + '<div class="pos-ac-meta">' + codeHtml + stockHtml + '</div>'
+                + '</div>'
+                + '<div class="pos-ac-right">' + priceHtml + '</div>'
+                + '</div>';
+
+            return $('<li></li>').data('item.autocomplete', item).append(html).appendTo(ul);
+        };
 
         // Enter key
         $('#item').on('keydown', function(e) {
@@ -1079,50 +1081,50 @@ if (isset($success)) {
         });
 
         // Barcode scanner auto-add.
-        // Detection: numeric value >= 6 digits followed by an input silence of ~220 ms.
-        // The burst clock restarts on deletion or pause > 400 ms, so there is no
-        // sticky "manual typing" flag that could get stuck and block scanning.
+        // A scanner burst types every char within ~120 ms of the previous one,
+        // so auto-add only fires when ALL inter-char gaps of the CURRENT field
+        // content are <= 120 ms. Any human pause disqualifies that content until
+        // it is cleared or retyped — no sticky flags, nothing gets stuck.
         var itemScanTimer = null;
-        var scanLastLen = 0;
-        var scanBurstStart = 0;
-        var scanLastInputAt = 0;
+        var scanCharTimes = [];
         function resetScanState() {
             if (itemScanTimer) { clearTimeout(itemScanTimer); itemScanTimer = null; }
-            scanLastLen = 0;
-            scanBurstStart = 0;
-            scanLastInputAt = 0;
+            scanCharTimes = [];
         }
         window.posResetScanState = resetScanState;
 
         $('#item').on('input', function() {
             var now = Date.now();
-            var len = $(this).val().length;
+            var val = $(this).val();
 
             clearTimeout(itemScanTimer);
+            itemScanTimer = null;
 
-            if (len === 0) {
+            if (!val || !/^[0-9]+$/.test(val)) {
                 resetScanState();
                 return;
             }
-            if (len < scanLastLen || (scanLastInputAt && now - scanLastInputAt > 400)) {
-                scanBurstStart = now;
-            }
-            if (!scanBurstStart) {
-                scanBurstStart = now;
-            }
-            scanLastLen = len;
-            scanLastInputAt = now;
 
-            var v = $(this).val().trim();
+            var len = val.length;
+            if (len <= scanCharTimes.length) {
+                // Deletion/paste-replace: rebuild as human-paced (huge fake gaps)
+                scanCharTimes = [];
+                for (var i = 0; i < len; i++) scanCharTimes.push(now + i * 10000);
+            } else {
+                while (scanCharTimes.length < len) scanCharTimes.push(now);
+            }
+
+            var v = val.trim();
             if (/^[0-9]{6,}$/.test(v)) {
                 itemScanTimer = setTimeout(function() {
                     var cur = $('#item').val().trim();
-                    var elapsed = Date.now() - scanBurstStart;
-                    if (cur === v && elapsed <= 1000) {
-                        beep.ok();
-                        posAjaxAdd(v);
+                    if (cur !== v || scanCharTimes.length !== cur.length) return;
+                    for (var i = 1; i < scanCharTimes.length; i++) {
+                        if (scanCharTimes[i] - scanCharTimes[i - 1] > 120) return;
                     }
-                }, 220);
+                    beep.ok();
+                    posAjaxAdd(cur);
+                }, 300);
             }
         });
 

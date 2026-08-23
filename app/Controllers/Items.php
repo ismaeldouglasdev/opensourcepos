@@ -487,9 +487,10 @@ class Items extends Secure_Controller
     }
 
     /**
-     * Look up a product barcode on the internet (Open Food Facts).
+     * Look up a product barcode on free internet databases.
      * GET items/barcodeLookup/{code}
-     * Used by the sales register when a scanned code is not registered yet.
+     * Tries Open Food Facts (food), Open Products Facts (general goods) and
+     * Open Beauty Facts (cosmetics/cleaning) — all share the same v2 API.
      */
     public function getBarcodeLookup(string $barcode): void
     {
@@ -501,9 +502,30 @@ class Items extends Secure_Controller
             return;
         }
 
-        $result = ['found' => false, 'name' => '', 'brand' => '', 'quantity' => '', 'image_url' => '', 'source' => ''];
+        $sources = [
+            ['url' => 'https://world.openfoodfacts.org', 'label' => 'Open Food Facts'],
+            ['url' => 'https://world.openproductsfacts.org', 'label' => 'Open Products Facts'],
+            ['url' => 'https://world.openbeautyfacts.org', 'label' => 'Open Beauty Facts'],
+        ];
 
-        $url = 'https://world.openfoodfacts.org/api/v2/product/' . $barcode . '.json';
+        foreach ($sources as $source) {
+            $result = $this->_lookup_off_family($source['url'] . '/api/v2/product/' . $barcode . '.json', $source['label']);
+            if ($result['found']) {
+                echo json_encode($result);
+                return;
+            }
+        }
+
+        echo json_encode(['found' => false]);
+    }
+
+    /**
+     * Query one OFF-family product API and normalize the response.
+     */
+    private function _lookup_off_family(string $url, string $source_label): array
+    {
+        $result = ['found' => false, 'name' => '', 'brand' => '', 'quantity' => '', 'image_url' => '', 'source' => $source_label];
+
         $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
@@ -516,27 +538,35 @@ class Items extends Secure_Controller
         $error = curl_error($ch);
         curl_close($ch);
 
-        if ($error === '' && is_string($body) && $body !== '') {
-            $json = json_decode($body, true);
-            if (($json['status'] ?? 0) == 1 && !empty($json['product'])) {
-                $product = $json['product'];
-                $name = $product['product_name_pt']
-                    ?? $product['product_name']
-                    ?? $product['generic_name']
-                    ?? '';
-                $name = trim((string) $name);
-                if ($name !== '') {
-                    $result['found'] = true;
-                    $result['name'] = $name;
-                    $result['brand'] = trim((string) ($product['brands'] ?? ''));
-                    $result['quantity'] = trim((string) ($product['quantity'] ?? ''));
-                    $result['image_url'] = trim((string) ($product['image_front_small_url'] ?? ''));
-                    $result['source'] = 'Open Food Facts';
-                }
-            }
+        if ($error !== '' || !is_string($body) || $body === '') {
+            return $result;
         }
 
-        echo json_encode($result);
+        $json = json_decode($body, true);
+        if (($json['status'] ?? 0) != 1 || empty($json['product'])) {
+            return $result;
+        }
+
+        $product = $json['product'];
+        $name = $product['product_name_pt']
+            ?? $product['product_name']
+            ?? $product['generic_name']
+            ?? '';
+        $name = trim((string) $name);
+        if ($name === '') {
+            return $result;
+        }
+
+        $result['found'] = true;
+        $result['name'] = $name;
+        $result['brand'] = trim((string) ($product['brands'] ?? ''));
+        $result['quantity'] = trim((string) ($product['quantity'] ?? ''));
+        $result['image_url'] = trim((string) ($product['image_front_url']
+            ?? $product['image_front_small_url']
+            ?? $product['image_url']
+            ?? ''));
+
+        return $result;
     }
 
     /**
@@ -718,6 +748,42 @@ class Items extends Secure_Controller
             if ($item_id === NEW_ENTRY) {
                 $item_id = $item_data['item_id'];
                 $new_item = true;
+            }
+
+            // Attach the internet image from the barcode lookup (new items only,
+            // and only when no manual file was uploaded in the same save).
+            $internet_image_url = trim((string) ($this->request->getPost('internet_image_url') ?? ''));
+            if ($new_item && empty($upload_data['raw_name'])
+                && $internet_image_url !== ''
+                && filter_var($internet_image_url, FILTER_VALIDATE_URL)
+                && preg_match('#^https://#i', $internet_image_url)) {
+
+                $ch = curl_init($internet_image_url);
+                curl_setopt_array($ch, [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_TIMEOUT => 10,
+                    CURLOPT_CONNECTTIMEOUT => 4,
+                    CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_USERAGENT => 'OSPOS-Elshaday/1.0',
+                ]);
+                $image = curl_exec($ch);
+                curl_close($ch);
+
+                if (is_string($image) && $image !== '') {
+                    $info = @getimagesizefromstring($image);
+                    $ext_map = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/gif' => 'gif'];
+                    $extension = $ext_map[$info['mime'] ?? ''] ?? null;
+
+                    if ($extension !== null) {
+                        $filename = $item_id . '.' . $extension;
+                        if (file_put_contents(FCPATH . 'uploads/item_pics/' . $filename, $image) !== false) {
+                            @chmod(FCPATH . 'uploads/item_pics/' . $filename, 0664);
+                            @chgrp(FCPATH . 'uploads/item_pics/' . $filename, 'www-data');
+                            $pic_data = ['pic_filename' => $filename];
+                            $this->item->save_value($pic_data, $item_id);
+                        }
+                    }
+                }
             }
 
             $use_destination_based_tax = (bool)$this->config['use_destination_based_tax'];
