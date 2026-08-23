@@ -78,31 +78,32 @@ window._tutorialSteps = [
 .checkout-total { font-weight: 600; text-align: center; background: var(--os-primary-light, #e8f8f0); border-radius: var(--os-radius-lg, 12px); margin-bottom: 8px; padding: 8px; font-size: 14px; }
 
 /* Qty stepper */
-.qty-stepper { max-width: 130px; }
+.qty-stepper { max-width: 120px; }
 /* Hardened against accessible.css generic .btn (padding 12x24/min-height 50):
-   scoped #register raises specificity and every property is !important */
-#register .qty-stepper .btn {
-    padding: 2px 6px !important;
-    min-height: 0 !important;
-    height: 34px !important;
-    width: 38px !important;
+   scoped #register td raises specificity and every property is !important.
+   Height 36px matches #register td input.form-control (modern.css). */
+#register td .qty-stepper .btn {
+    padding: 2px 5px !important;
+    min-height: 36px !important;
+    height: 36px !important;
+    width: 34px !important;
     font-size: 18px !important;
     line-height: 1 !important;
     font-weight: 700 !important;
     border-radius: 4px !important;
     box-shadow: none !important;
 }
-#register .qty-stepper .btn:first-child { border-radius: 4px 0 0 4px !important; }
-#register .qty-stepper .btn:last-child { border-radius: 0 4px 4px 0 !important; }
-#register .qty-stepper input {
+#register td .qty-stepper .btn:first-child { border-radius: 4px 0 0 4px !important; }
+#register td .qty-stepper .btn:last-child { border-radius: 0 4px 4px 0 !important; }
+#register td .qty-stepper input {
     text-align: center !important;
     min-width: 0 !important;
-    flex: 0 0 58px !important;
-    width: 58px !important;
-    height: 34px !important;
-    min-height: 0 !important;
-    padding: 2px 4px !important;
-    font-size: 16px !important;
+    flex: 0 1 46px !important;
+    width: 46px !important;
+    min-height: 36px !important;
+    height: 36px !important;
+    padding: 2px 3px !important;
+    font-size: 15px !important;
 }
 
 /* Payment list */
@@ -164,10 +165,10 @@ window._tutorialSteps = [
 .disc-toggle { display: inline-flex; border-radius: 4px; overflow: hidden; border: 1px solid #ccc; cursor: pointer; }
 /* Hardened vs accessible.css generic .btn blow-up */
 .disc-toggle-btn {
-    padding: 6px 9px !important;
+    padding: 6px 8px !important;
     font-size: 13px !important;
-    min-height: 0 !important;
-    height: 34px !important;
+    min-height: 36px !important;
+    height: 36px !important;
     font-weight: 700 !important;
     border: none !important;
     cursor: pointer;
@@ -308,11 +309,11 @@ if (isset($success)) {
     <table class="sales_table_100" id="register">
         <thead>
             <tr>
-                <th style="width: 4%;"><?= lang('Common.delete') ?></th>
-                <th style="width: 6%;"><?= lang(ucfirst($controller_name) . '.item_number') ?></th>
-                <th style="width: 58%;"><?= lang(ucfirst($controller_name) . '.item_name') ?></th>
-                <th style="width: 4%;"><?= lang(ucfirst($controller_name) . '.price') ?></th>
-                <th style="width: 8%;"><?= lang(ucfirst($controller_name) . '.quantity') ?></th>
+                    <th style="width: 4%;"><?= lang('Common.delete') ?></th>
+                    <th style="width: 6%;"><?= lang(ucfirst($controller_name) . '.item_number') ?></th>
+                    <th style="width: 53%;"><?= lang(ucfirst($controller_name) . '.item_name') ?></th>
+                    <th style="width: 5%;"><?= lang(ucfirst($controller_name) . '.price') ?></th>
+                    <th style="width: 12%;"><?= lang(ucfirst($controller_name) . '.quantity') ?></th>
                 <th style="width: 13%;"><?= lang(ucfirst($controller_name) . '.discount') ?></th>
                 <th style="width: 7%;"><?= lang(ucfirst($controller_name) . '.total') ?></th>
             </tr>
@@ -770,20 +771,10 @@ if (isset($success)) {
 
         // Delegated events: cart HTML is replaced by the AJAX add flow, so
         // direct .click()/.change() bindings would die after the first add.
+        // NOTE: delete item/payment trash icons stay NATIVE anchors — they
+        // navigate to deleteItem/deletePayment which redirect back.
         $("#remove_customer_button").click(function() {
             $.post("<?= site_url('sales/removeCustomer'); ?>", redirect);
-        });
-
-        $(document).on('click', '.delete_item_button', function(e) {
-            e.preventDefault();
-            const item_id = $(this).data('item-id');
-            $.post("<?= site_url('sales/deleteItem/'); ?>" + item_id, redirect);
-        });
-
-        $(document).on('click', '.delete_payment_button', function(e) {
-            e.preventDefault();
-            const item_id = $(this).data('payment-id');
-            $.post("<?= site_url('sales/deletePayment/'); ?>" + item_id, redirect);
         });
 
         $(document).on('click', '.qty-plus', function() {
