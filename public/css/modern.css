@@ -2877,6 +2877,21 @@ body {
     white-space: nowrap !important;
 }
 
+/* Top-seller badge (empty search) */
+.pos-ac-top {
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    color: #b45309 !important;
+    background: #fef3c7 !important;
+    padding: 1px 5px !important;
+    border-radius: 3px !important;
+    white-space: nowrap !important;
+}
+
+.pos-ac-top .glyphicon {
+    font-size: 9px !important;
+}
+
 /* Meta line (barcode + stock) */
 .pos-ac-meta {
     display: flex !important;

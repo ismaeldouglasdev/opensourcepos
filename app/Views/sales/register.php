@@ -822,10 +822,25 @@ if (isset($success)) {
             return CURRENCY_SYMBOL + ' ' + s;
         }
 
+        function posEscapeHtml(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         function posHighlight(text, term) {
-            if (!term) return text;
-            var re = new RegExp('(' + term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-            return text.replace(re, '<strong>$1</strong>');
+            var safe = posEscapeHtml(text);
+            var words = String(term || '').trim().split(/\s+/).filter(function(w) { return w.length > 0; });
+            if (!words.length) return safe;
+            var parts = words.map(function(w) {
+                // term is matched against escaped text: neutralize regex metachars
+                return w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            });
+            parts.sort(function(a, b) { return b.length - a.length; });
+            return safe.replace(new RegExp('(' + parts.join('|') + ')', 'gi'), '<strong>$1</strong>');
         }
 
         function posStockBadge(qty, status) {
@@ -904,6 +919,14 @@ if (isset($success)) {
                             data.unshift({ type: 'diversos', label: 'DIVERSOS', value: '1' });
                         }
                         response(data);
+                    },
+                    error: function() {
+                        var now = Date.now();
+                        if (now - (window._posSearchFailAt || 0) > 5000) {
+                            window._posSearchFailAt = now;
+                            $.notify({ message: 'Falha na busca de produtos. Verifique a conexão.' }, { type: 'danger', timer: 1500 });
+                        }
+                        response([]);
                     }
                 });
             },
@@ -932,12 +955,13 @@ if (isset($success)) {
                 var codeHtml = item.item_number ? '<span class="pos-ac-code">' + posHighlight(item.item_number, this.term) + '</span>' : '';
                 var stockHtml = posStockBadge(item.stock_qty, item.stock_status);
                 var priceHtml = '<span class="pos-ac-price">' + posFmtMoney(item.unit_price) + '</span>';
-                var catHtml = item.category ? '<span class="pos-ac-cat">' + item.category + '</span>' : '';
+                var catHtml = item.category ? '<span class="pos-ac-cat">' + posEscapeHtml(item.category) + '</span>' : '';
+                var topHtml = item.is_top ? '<span class="pos-ac-top"><span class="glyphicon glyphicon-fire"></span> MAIS VENDIDO</span>' : '';
 
                 var html = '<div class="pos-ac-row">'
                     + posItemThumb(item.pic_filename)
                     + '<div class="pos-ac-info">'
-                    + '<div class="pos-ac-name">' + nameHtml + catHtml + '</div>'
+                    + '<div class="pos-ac-name">' + nameHtml + topHtml + catHtml + '</div>'
                     + '<div class="pos-ac-meta">' + codeHtml + stockHtml + '</div>'
                     + '</div>'
                     + '<div class="pos-ac-right">' + priceHtml + '</div>'

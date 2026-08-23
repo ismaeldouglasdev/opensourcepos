@@ -1699,11 +1699,8 @@ class Sales extends Secure_Controller
     {
         $this->response->setContentType('application/json');
 
-        $term = $this->request->getGet('term');
-        if (empty($term)) {
-            echo json_encode([]);
-            return;
-        }
+        // Empty term -> model returns top sellers (last 30 days)
+        $term = (string) ($this->request->getGet('term') ?? '');
 
         $location = $this->sale_lib->get_sale_location();
         $results = $this->item->get_search_results_structured($term, (int) $location, 15);

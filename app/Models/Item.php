@@ -737,72 +737,114 @@ class Item extends Model
      */
     public function get_search_results_structured(string $search, int $location_id = 1, int $limit = 15): array
     {
-        $results = [];
-        $seen = [];
+        $search = trim((string) preg_replace('/\s+/', ' ', trim((string) $search)));
+
+        if ($search === '') {
+            return $this->_get_top_sellers_structured($location_id, min($limit, 8));
+        }
+
         $non_kit = [ITEM, ITEM_AMOUNT_ENTRY];
+        $db = $this->db;
 
-        // Query 1: search by NAME (highest relevance)
-        $builder = $this->db->table('items');
-        $builder->select('items.item_id, items.name, items.item_number, items.unit_price, items.pic_filename, items.category');
-        $builder->select('COALESCE(iq.quantity, 0) AS stock_qty', false);
-        $builder->join('item_quantities iq', 'iq.item_id = items.item_id AND iq.location_id = ' . (int) $location_id, 'left');
-        $builder->where('items.deleted', false);
-        $builder->whereIn('items.item_type', $non_kit);
-        $builder->like('items.name', $search);
-        $builder->orderBy('items.name', 'asc');
-        $builder->limit($limit);
+        // Connection charset is utf8mb4, so columns are converted before the
+        // accent/case-insensitive collation is applied to each comparison.
+        $nm = 'CONVERT(items.name USING utf8mb4)';
+        $cd = 'CONVERT(items.item_number USING utf8mb4)';
+        $ds = 'CONVERT(items.description USING utf8mb4)';
+        $collate = ' COLLATE utf8mb4_uca1400_ai_ci';
 
-        foreach ($builder->get()->getResult() as $row) {
-            if (!in_array($row->item_id, $seen, true)) {
-                $seen[] = $row->item_id;
-                $results[] = $this->_format_structured_result($row);
+        $term_quoted = $this->_quote_like_term($search);
+
+        $words = preg_split('/\s+/u', $search) ?: [];
+        $match_clauses = [];
+        $seen_word = [];
+
+        foreach ($words as $word) {
+            if ($word === '' || isset($seen_word[$word])) {
+                continue;
             }
+            $seen_word[$word] = true;
+
+            $w = $this->_quote_like_term($word, true);
+            $match_clauses[] = "($nm LIKE CONCAT('%', $w, '%')$collate"
+                . " OR $cd LIKE CONCAT('%', $w, '%')$collate"
+                . " OR $ds LIKE CONCAT('%', $w, '%')$collate)";
         }
 
-        // Query 2: search by BARCODE / item_number
-        $builder = $this->db->table('items');
-        $builder->select('items.item_id, items.name, items.item_number, items.unit_price, items.pic_filename, items.category');
-        $builder->select('COALESCE(iq.quantity, 0) AS stock_qty', false);
-        $builder->join('item_quantities iq', 'iq.item_id = items.item_id AND iq.location_id = ' . (int) $location_id, 'left');
-        $builder->where('items.deleted', false);
-        $builder->whereIn('items.item_type', $non_kit);
-        $builder->like('items.item_number', $search);
-        $builder->orderBy('items.item_number', 'asc');
-        $builder->limit($limit);
+        $where_match = $match_clauses !== []
+            ? implode(' AND ', $match_clauses)
+            : '1=0';
 
-        foreach ($builder->get()->getResult() as $row) {
-            if (!in_array($row->item_id, $seen, true)) {
-                $seen[] = $row->item_id;
-                $results[] = $this->_format_structured_result($row);
-            }
+        $sold_subquery = 'SELECT si.item_id, SUM(si.quantity_purchased) AS sold_30d'
+            . ' FROM ' . $db->prefixTable('sales_items') . ' si'
+            . ' INNER JOIN ' . $db->prefixTable('sales') . ' s ON s.sale_id = si.sale_id'
+            . ' WHERE s.sale_status = ' . COMPLETED
+            . ' AND s.sale_time >= DATE_SUB(NOW(), INTERVAL 30 DAY)'
+            . ' GROUP BY si.item_id';
+
+        $prio_case = 'CASE'
+            . " WHEN $cd = $term_quoted$collate THEN 100"
+            . " WHEN $nm = $term_quoted$collate THEN 90"
+            . " WHEN $nm LIKE CONCAT($term_quoted, '%')$collate THEN 80"
+            . " WHEN $nm LIKE CONCAT('%', $term_quoted, '%')$collate THEN 70"
+            . " WHEN $cd LIKE CONCAT('%', $term_quoted, '%')$collate THEN 60"
+            . " WHEN $ds LIKE CONCAT('%', $term_quoted, '%')$collate THEN 40"
+            . ' ELSE 20 END';
+
+        $sql = 'SELECT items.item_id, items.name, items.item_number, items.unit_price, items.pic_filename, items.category,'
+            . ' COALESCE(iq.quantity, 0) AS stock_qty,'
+            . ' COALESCE(pop.sold_30d, 0) AS sold_30d,'
+            . " $prio_case AS prio"
+            . ' FROM ' . $db->prefixTable('items') . ' items'
+            . ' LEFT JOIN ' . $db->prefixTable('item_quantities') . ' iq ON iq.item_id = items.item_id AND iq.location_id = ' . (int) $location_id
+            . ' LEFT JOIN (' . $sold_subquery . ') pop ON pop.item_id = items.item_id'
+            . ' WHERE items.deleted = 0'
+            . ' AND items.item_type IN (' . implode(',', $non_kit) . ')'
+            . ' AND (' . $where_match . ')'
+            . ' ORDER BY prio DESC, sold_30d DESC, stock_qty > 0 DESC, items.name ASC'
+            . ' LIMIT ' . (int) $limit;
+
+        $results = [];
+        foreach ($db->query($sql)->getResult() as $row) {
+            $results[] = $this->_format_structured_result($row);
         }
 
-        // Query 3: search by DESCRIPTION (lower relevance)
-        $builder = $this->db->table('items');
-        $builder->select('items.item_id, items.name, items.item_number, items.unit_price, items.pic_filename, items.category');
-        $builder->select('COALESCE(iq.quantity, 0) AS stock_qty', false);
-        $builder->join('item_quantities iq', 'iq.item_id = items.item_id AND iq.location_id = ' . (int) $location_id, 'left');
-        $builder->where('items.deleted', false);
-        $builder->whereIn('items.item_type', $non_kit);
-        $builder->like('items.description', $search);
-        $builder->orderBy('items.name', 'asc');
-        $builder->limit($limit);
-
-        foreach ($builder->get()->getResult() as $row) {
-            if (!in_array($row->item_id, $seen, true)) {
-                $seen[] = $row->item_id;
-                $results[] = $this->_format_structured_result($row);
-            }
+        if (mb_strlen($search) >= 2) {
+            $results = array_merge($results, $this->_get_category_supplier_suggestions($search));
         }
 
-        // Categories (selecting one refines the search)
+        return $results;
+    }
+
+    /**
+     * Quote a search term for safe interpolation into a LIKE comparison,
+     * escaping SQL quotes/backslashes plus LIKE wildcards (% and _) when
+     * $wildcards is true. Wildcards are escaped BEFORE SQL quoting.
+     */
+    private function _quote_like_term(string $term, bool $wildcards = false): string
+    {
+        if ($wildcards) {
+            $term = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term);
+        }
+
+        return "'" . str_replace(["'", '"'], ["\\'", '\"'], $term) . "'";
+    }
+
+    /**
+     * Category / supplier refinement suggestions (lower relevance).
+     */
+    private function _get_category_supplier_suggestions(string $search): array
+    {
+        $results = [];
+
         $builder = $this->db->table('items');
         $builder->select('category');
         $builder->where('deleted', false);
+        $builder->where('category !=', '');
         $builder->distinct();
         $builder->like('category', $search);
         $builder->orderBy('category', 'asc');
-        $builder->limit(5);
+        $builder->limit(3);
 
         foreach ($builder->get()->getResult() as $row) {
             $results[] = [
@@ -812,14 +854,13 @@ class Item extends Model
             ];
         }
 
-        // Suppliers
         $builder = $this->db->table('suppliers');
         $builder->select('company_name');
         $builder->where('deleted', false);
-        $builder->like('company_name', $search);
         $builder->distinct();
+        $builder->like('company_name', $search);
         $builder->orderBy('company_name', 'asc');
-        $builder->limit(5);
+        $builder->limit(3);
 
         foreach ($builder->get()->getResult() as $row) {
             $results[] = [
@@ -833,9 +874,44 @@ class Item extends Model
     }
 
     /**
+     * Best-selling completed-sale items over the last 30 days, shown when
+     * the POS search field is opened without typing.
+     */
+    private function _get_top_sellers_structured(int $location_id, int $limit = 8): array
+    {
+        $non_kit = [ITEM, ITEM_AMOUNT_ENTRY];
+        $db = $this->db;
+
+        $sold_subquery = 'SELECT si.item_id, SUM(si.quantity_purchased) AS sold_30d'
+            . ' FROM ' . $db->prefixTable('sales_items') . ' si'
+            . ' INNER JOIN ' . $db->prefixTable('sales') . ' s ON s.sale_id = si.sale_id'
+            . ' WHERE s.sale_status = ' . COMPLETED
+            . ' AND s.sale_time >= DATE_SUB(NOW(), INTERVAL 30 DAY)'
+            . ' GROUP BY si.item_id';
+
+        $sql = 'SELECT items.item_id, items.name, items.item_number, items.unit_price, items.pic_filename, items.category,'
+            . ' COALESCE(iq.quantity, 0) AS stock_qty,'
+            . ' COALESCE(pop.sold_30d, 0) AS sold_30d'
+            . ' FROM ' . $db->prefixTable('items') . ' items'
+            . ' LEFT JOIN ' . $db->prefixTable('item_quantities') . ' iq ON iq.item_id = items.item_id AND iq.location_id = ' . (int) $location_id
+            . ' INNER JOIN (' . $sold_subquery . ') pop ON pop.item_id = items.item_id'
+            . ' WHERE items.deleted = 0'
+            . ' AND items.item_type IN (' . implode(',', $non_kit) . ')'
+            . ' ORDER BY sold_30d DESC, items.name ASC'
+            . ' LIMIT ' . (int) $limit;
+
+        $results = [];
+        foreach ($db->query($sql)->getResult() as $row) {
+            $results[] = $this->_format_structured_result($row, true);
+        }
+
+        return $results;
+    }
+
+    /**
      * Format a single structured search result for the POS autocomplete.
      */
-    private function _format_structured_result(object $row): array
+    private function _format_structured_result(object $row, bool $is_top = false): array
     {
         $stock = (int) ($row->stock_qty ?? 0);
         if ($stock > 0) {
@@ -857,6 +933,8 @@ class Item extends Model
             'stock_qty' => $stock,
             'stock_status' => $stock_status,
             'category' => $row->category ?? '',
+            'sold_30d' => (int) ($row->sold_30d ?? 0),
+            'is_top' => $is_top,
         ];
     }
 

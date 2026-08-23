@@ -69,8 +69,20 @@ class ThermalPrinter
             return true;
 
         } catch (\Exception $e) {
+            $msg = $e->getMessage();
+            $device = $this->config['escpos_device'] ?? '/dev/usb/lp0';
+
+            if (str_contains($msg, 'No such file or directory')) {
+                $msg = 'impressora não encontrada em ' . $device
+                    . '. Verifique se ela está LIGADA e o cabo USB firme nos dois lados, depois tente novamente.';
+            } elseif (str_contains($msg, 'Permission denied')) {
+                $msg = 'sem permissão de acesso em ' . $device . '. Chame o suporte.';
+            }
+
+            log_message('error', 'ThermalPrinter connect failed: ' . $msg);
+
             throw new \RuntimeException(
-                'Não foi possível conectar à impressora "' . $printerName . '": ' . $e->getMessage()
+                'Não foi possível conectar à impressora "' . $printerName . '": ' . $msg
             );
         }
     }
