@@ -938,19 +938,27 @@ if (isset($success)) {
                     }
                     if (res.cart_html !== undefined) {
                         $('#cart_contents').html(res.cart_html);
-                        // Update totals section
+                        // Totals table exists since page load
                         var $totals = $('#sale_totals');
-                        if (res.totals_html) $totals.html(res.totals_html);
-                        // Update payment section
+                        if ($totals.length && res.totals_html !== undefined) $totals.html(res.totals_html);
+
+                        // When the cart goes from empty to non-empty, the
+                        // payments table and buttons container don't exist yet:
+                        // create them right after the totals table.
                         var $pay = $('#payment_totals');
-                        if (res.payments_html) {
-                            if ($pay.length) $pay.html(res.payments_html);
-                            else $pay.closest('.panel-body').find('#payment_totals').html(res.payments_html);
+                        if (!$pay.length) {
+                            $pay = $('<table class="sales_table_100" id="payment_totals">');
+                            $('#sale_totals').after($pay);
                         }
-                        // Update buttons
-                        if (res.buttons_html) {
-                            $('#sale_buttons').html(res.buttons_html);
+                        if (res.payments_html) $pay.html(res.payments_html);
+
+                        var $btns = $('#sale_buttons');
+                        if (!$btns.length) {
+                            $btns = $('<div id="sale_buttons">');
+                            $('#payment_totals').after($btns);
                         }
+                        if (res.buttons_html) $btns.html(res.buttons_html);
+
                         // Re-init qty steppers and discount toggles for new rows
                         if (typeof initQtySteppers === 'function') initQtySteppers();
                         if (typeof initDiscountToggles === 'function') initDiscountToggles();
