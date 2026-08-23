@@ -550,7 +550,8 @@ if (isset($success)) {
                 </tr>
             </table>
 
-            <div style="margin: 6px 0;">
+            <div id="sale_buttons">
+                <div style="margin: 6px 0;">
     <?php if (!empty($editing_sale_id)): ?>
     <button type="button" class="btn btn-warning btn-lg btn-block" id="btn_finalizar_venda" onclick="openCheckoutModal()">
         <span class="glyphicon glyphicon-pencil"></span> ATUALIZAR VENDA #<?= $editing_sale_id ?>
@@ -567,6 +568,7 @@ if (isset($success)) {
         <span class="glyphicon glyphicon-print"></span> Reimprimir Última Venda
     </button>
 </div>
+            </div>
 
 <div id="payment_details">
                 <?php if ($payments_cover_total) { // Show Complete sale button instead of Add Payment if there is no amount due left ?>
@@ -947,7 +949,7 @@ if (isset($success)) {
                         }
                         // Update buttons
                         if (res.buttons_html) {
-                            $('div:has(> #btn_finalizar_venda)').first().html(res.buttons_html);
+                            $('#sale_buttons').html(res.buttons_html);
                         }
                         // Re-init qty steppers and discount toggles for new rows
                         if (typeof initQtySteppers === 'function') initQtySteppers();
@@ -1040,7 +1042,7 @@ if (isset($success)) {
             var html = '<div class="pos-ac-row">'
                 + posItemThumb(item.pic_filename)
                 + '<div class="pos-ac-info">'
-                + '<div class="pos-ac-name">' + nameHtml + topHtml + catHtml + '</div>'
+                + '<div class="pos-ac-name"><span class="pos-ac-name-text">' + nameHtml + '</span>' + topHtml + catHtml + '</div>'
                 + '<div class="pos-ac-meta">' + codeHtml + stockHtml + '</div>'
                 + '</div>'
                 + '<div class="pos-ac-right">' + priceHtml + '</div>'

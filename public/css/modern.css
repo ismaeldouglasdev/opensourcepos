@@ -2857,12 +2857,18 @@ body {
     font-weight: 700 !important;
     font-size: 16px !important;
     color: var(--os-text) !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
     display: flex !important;
     align-items: center !important;
     gap: 8px !important;
+}
+
+/* Highlighted name text stays as ONE flex item so <strong> splits never
+   get separated by the container's gap */
+.pos-autocomplete .pos-ac-name-text {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
 }
 
 .pos-autocomplete .pos-ac-name strong {

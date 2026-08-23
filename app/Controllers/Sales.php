@@ -1799,33 +1799,44 @@ class Sales extends Secure_Controller
         echo view('sales/register', $this->_build_reload_data($data));
         $full_html = ob_get_clean();
 
-        // Extract cart tbody
-        preg_match('/<tbody id="cart_contents">(.*)<\/tbody>/s', $full_html, $cart_match);
-        $cart_html = $cart_match[1] ?? '';
-
-        // Extract sale totals
-        preg_match('/<table class="sales_table_100" id="sale_totals">(.*)<\/table>/s', $full_html, $totals_match);
-        $totals_html = $totals_match[1] ?? '';
-
-        // Extract payment totals (may not exist if cart is empty)
-        $payments_html = '';
-        if (preg_match('/<table class="sales_table_100" id="payment_totals">(.*)<\/table>/s', $full_html, $pay_match)) {
-            $payments_html = $pay_match[1];
-        }
-
-        // Extract buttons area
-        $buttons_html = '';
-        if (preg_match('/<div style="margin: 6px 0;">(.*)<div style="margin: 6px 0; display: flex;/s', $full_html, $btn_match)) {
-            $buttons_html = $btn_match[1];
-        }
+        // Extract stable-ID sections via DOM (regex extraction broke whenever
+        // the markup shifted and captured the wrong panel)
+        $data['cart_html'] = $this->_extract_fragment($full_html, 'cart_contents');
+        $data['totals_html'] = $this->_extract_fragment($full_html, 'sale_totals');
+        $data['payments_html'] = $this->_extract_fragment($full_html, 'payment_totals');
+        $data['buttons_html'] = $this->_extract_fragment($full_html, 'sale_buttons');
 
         $data['success'] = $added;
-        $data['cart_html'] = $cart_html;
-        $data['totals_html'] = $totals_html;
-        $data['payments_html'] = $payments_html;
-        $data['buttons_html'] = $buttons_html;
 
         echo json_encode($data);
+    }
+
+    /**
+     * Return the innerHTML of the element with the given ID, parsed from
+     * the full rendered page (used by addAjax to refresh cart fragments).
+     */
+    private function _extract_fragment(string $html, string $id): string
+    {
+        if (!class_exists(\DOMDocument::class)) {
+            return '';
+        }
+
+        $doc = new \DOMDocument();
+        libxml_use_internal_errors(true);
+        $doc->loadHTML('<?xml encoding="utf-8" ?>' . $html);
+        libxml_clear_errors();
+
+        $node = $doc->getElementById($id);
+        if ($node === null) {
+            return '';
+        }
+
+        $inner = '';
+        foreach ($node->childNodes as $child) {
+            $inner .= $doc->saveHTML($child);
+        }
+
+        return trim($inner);
     }
 
     /**
