@@ -313,6 +313,12 @@ class Items extends Secure_Controller
             $item_info->qty_per_pack = 1;
             $item_info->pack_name = lang('Items.default_pack_name');
 
+            // Prefill the barcode when the dialog is opened from an unknown scan (sales register)
+            $barcode = trim((string) ($this->request->getGet('item_number') ?? ''));
+            if (preg_match('/^\d{6,32}$/', $barcode)) {
+                $item_info->item_number = $barcode;
+            }
+
             if ($use_destination_based_tax) {
                 $item_info->tax_category_id = $this->config['default_tax_category'];
             }
@@ -478,6 +484,59 @@ class Items extends Secure_Controller
         $data['items'] = $result;
 
         echo view('barcodes/barcode_sheet', $data);
+    }
+
+    /**
+     * Look up a product barcode on the internet (Open Food Facts).
+     * GET items/barcodeLookup/{code}
+     * Used by the sales register when a scanned code is not registered yet.
+     */
+    public function getBarcodeLookup(string $barcode): void
+    {
+        $this->response->setContentType('application/json');
+
+        $barcode = trim($barcode);
+        if (!preg_match('/^\d{6,14}$/', $barcode)) {
+            echo json_encode(['found' => false]);
+            return;
+        }
+
+        $result = ['found' => false, 'name' => '', 'brand' => '', 'quantity' => '', 'image_url' => '', 'source' => ''];
+
+        $url = 'https://world.openfoodfacts.org/api/v2/product/' . $barcode . '.json';
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 6,
+            CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_USERAGENT => 'OSPOS-Elshaday/1.0',
+            CURLOPT_FOLLOWLOCATION => true,
+        ]);
+        $body = curl_exec($ch);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        if ($error === '' && is_string($body) && $body !== '') {
+            $json = json_decode($body, true);
+            if (($json['status'] ?? 0) == 1 && !empty($json['product'])) {
+                $product = $json['product'];
+                $name = $product['product_name_pt']
+                    ?? $product['product_name']
+                    ?? $product['generic_name']
+                    ?? '';
+                $name = trim((string) $name);
+                if ($name !== '') {
+                    $result['found'] = true;
+                    $result['name'] = $name;
+                    $result['brand'] = trim((string) ($product['brands'] ?? ''));
+                    $result['quantity'] = trim((string) ($product['quantity'] ?? ''));
+                    $result['image_url'] = trim((string) ($product['image_front_small_url'] ?? ''));
+                    $result['source'] = 'Open Food Facts';
+                }
+            }
+        }
+
+        echo json_encode($result);
     }
 
     /**

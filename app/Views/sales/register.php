@@ -862,6 +862,53 @@ if (isset($success)) {
 
         // AJAX submit — avoids full page reload
         var posAjaxPending = false;
+
+        // Open the new-item dialog pre-filled with an unknown barcode and
+        // try to fill the name/brand from an internet lookup (Open Food Facts).
+        function openNewItemWithBarcode(barcode) {
+            $.notify({ message: 'Código não cadastrado. Abrindo cadastro do produto...' }, { type: 'warning', timer: 2500 });
+            var $link = $('<a>').addClass('modal-dlg').attr({
+                'data-href': '<?= esc("items/view") ?>?item_number=' + encodeURIComponent(barcode),
+                'data-btn-new': 'Novo',
+                'data-btn-submit': 'Enviar',
+                'title': 'Novo produto'
+            }).hide().appendTo('body');
+            $link[0].click();
+            setTimeout(function() { $link.remove(); }, 1500);
+
+            var tries = 0;
+            var timer = setInterval(function() {
+                tries++;
+                var $field = $('.modal-body input[name="item_number"]').filter(':visible').last();
+                if ($field.length && $field.val() === barcode) {
+                    clearInterval(timer);
+                    fillItemFromLookup(barcode);
+                } else if (tries > 40) {
+                    clearInterval(timer);
+                }
+            }, 120);
+        }
+
+        function fillItemFromLookup(code) {
+            $.getJSON('<?= esc("items/barcodeLookup") ?>/' + code, function(res) {
+                if (!res || !res.found || !res.name) {
+                    $.notify({ message: 'Produto não encontrado na internet. Complete o cadastro manualmente.' }, { type: 'info', timer: 3500 });
+                    return;
+                }
+                var full = res.name;
+                if (res.brand && full.toLowerCase().indexOf(res.brand.toLowerCase()) === -1) {
+                    full += ' ' + res.brand;
+                }
+                if (res.quantity && full.toLowerCase().indexOf(res.quantity.toLowerCase()) === -1) {
+                    full += ' ' + res.quantity;
+                }
+                var $name = $('.modal-body input[name="name"]').filter(':visible').last();
+                if ($name.length && !$name.val()) {
+                    $name.val(full).trigger('input');
+                }
+                $.notify({ message: 'Produto encontrado (' + res.source + '): "' + full + '". Confira os dados e salve.' }, { type: 'success', timer: 6000 });
+            });
+        }
         function posAjaxAdd(itemId) {
             if (posAjaxPending) return;
             posAjaxPending = true;
@@ -872,6 +919,15 @@ if (isset($success)) {
                 data: { item: itemId },
                 success: function(res) {
                     posAjaxPending = false;
+                    if (res.error && res.unknown_code) {
+                        // Scanned a code that is not registered: open the new-item
+                        // dialog pre-filled and try to fetch product info online.
+                        $('#item').autocomplete('close');
+                        $('#item').val('').focus();
+                        if (typeof posResetScanState === 'function') posResetScanState();
+                        openNewItemWithBarcode(res.unknown_code);
+                        return;
+                    }
                     if (res.error) {
                         $.notify({ message: res.error }, { type: 'danger', timer: 2000 });
                     }

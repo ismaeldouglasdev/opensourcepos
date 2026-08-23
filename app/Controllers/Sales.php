@@ -1727,6 +1727,7 @@ class Sales extends Secure_Controller
             }
         }
 
+        $raw_item = (string) $this->request->getPost('item', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $item_id = $this->request->getPost('item', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $this->token_lib->parse_barcode($quantity, $price, $item_id);
         $mode = $this->sale_lib->get_mode();
@@ -1771,6 +1772,15 @@ class Sales extends Secure_Controller
                 $data['error'] = lang('Sales.unable_to_add_item');
             } elseif (!$this->sale_lib->add_item($item_id, $item_location, $quantity, $discount, $discount_type, PRICE_MODE_STANDARD, null, null, $price)) {
                 $data['error'] = lang('Sales.item_not_found');
+                // Scanned/digit-only code with no registered item: client opens
+                // the new-item dialog pre-filled so the product can be created.
+                // Check the raw posted value too, since parse_barcode() may
+                // have rewritten item_id according to the configured format.
+                if (preg_match('/^\d{6,}$/', (string) $item_id)) {
+                    $data['unknown_code'] = $item_id;
+                } elseif (preg_match('/^\d{6,}$/', $raw_item)) {
+                    $data['unknown_code'] = $raw_item;
+                }
             } else {
                 $added = true;
                 $warning = $this->sale_lib->out_of_stock($item_id, $item_location);

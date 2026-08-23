@@ -112,6 +112,7 @@ $routes->get('items/search', 'Items::getSearch');
 $routes->get('items/row/(:segment)', 'Items::getRow/$1');
 $routes->get('items/view', 'Items::getView');
 $routes->get('items/view/(:num)', 'Items::getView/$1');
+$routes->get('items/barcodeLookup/(:num)', 'Items::getBarcodeLookup/$1');
 $routes->get('items/bulkEdit', 'Items::getBulkEdit');
 $routes->get('items/suggest', 'Items::getSuggest');
 $routes->get('items/suggestLowSell', 'Items::getSuggestLowSell');
