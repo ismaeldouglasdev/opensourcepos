@@ -901,8 +901,10 @@ class Item extends Model
             . ' LIMIT ' . (int) $limit;
 
         $results = [];
+        $position = 0;
         foreach ($db->query($sql)->getResult() as $row) {
-            $results[] = $this->_format_structured_result($row, true);
+            $results[] = $this->_format_structured_result($row, $position < 3);
+            $position++;
         }
 
         return $results;

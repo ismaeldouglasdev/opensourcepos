@@ -552,15 +552,9 @@ if (isset($success)) {
 
             <div id="sale_buttons">
                 <div style="margin: 6px 0;">
-    <?php if (!empty($editing_sale_id)): ?>
-    <button type="button" class="btn btn-warning btn-lg btn-block" id="btn_finalizar_venda" onclick="openCheckoutModal()">
-        <span class="glyphicon glyphicon-pencil"></span> ATUALIZAR VENDA #<?= $editing_sale_id ?>
-    </button>
-<?php else: ?>
     <button type="button" class="btn btn-success btn-lg btn-block" id="btn_finalizar_venda" onclick="openCheckoutModal()">
         <span class="glyphicon glyphicon-shopping-cart"></span> FINALIZAR VENDA (F2)
     </button>
-<?php endif; ?>
 </div>
 
 <div style="margin: 6px 0; display: flex; gap: 8px;">
@@ -738,21 +732,23 @@ if (isset($success)) {
             window.location.href = "<?= site_url('sales'); ?>";
         };
 
+        // Delegated events: cart HTML is replaced by the AJAX add flow, so
+        // direct .click()/.change() bindings would die after the first add.
         $("#remove_customer_button").click(function() {
             $.post("<?= site_url('sales/removeCustomer'); ?>", redirect);
         });
 
-        $(".delete_item_button").click(function() {
+        $(document).on('click', '.delete_item_button', function() {
             const item_id = $(this).data('item-id');
             $.post("<?= site_url('sales/deleteItem/'); ?>" + item_id, redirect);
         });
 
-        $(".delete_payment_button").click(function() {
+        $(document).on('click', '.delete_payment_button', function() {
             const item_id = $(this).data('payment-id');
             $.post("<?= site_url('sales/deletePayment/'); ?>" + item_id, redirect);
         });
 
-        $(".qty-plus").click(function() {
+        $(document).on('click', '.qty-plus', function() {
             const $group = $(this).closest('.qty-stepper');
             const $input = $group.find("input[name='quantity']");
             let v = parseFloat(($input.val() || '0').replace(',', '.'));
@@ -761,7 +757,7 @@ if (isset($success)) {
             $group.closest('form').submit();
         });
 
-        $(".qty-minus").click(function() {
+        $(document).on('click', '.qty-minus', function() {
             const $group = $(this).closest('.qty-stepper');
             const $input = $group.find("input[name='quantity']");
             let v = parseFloat(($input.val() || '0').replace(',', '.'));
@@ -770,7 +766,7 @@ if (isset($success)) {
             $group.closest('form').submit();
         });
 
-        $("input[name='item_number']").change(function() {
+        $(document).on('change', "#cart_contents input[name='item_number']", function() {
             var item_id = $(this).parents('tr').find("input[name='item_id']").val();
             var item_number = $(this).val();
             $.ajax({
@@ -784,7 +780,7 @@ if (isset($success)) {
             });
         });
 
-        $("input[name='name']").change(function() {
+        $(document).on('change', "#cart_contents input[name='name']", function() {
             var item_id = $(this).parents('tr').find("input[name='item_id']").val();
             var item_name = $(this).val();
             $.ajax({
@@ -798,7 +794,7 @@ if (isset($success)) {
             });
         });
 
-        $("input[name='item_description']").change(function() {
+        $(document).on('change', "#cart_contents input[name='item_description']", function() {
             var item_id = $(this).parents('tr').find("input[name='item_id']").val();
             var item_description = $(this).val();
             $.ajax({
@@ -924,6 +920,7 @@ if (isset($success)) {
                     if (res.error && res.unknown_code) {
                         // Scanned a code that is not registered: open the new-item
                         // dialog pre-filled and try to fetch product info online.
+                        beep.error();
                         $('#item').autocomplete('close');
                         $('#item').val('').focus();
                         if (typeof posResetScanState === 'function') posResetScanState();
@@ -958,10 +955,6 @@ if (isset($success)) {
                             $('#payment_totals').after($btns);
                         }
                         if (res.buttons_html) $btns.html(res.buttons_html);
-
-                        // Re-init qty steppers and discount toggles for new rows
-                        if (typeof initQtySteppers === 'function') initQtySteppers();
-                        if (typeof initDiscountToggles === 'function') initDiscountToggles();
                     }
                     // Suppress any late autocomplete response from reopening
                     // the menu right after we cleared the field.
@@ -1063,9 +1056,11 @@ if (isset($success)) {
 
         // After an item is added the field is cleared and kept focused; a late
         // itemSearch response can reopen the menu — force-close during the
-        // suppression window set by posAjaxAdd.
+        // suppression window, but ONLY while the field is still empty so that
+        // typing right after an add is never blocked.
         $('#item').on('autocompleteopen', function() {
-            if (Date.now() < (window._posSuppressMenuUntil || 0)) {
+            var suppressed = Date.now() < (window._posSuppressMenuUntil || 0);
+            if (suppressed && $(this).val().trim() === '') {
                 $(this).autocomplete('close');
             }
         });
