@@ -2371,11 +2371,21 @@ td.text-right {
     font-variant-numeric: tabular-nums !important;
 }
 
-/* Register table monospace */
+/* Register table: fixed layout — column widths in the thead are LAW,
+   cells clip instead of pushing neighbors (no more overlapping) */
+#register {
+    table-layout: fixed !important;
+}
+
+#register td {
+    overflow: hidden !important;
+}
+
+/* Register table monospace (price/qty/discount/total) */
 #register td:nth-child(3),
 #register td:nth-child(4),
 #register td:nth-child(5),
-#register td:nth-child(7) {
+#register td:nth-child(6) {
     font-family: var(--os-font-mono) !important;
     font-variant-numeric: tabular-nums !important;
 }

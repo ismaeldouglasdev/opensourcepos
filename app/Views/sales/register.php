@@ -78,16 +78,17 @@ window._tutorialSteps = [
 .checkout-total { font-weight: 600; text-align: center; background: var(--os-primary-light, #e8f8f0); border-radius: var(--os-radius-lg, 12px); margin-bottom: 8px; padding: 8px; font-size: 14px; }
 
 /* Qty stepper */
-.qty-stepper { max-width: 120px; }
+.qty-stepper { max-width: 112px; }
 /* Hardened against accessible.css generic .btn (padding 12x24/min-height 50):
    scoped #register td raises specificity and every property is !important.
-   Height 36px matches #register td input.form-control (modern.css). */
+   Height 36px matches #register td input.form-control (modern.css).
+   Total stepper = 32+46+32 + borders ≈ 114px, fits the 124px column. */
 #register td .qty-stepper .btn {
-    padding: 2px 5px !important;
+    padding: 2px 4px !important;
     min-height: 36px !important;
     height: 36px !important;
-    width: 34px !important;
-    font-size: 18px !important;
+    width: 32px !important;
+    font-size: 17px !important;
     line-height: 1 !important;
     font-weight: 700 !important;
     border-radius: 4px !important;
@@ -309,20 +310,19 @@ if (isset($success)) {
     <table class="sales_table_100" id="register">
         <thead>
             <tr>
-                    <th style="width: 4%;"><?= lang('Common.delete') ?></th>
-                    <th style="width: 6%;"><?= lang(ucfirst($controller_name) . '.item_number') ?></th>
-                    <th style="width: 53%;"><?= lang(ucfirst($controller_name) . '.item_name') ?></th>
-                    <th style="width: 5%;"><?= lang(ucfirst($controller_name) . '.price') ?></th>
-                    <th style="width: 12%;"><?= lang(ucfirst($controller_name) . '.quantity') ?></th>
-                <th style="width: 13%;"><?= lang(ucfirst($controller_name) . '.discount') ?></th>
-                <th style="width: 7%;"><?= lang(ucfirst($controller_name) . '.total') ?></th>
+                    <th style="width: 34px;">&nbsp;</th>
+                    <th><?= lang(ucfirst($controller_name) . '.item_name') ?></th>
+                    <th style="width: 78px;"><?= lang(ucfirst($controller_name) . '.price') ?></th>
+                    <th style="width: 124px;"><?= lang(ucfirst($controller_name) . '.quantity') ?></th>
+                <th style="width: 140px;"><?= lang(ucfirst($controller_name) . '.discount') ?></th>
+                <th style="width: 74px;"><?= lang(ucfirst($controller_name) . '.total') ?></th>
             </tr>
         </thead>
 
         <tbody id="cart_contents">
             <?php if (count($cart) == 0) { ?>
                 <tr>
-                    <td colspan="7">
+                    <td colspan="6">
                         <div class="alert alert-dismissible alert-info"><?= lang(ucfirst($controller_name) . '.no_items_in_cart') ?></div>
                     </td>
                 </tr>
@@ -346,12 +346,13 @@ if (isset($success)) {
                                 ?>
                             </td>
                             <?php if ($item['item_type'] == ITEM_TEMP) { ?>
-                                <td><?= form_input(['name' => 'item_number', 'id' => 'item_number', 'class' => 'form-control input-sm', 'value' => $item['item_number'], 'tabindex' => ++$tabindex]) ?></td>
-                                <td style="align: center;">
-                                    <?= form_input(['name' => 'name', 'id' => 'name', 'class' => 'form-control input-sm', 'value' => $item['name'], 'tabindex' => ++$tabindex]) ?>
+                                <td>
+                                    <?= form_input(['name' => 'item_number', 'id' => 'item_number', 'class' => 'form-control input-sm', 'value' => $item['item_number'], 'tabindex' => ++$tabindex, 'placeholder' => lang('Items.item_number')]) ?>
+                                    <div style="height:4px"></div>
+                                    <?= form_input(['name' => 'name', 'id' => 'name', 'class' => 'form-control input-sm', 'value' => $item['name'], 'tabindex' => ++$tabindex, 'placeholder' => lang('Items.name')]) ?>
                                 </td>
                             <?php } else { ?>
-                                <td colspan="2" class="cart-product-cell" style="align: center;">
+                                <td class="cart-product-cell">
                                     <?php
                                     // Foto do produto (grande, em cima; clique abre o modal global)
                                     $item_pic = '';
@@ -449,7 +450,7 @@ if (isset($success)) {
                         <?php if ($item['item_type'] == ITEM_TEMP) { ?>
                         <tr>
                             <td><?= form_input(['type' => 'hidden', 'name' => 'item_id', 'value' => $item['item_id']]) ?></td>
-                            <td style="align: center;" colspan="5">
+                            <td style="text-align: left;" colspan="4">
                                 <?= form_input(['name' => 'item_description', 'id' => 'item_description', 'class' => 'form-control input-sm', 'value' => $item['description'], 'tabindex' => ++$tabindex]) ?>
                             </td>
                             <td> </td>
@@ -460,7 +461,7 @@ if (isset($success)) {
                             <td style="color: #2F4F4F;">
                                 <?= lang(ucfirst($controller_name) . '.serial') ?>
                             </td>
-                            <td colspan="5" style="text-align: left;">
+                            <td colspan="4" style="text-align: left;">
                                 <?= form_input(['name' => 'serialnumber', 'class' => 'form-control input-sm', 'value' => $item['serialnumber'], 'onClick' => 'this.select();']) ?>
                             </td>
                         </tr>
