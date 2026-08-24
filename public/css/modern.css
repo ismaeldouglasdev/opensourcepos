@@ -2841,18 +2841,11 @@ body {
 .pos-autocomplete .ui-state-active,
 .pos-autocomplete .ui-state-hover,
 .pos-autocomplete .ui-state-focus {
-    background: var(--os-primary) !important;
-    color: #fff !important;
+    background: #C0FFF0 !important; /* menta cristal — pedido do usuário */
+    color: var(--os-text) !important;
     border: none !important;
     border-radius: var(--os-radius) !important;
     margin: 1px 2px !important;
-}
-
-/* Hover bem visível: todo texto interno vira branco sobre o verde sólido */
-.pos-autocomplete .ui-state-active *,
-.pos-autocomplete .ui-state-hover *,
-.pos-autocomplete .ui-state-focus * {
-    color: #fff !important;
 }
 
 /* --- Item row layout --- */
