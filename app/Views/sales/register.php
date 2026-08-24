@@ -88,12 +88,15 @@ window._tutorialSteps = [
     min-height: 36px !important;
     height: 36px !important;
     width: 32px !important;
+    flex: 0 0 32px !important;
     font-size: 17px !important;
     line-height: 1 !important;
     font-weight: 700 !important;
     border-radius: 4px !important;
     box-shadow: none !important;
 }
+/* BS3 sets .input-group-btn { width: 0% } which collapses under display:flex */
+#register td .qty-stepper .input-group-btn { flex: 0 0 auto !important; width: auto !important; }
 #register td .qty-stepper .btn:first-child { border-radius: 4px 0 0 4px !important; }
 #register td .qty-stepper .btn:last-child { border-radius: 0 4px 4px 0 !important; }
 #register td .qty-stepper input {
@@ -315,7 +318,7 @@ if (isset($success)) {
                     <th style="width: 78px;"><?= lang(ucfirst($controller_name) . '.price') ?></th>
                     <th style="width: 124px;"><?= lang(ucfirst($controller_name) . '.quantity') ?></th>
                 <th style="width: 140px;"><?= lang(ucfirst($controller_name) . '.discount') ?></th>
-                <th style="width: 74px;"><?= lang(ucfirst($controller_name) . '.total') ?></th>
+                <th style="width: 90px;"><?= lang(ucfirst($controller_name) . '.total') ?></th>
             </tr>
         </thead>
 
@@ -547,9 +550,6 @@ if (isset($success)) {
 
                     <button class="btn btn-info btn-sm modal-dlg" data-btn-submit="<?= lang('Common.submit') ?>" data-href="<?= "customers/view" ?>" title="<?= lang(ucfirst($controller_name) . ".new_customer") ?>">
                         <span class="glyphicon glyphicon-user">&nbsp;</span><?= lang(ucfirst($controller_name) . ".new_customer") ?>
-                    </button>
-                    <button class="btn btn-default btn-sm modal-dlg" id="show_keyboard_help" data-href="<?= esc("$controller_name/salesKeyboardHelp") ?>" title="<?= lang(ucfirst($controller_name) . '.key_title') ?>">
-                        <span class="glyphicon glyphicon-share-alt">&nbsp;</span><?= lang(ucfirst($controller_name) . '.key_help') ?>
                     </button>
                 </div>
             <?php } ?>
@@ -890,6 +890,11 @@ if (isset($success)) {
 
         // AJAX submit — avoids full page reload
         var posAjaxPending = false;
+
+        // Toasts: bottom-right so they don't land on top of the cart table
+        if ($.notifyDefaults) {
+            $.notifyDefaults({ placement: { from: 'bottom', align: 'right' } });
+        }
 
         // Open the new-item dialog pre-filled with an unknown barcode and
         // try to fill the name/brand from an internet lookup (Open Food Facts).
@@ -1391,9 +1396,6 @@ if (isset($success)) {
                 break;
             case 56: // Alt + 8 Finish Quote/Invoice without payment
                 $("#finish_invoice_quote_button").click();
-                break;
-            case 57: // Alt + 9 Open Shortcuts Help Modal
-                $("#show_keyboard_help").click();
                 break;
         }
 

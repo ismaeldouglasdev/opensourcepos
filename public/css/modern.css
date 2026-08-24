@@ -2425,6 +2425,12 @@ td.text-right {
     margin-top: 4px !important;
 }
 
+/* Totals panel: no wrapping/clipping of labels and values */
+#sale_totals th {
+    white-space: nowrap !important;
+    padding: 4px 8px !important;
+}
+
 /* ============================================
     73. HOME CARDS — Unified pastel, bigger icons
     ============================================ */

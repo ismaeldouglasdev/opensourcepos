@@ -116,7 +116,9 @@ try {
     <link rel="stylesheet" href="<?= base_url('css/modern.css?v=' . filemtime(FCPATH . 'css/modern.css')) ?>">
 
     <!-- CSS Acessível para Idosos -->
+    <?php if (service('uri')->getSegment(1) !== 'sales'): ?>
     <link rel="stylesheet" href="<?= base_url('css/accessible.css') ?>">
+    <?php endif; ?>
 
     <?= view('partial/tutorial') ?>
 </head>
