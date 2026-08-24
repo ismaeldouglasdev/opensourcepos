@@ -1365,7 +1365,7 @@ if (isset($success)) {
         }
 
         $('[name="description"],[name="serialnumber"]').change(function() {
-            $(this).closest('form').submit()
+            posSubmitRow($(this).closest('tr'));
         });
 
         // Custom discount toggle (delegated — cart HTML is replaced by AJAX add)

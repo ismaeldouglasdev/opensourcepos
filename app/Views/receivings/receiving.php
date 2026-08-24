@@ -132,7 +132,7 @@ if (isset($success)) {
 
                     <?= form_open("$controller_name/editItem/$line", ['class' => 'form-horizontal', 'id' => "cart_$line"]) ?>
 
-                    <tr>
+                    <tr data-line="<?= $line ?>">
                         <td><?= anchor("$controller_name/deleteItem/$line", '<span class="glyphicon glyphicon-trash"></span>') ?></td>
                         <td><?= esc($item['item_number']) ?></td>
                         <td style="text-align: center;">
@@ -508,7 +508,10 @@ if (isset($success)) {
 
         $("#cart_contents input").keypress(function(event) {
             if (event.which == 13) {
-                $(this).parents("tr").prevAll("form:first").submit();
+                event.preventDefault();
+                // O form da linha é arrastado pra fora da tabela pelo parser —
+                // achar por id (inputs ficam associados via form-pointer).
+                $('#cart_' + $(this).closest('tr').data('line')).submit();
             }
         });
 
@@ -529,7 +532,7 @@ if (isset($success)) {
         }
 
         $('[name="price"],[name="quantity"],[name="receiving_quantity"],[name="discount"],[name="description"],[name="serialnumber"]').change(function() {
-            $(this).parents("tr").prevAll("form:first").submit()
+            $('#cart_' + $(this).closest('tr').data('line')).submit()
         });
 
         $('[name="discount_toggle"]').change(function() {
