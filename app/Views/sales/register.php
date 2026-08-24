@@ -154,7 +154,7 @@ window._tutorialSteps = [
 #register td:nth-child(6) { overflow: visible; }
 #register td .input-group { display: flex; align-items: center; width: 100%; }
 #register td .input-group .form-control { flex: 1 1 0%; min-width: 0; height: 28px; font-size: 12px; padding: 1px 4px; }
-#register td .input-group .input-group-btn { flex: 0 0 auto; display: flex; align-items: center; }
+#register td .input-group .input-group-btn { flex: 0 0 auto; display: flex; align-items: center; width: auto !important; font-size: 14px !important; }
 #register td .input-group .input-group-btn .bootstrap-toggle { margin: 0; flex: 0 0 46px; width: 46px; }
 #register td .input-group .input-group-btn .bootstrap-toggle .toggle { width: 46px !important; min-width: 46px !important; min-height: 26px !important; }
 #register td .input-group .input-group-btn .bootstrap-toggle .toggle.btn-sm { width: 46px !important; min-width: 46px !important; }
@@ -166,25 +166,25 @@ window._tutorialSteps = [
 #register td > .form-control { padding: 1px 4px; height: 28px; font-size: 12px; }
 
 /* Custom discount toggle */
-.disc-toggle { display: inline-flex; border-radius: 4px; overflow: hidden; border: 1px solid #ccc; cursor: pointer; }
+.disc-toggle { display: inline-flex; border-radius: 4px; overflow: hidden; border: 1px solid #999; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.12); }
 /* Hardened vs accessible.css generic .btn blow-up */
 .disc-toggle-btn {
-    padding: 6px 8px !important;
-    font-size: 13px !important;
+    padding: 6px 9px !important;
+    font-size: 15px !important;
     min-height: 36px !important;
     height: 36px !important;
     font-weight: 700 !important;
     border: none !important;
     cursor: pointer;
-    background: #f0f0f0;
-    color: #888;
+    background: #fff;
+    color: #444;
     line-height: 1 !important;
-    min-width: 30px !important;
+    min-width: 36px !important;
     text-align: center;
     transition: background 0.15s, color 0.15s;
 }
-.disc-toggle-btn:hover { background: #e0e0e0; }
-.disc-toggle-btn.active { background: #5cb85c; color: #fff; }
+.disc-toggle-btn:hover { background: #dcdcdc; }
+.disc-toggle-btn.active { background: #16a34a; color: #fff; }
 
 /* Stock status badges */
 .stock-badge { font-size: 9px; padding: 0 3px; vertical-align: middle; line-height: 1.5; border-radius: 3px; }
@@ -334,7 +334,7 @@ if (isset($success)) {
                 foreach (array_reverse($cart, true) as $line => $item) {
             ?>
                     <?= form_open("$controller_name/editItem/$line", ['class' => 'form-horizontal', 'id' => "cart_$line"]) ?>
-                        <tr>
+                        <tr data-line="<?= $line ?>">
                             <td>
                                 <?php
                                 echo anchor("$controller_name/deleteItem/$line", '<span class="glyphicon glyphicon-trash"></span>', ['class' => 'delete_item_button', 'data-item-id' => $line]);
@@ -399,7 +399,7 @@ if (isset($success)) {
                             <td>
                                 <?php
                                 if ($items_module_allowed && $change_price) {
-                                    echo form_input(['name' => 'price', 'class' => 'form-control input-sm', 'value' => to_currency_no_money($item['price']), 'tabindex' => ++$tabindex, 'onClick' => 'this.select();', 'onchange' => 'if(this.value != this.defaultValue) this.form.submit();']);
+                                    echo form_input(['name' => 'price', 'class' => 'form-control input-sm', 'value' => to_currency_no_money($item['price']), 'tabindex' => ++$tabindex, 'onClick' => 'this.select();']);
                                 } else {
                                     echo to_currency($item['price']);
                                     echo form_hidden('price', to_currency_no_money($item['price']));
@@ -418,7 +418,7 @@ if (isset($success)) {
                                         <span class="input-group-btn">
                                             <button type="button" class="btn btn-xs qty-minus" tabindex="-1">−</button>
                                         </span>
-                                        <?= form_input(['name' => 'quantity', 'class' => 'form-control input-sm', 'value' => to_quantity_decimals($item['quantity'] ?? 0), 'tabindex' => ++$tabindex, 'onClick' => 'this.select();', 'onchange' => 'if(this.value != this.defaultValue) this.form.submit();']) ?>
+                                        <?= form_input(['name' => 'quantity', 'class' => 'form-control input-sm', 'value' => to_quantity_decimals($item['quantity'] ?? 0), 'tabindex' => ++$tabindex, 'onClick' => 'this.select();']) ?>
                                         <span class="input-group-btn">
                                             <button type="button" class="btn btn-xs qty-plus" tabindex="-1">+</button>
                                         </span>
@@ -430,7 +430,7 @@ if (isset($success)) {
 
                             <td>
                                 <div class="input-group">
-                                    <?= form_input(['name' => 'discount', 'class' => 'form-control input-sm', 'value' => $item['discount_type'] ? to_currency_no_money($item['discount']) : to_decimals($item['discount']), 'tabindex' => ++$tabindex, 'onClick' => 'this.select();', 'onchange' => 'if(this.value != this.defaultValue) this.form.submit();']) ?>
+                                    <?= form_input(['name' => 'discount', 'class' => 'form-control input-sm', 'value' => $item['discount_type'] ? to_currency_no_money($item['discount']) : to_decimals($item['discount']), 'tabindex' => ++$tabindex, 'onClick' => 'this.select();']) ?>
                                     <span class="input-group-btn">
                                         <span class="disc-toggle" data-line="<?= $line ?>">
                                             <button type="button" class="disc-toggle-btn <?= $item['discount_type'] == 1 ? 'active' : '' ?>" data-val="1"><?= $config['currency_symbol'] ?></button>
@@ -443,7 +443,7 @@ if (isset($success)) {
                             <td>
                                 <?php
                                 if (($item['item_type'] ?? '') == ITEM_AMOUNT_ENTRY) {
-                                    echo form_input(['name' => 'discounted_total', 'class' => 'form-control input-sm', 'value' => to_currency_no_money($item['discounted_total'] ?? 0), 'tabindex' => ++$tabindex, 'onClick' => 'this.select();', 'onchange' => 'if(this.value != this.defaultValue) this.form.submit();']);
+                                    echo form_input(['name' => 'discounted_total', 'class' => 'form-control input-sm', 'value' => to_currency_no_money($item['discounted_total'] ?? 0), 'tabindex' => ++$tabindex, 'onClick' => 'this.select();']);
                                 } else {
                                     echo to_currency($item['discounted_total'] ?? 0);
                                 }
@@ -784,7 +784,7 @@ if (isset($success)) {
             let v = parseFloat(($input.val() || '0').replace(',', '.'));
             if (isNaN(v)) v = 0;
             $input.val(v + 1);
-            $group.closest('form').submit();
+            posSubmitRow($group.closest('tr'));
         });
 
         $(document).on('click', '.qty-minus', function() {
@@ -793,7 +793,12 @@ if (isset($success)) {
             let v = parseFloat(($input.val() || '0').replace(',', '.'));
             if (isNaN(v)) v = 0;
             $input.val(Math.max(1, v - 1));
-            $group.closest('form').submit();
+            posSubmitRow($group.closest('tr'));
+        });
+
+        // Qty/price/discount edits: AJAX row submit instead of full reload
+        $(document).on('change', "#cart_contents input[name='quantity'], #cart_contents input[name='price'], #cart_contents input[name='discount'], #cart_contents input[name='discounted_total']", function() {
+            if (this.value != this.defaultValue) posSubmitRow($(this).closest('tr'));
         });
 
         $(document).on('change', "#cart_contents input[name='item_number']", function() {
@@ -894,6 +899,44 @@ if (isset($success)) {
         // Toasts: bottom-right so they don't land on top of the cart table
         if ($.notifyDefaults) {
             $.notifyDefaults({ placement: { from: 'bottom', align: 'right' } });
+        }
+
+        // Row edit (qty/price/discount) via AJAX: POSTs the row fields to
+        // sales/editItem/{line} and swaps only the cart fragments — no full
+        // page reload (a reload per +/− click felt unresponsive and slow).
+        // NOTE: the row <form> is hoisted OUT of the table by the HTML parser,
+        // so we scrape the inputs from the <tr> instead of serializing the form.
+        function posSubmitRow($tr, extra) {
+            if (posAjaxPending || !$tr || !$tr.length) return;
+            var line = $tr.data('line');
+            if (line === undefined) return;
+            var data = extra || {};
+            $tr.find('input[name]').each(function() {
+                if (this.type !== 'checkbox' || this.checked) data[this.name] = $(this).val();
+            });
+            posAjaxPending = true;
+            $.post('<?= esc("$controller_name/editItem") ?>/' + line, data, function(html) {
+                posAjaxPending = false;
+                var $h = $('<div>').append($.parseHTML(html));
+                $('#cart_contents').html($h.find('#cart_contents').html());
+                var $t = $('#sale_totals');
+                if ($t.length && $h.find('#sale_totals').length) $t.html($h.find('#sale_totals').html());
+                var $pay = $('#payment_totals');
+                if (!$pay.length) {
+                    $pay = $('<table class="sales_table_100" id="payment_totals">');
+                    $('#sale_totals').after($pay);
+                }
+                if ($h.find('#payment_totals').length) $pay.html($h.find('#payment_totals').html());
+                var $btns = $('#sale_buttons');
+                if (!$btns.length) {
+                    $btns = $('<div id="sale_buttons">');
+                    $('#payment_totals').after($btns);
+                }
+                if ($h.find('#sale_buttons').length) $btns.html($h.find('#sale_buttons').html());
+            }, 'html').fail(function() {
+                posAjaxPending = false;
+                window.location.reload();
+            });
         }
 
         // Open the new-item dialog pre-filled with an unknown barcode and
@@ -1328,13 +1371,10 @@ if (isset($success)) {
         // Custom discount toggle (delegated — cart HTML is replaced by AJAX add)
         $(document).on('click', '.disc-toggle-btn', function() {
             var $group = $(this).closest('.disc-toggle');
-            var line = $group.data('line');
             var val = $(this).data('val');
             $group.find('.disc-toggle-btn').removeClass('active');
             $(this).addClass('active');
-            var input = $('<input>').attr('type', 'hidden').attr('name', 'discount_type').val(val);
-            $('#cart_' + line).append(input);
-            $('#cart_' + line).submit();
+            posSubmitRow($group.closest('tr'), { discount_type: val });
         });
     });
 

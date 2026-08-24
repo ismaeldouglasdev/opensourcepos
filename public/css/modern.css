@@ -5,7 +5,9 @@
    ============================================ */
 
 /* --- GOOGLE FONT --- */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+/* REMOVIDO @import do Google Fonts: era render-blocking e a conexão com
+   fonts.googleapis.com estava demorando 4+s — TODAS as páginas esperavam.
+   Fallback system-ui abaixo é instantâneo. */
 /* Fallback: system-ui se Google Fonts falhar (ex: sem internet) */
 
 /* --- GLOBAL UI SCALE — tudo proporcionalmente maior (pedido do usuário) --- */
@@ -2592,14 +2594,22 @@ body {
 }
 
 /* --- COMPACT DATA TABLES (Items, Customers, etc.) --- */
+/* Sem scroll horizontal: tabelas comprimem pra caber (pedido do usuário) */
 #table_holder {
-    overflow-x: auto;
+    overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch;
+}
+
+.bootstrap-table .fixed-table-body {
+    overflow-x: hidden !important;
 }
 
 .bootstrap-table .table {
     font-size: 1rem;
-    white-space: nowrap;
+    white-space: normal;
+    table-layout: auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
 }
 
 .bootstrap-table .table > thead > tr > th,
@@ -2829,12 +2839,20 @@ body {
 }
 
 .pos-autocomplete .ui-state-active,
-.pos-autocomplete .ui-state-hover {
-    background: var(--os-primary-light) !important;
-    color: var(--os-text) !important;
+.pos-autocomplete .ui-state-hover,
+.pos-autocomplete .ui-state-focus {
+    background: var(--os-primary) !important;
+    color: #fff !important;
     border: none !important;
     border-radius: var(--os-radius) !important;
     margin: 1px 2px !important;
+}
+
+/* Hover bem visível: todo texto interno vira branco sobre o verde sólido */
+.pos-autocomplete .ui-state-active *,
+.pos-autocomplete .ui-state-hover *,
+.pos-autocomplete .ui-state-focus * {
+    color: #fff !important;
 }
 
 /* --- Item row layout --- */
