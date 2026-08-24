@@ -303,7 +303,7 @@ window._tutorialSteps = [
     </div>
 </div>
 
-<div id="table_holder">
+<div id="table_holder" class="sales-manage">
     <table id="table"></table>
 </div>
 
