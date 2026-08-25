@@ -1138,7 +1138,8 @@ if (isset($success)) {
         // typing right after an add is never blocked.
         $('#item').on('autocompleteopen', function() {
             var suppressed = Date.now() < (window._posSuppressMenuUntil || 0);
-            if (suppressed && $(this).val().trim() === '') {
+            var checkoutOpen = $('#checkoutModal').hasClass('in') || $('#checkoutModal').is(':visible');
+            if ((suppressed && $(this).val().trim() === '') || checkoutOpen) {
                 $(this).autocomplete('close');
             }
         });
@@ -1789,7 +1790,16 @@ function openCheckoutModal() {
     document.getElementById('finish_checkout_btn').disabled = true;
     
     document.querySelectorAll('.payment-btn').forEach(function(btn) { btn.classList.remove('active'); });
-    
+
+    // Close the product autocomplete and block a late itemSearch response
+    // from reopening it over the checkout modal (z-index is already below
+    // the modal, but the menu must not linger at all).
+    var $item = jQuery('#item');
+    if ($item.data('ui-autocomplete')) $item.autocomplete('close');
+    window._posSuppressMenuUntil = Date.now() + 900;
+    $item.trigger('blur');
+    jQuery('.ui-autocomplete').hide();
+
     jQuery('#checkoutModal').modal('show');
 }
 

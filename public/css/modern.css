@@ -2851,7 +2851,7 @@ body {
     55. POS AUTOCOMPLETE — Rich dropdown
     ============================================ */
 .pos-autocomplete {
-    z-index: 1060 !important;
+    z-index: 1000 !important;
     max-height: 400px !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
