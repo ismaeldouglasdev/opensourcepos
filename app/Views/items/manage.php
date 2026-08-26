@@ -127,6 +127,62 @@ window._tutorialSteps = [
             history.replaceState(null, '', <?= json_encode(esc("$controller_name")) ?>);
         }
     });
+
+    // ── Real-time item-update notifications (phone app → PC) ──
+    (function() {
+        var wsUrl = 'ws://' + window.location.hostname + ':8000/v1/store/item-update/ws';
+        var seen = {};
+        var reconnectDelay = 2000;
+
+        function connect() {
+            try {
+                var ws = new WebSocket(wsUrl);
+                ws.onopen = function() {
+                    reconnectDelay = 2000;
+                    ws.send('ping');
+                    setInterval(function() { try { ws.send('ping'); } catch(e) {} }, 25000);
+                };
+                ws.onmessage = function(evt) {
+                    if (evt.data === 'pong') return;
+                    try {
+                        var d = JSON.parse(evt.data);
+                        if (d.type !== 'item_update') return;
+                        var key = d.item_id + ':' + d.action + ':' + (d.ts || '');
+                        if (seen[key]) return;
+                        seen[key] = true;
+                        setTimeout(function() { delete seen[key]; }, 10000);
+
+                        var msg, type;
+                        if (d.action === 'created') {
+                            msg = '<b>' + (d.item_name || 'Produto') + '</b> cadastrado no celular.';
+                            type = 'success';
+                        } else if (d.action === 'updated') {
+                            msg = '<b>' + (d.item_name || 'Produto') + '</b> atualizado no celular.';
+                            type = 'info';
+                        } else if (d.action === 'deleted') {
+                            msg = 'Produto #' + d.item_id + ' excluído no celular.';
+                            type = 'warning';
+                        }
+                        if (msg) {
+                            $.notify({ message: msg, icon: 'glyphicon glyphicon-phone' }, {
+                                type: type, placement: { from: 'bottom', align: 'right' }, timer: 5000,
+                                offset: { y: 60 }
+                            });
+                        }
+                        if (typeof table_support !== 'undefined' && table_support.refresh) {
+                            table_support.refresh();
+                        }
+                    } catch(e) {}
+                };
+                ws.onclose = function() {
+                    setTimeout(connect, reconnectDelay);
+                    reconnectDelay = Math.min(reconnectDelay * 1.5, 30000);
+                };
+                ws.onerror = function() { ws.close(); };
+            } catch(e) {}
+        }
+        connect();
+    })();
 </script>
 
 <div id="title_bar" class="btn-toolbar print_hide">
