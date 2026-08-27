@@ -1949,7 +1949,7 @@ class Sales extends Secure_Controller
             return;
         }
         
-        $quantity = $this->request->getPost('quantity') ?? '1';
+        $quantity = parse_decimals($this->request->getPost('quantity')) ?: '1';
         $description = $this->request->getPost('description') ?? 'Diversos';
         
         $item_id = $this->config['diversos_item_id'] ?? '3611';

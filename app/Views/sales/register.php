@@ -1577,11 +1577,11 @@ if (isset($success)) {
                 <p style="text-align:center; margin-bottom: 15px;">Digite o valor do produto:</p>
                 <div class="form-group">
                     <label for="diversos_valor">Valor (R$):</label>
-                    <input type="number" class="form-control" id="diversos_valor" step="0.01" min="0.01" placeholder="0,00" style="text-align: center; font-size: 24px; height: 60px;">
+                    <input type="text" class="form-control" id="diversos_valor" inputmode="decimal" placeholder="0,00" style="text-align: center; font-size: 24px; height: 60px;">
                 </div>
                 <div class="form-group">
                     <label for="diversos_qtd">Quantidade:</label>
-                    <input type="number" class="form-control" id="diversos_qtd" value="1" min="1" style="text-align: center; font-size: 20px; height: 50px;">
+                    <input type="text" class="form-control" id="diversos_qtd" inputmode="numeric" value="1" style="text-align: center; font-size: 20px; height: 50px;">
                 </div>
                 <div class="form-group">
                     <label for="diversos_desc">Descrição (opcional):</label>
