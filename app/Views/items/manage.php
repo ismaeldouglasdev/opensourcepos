@@ -128,6 +128,143 @@ window._tutorialSteps = [
         }
     });
 
+    // ── Inline editing on double-click ──
+    (function() {
+        var INLINE_FIELDS = {
+            name:        { type: 'text',  css: 'items-col-name' },
+            item_number: { type: 'text',  css: 'items-col-mono' },
+            category:    { type: 'text',  css: 'items-col-wrap' },
+            cost_price:  { type: 'money', css: 'items-col-num' },
+            unit_price:  { type: 'money', css: 'items-col-num' },
+            quantity:    { type: 'qty',   css: 'items-col-qty' }
+        };
+        // field -> column index, filled by markInlineCells() from the thead
+        var FIELD_INDEX = {};
+
+        // Link each body cell to its column field by index (bootstrap-table
+        // does not put data-field on <td>, only on <th>). Call after every load.
+        window.markInlineCells = function() {
+            var $ths = $('#table_holder.items-manage thead th');
+            FIELD_INDEX = {};
+            $ths.each(function(i, th) {
+                var f = $(th).attr('data-field');
+                if (f && INLINE_FIELDS[f]) {
+                    FIELD_INDEX[f] = i;
+                }
+            });
+            // tag cells so CSS/JS can address them generically
+            $('#table_holder.items-manage td').removeClass('editable-cell');
+            $('#table_holder.items-manage tbody tr').each(function() {
+                var $tds = $(this).children('td');
+                for (var f in FIELD_INDEX) {
+                    var $c = $tds.eq(FIELD_INDEX[f]);
+                    if ($c.length) $c.addClass('editable-cell').attr('data-efield', f);
+                }
+            });
+        };
+
+        $(document).on('dblclick', '#table_holder.items-manage td.editable-cell', function() {
+            var $td = $(this);
+            var field = $td.attr('data-efield');
+            if (!INLINE_FIELDS[field]) return;
+            if ($td.find('input, select').length) return;
+            if ($td.closest('tr').find('input[type="checkbox"]').is(':checked')) return;
+
+            var $tr = $td.closest('tr');
+            var itemId = $tr.data('uniqueid');
+            if (!itemId) return;
+
+            var raw = $.trim($td.text());
+            var cfg = INLINE_FIELDS[field];
+            var inputmode = (cfg.type === 'money' || cfg.type === 'qty') ? 'decimal' : '';
+            var inputClass = 'inline-edit-input inline-edit-' + cfg.type;
+
+            var $input = $('<input>', {
+                type: 'text',
+                inputmode: inputmode,
+                'class': inputClass,
+                value: raw,
+                'data-original': raw
+            });
+
+            $td.data('original-html', $td.html());
+            $td.empty().append($input);
+            $input.focus().select();
+
+            $input.on('keydown', function(ke) {
+                if (ke.key === 'Enter') {
+                    ke.preventDefault();
+                    $(this).blur();
+                } else if (ke.key === 'Escape') {
+                    cancelEdit($td);
+                }
+            });
+
+            $input.on('blur', function() {
+                var $inp = $(this);
+                var newVal = $.trim($inp.val());
+                var oldVal = $inp.data('original');
+
+                if (newVal === oldVal || (!newVal && cfg.type === 'money')) {
+                    cancelEdit($td);
+                    return;
+                }
+
+                saveInlineEdit($td, itemId, field, newVal, cfg);
+            });
+        });
+
+        function cancelEdit($td) {
+            var orig = $td.data('original-html');
+            if (orig !== undefined) $td.html(orig);
+        }
+
+        function saveInlineEdit($td, itemId, field, value, cfg) {
+            $td.css('opacity', '0.5');
+            $td.find('input').prop('disabled', true);
+
+            $.post('items/inlineUpdate', {
+                item_id: itemId,
+                field: field,
+                value: value
+            }, function(resp) {
+                if (resp.success && resp.value !== undefined) {
+                    $td.html(resp.value);
+                    $td.css('opacity', '');
+                    $td.addClass('inline-edit-flash');
+                    setTimeout(function() { $td.removeClass('inline-edit-flash'); }, 1200);
+                    $.notify(resp.message, { type: 'success', placement: { from: 'bottom', align: 'right' }, timer: 2000 });
+                } else {
+                    cancelEdit($td);
+                    $.notify(resp.message || 'Erro ao salvar', { type: 'danger', placement: { from: 'bottom', align: 'right' } });
+                }
+            }, 'json').fail(function() {
+                cancelEdit($td);
+                $.notify('Falha na comunicação com o servidor', { type: 'danger', placement: { from: 'bottom', align: 'right' } });
+            });
+        }
+
+        // Hook into the existing table_support init / load success. We grab the
+        // onLoadSuccess that manage.php already passes, wrap it to also mark cells.
+        var __inlineHooked = false;
+        $(function() {
+            if (__inlineHooked) return;
+            __inlineHooked = true;
+            var origInit = window.table_support && table_support.init;
+            // call markInlineCells after table renders (bootstrap-table draws async)
+            var timer = setInterval(function() {
+                if ($('#table_holder.items-manage tbody tr').length) {
+                    markInlineCells();
+                    clearInterval(timer);
+                }
+            }, 300);
+            // also on pagination/search load success
+            $(document).on('load-success.bs.table', function(e) {
+                markInlineCells();
+            });
+        });
+    })();
+
     // ── Real-time item-update notifications (phone app → PC) ──
     (function() {
         var wsUrl = 'ws://' + window.location.hostname + ':8000/v1/store/item-update/ws';

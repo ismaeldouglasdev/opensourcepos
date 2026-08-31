@@ -1448,4 +1448,113 @@ class Items extends Secure_Controller
             $this->attribute->saveAttributeLink($itemId, $definitionId, $attributeId);
         }
     }
+
+    /**
+     * Inline update a single field of an item (for table inline editing).
+     * POST items/inlineUpdate  { item_id, field, value }
+     *
+     * @return void
+     */
+    public function postInlineUpdate(): void
+    {
+        $this->response->setContentType('application/json');
+
+        $item_id = intval($this->request->getPost('item_id'));
+        $field   = $this->request->getPost('field');
+        $value   = $this->request->getPost('value');
+
+        if ($item_id < 1) {
+            echo json_encode(['success' => false, 'message' => 'ID inválido']);
+            return;
+        }
+
+        $allowed = [
+            'name'        => 'text',
+            'item_number' => 'text',
+            'category'    => 'text',
+            'cost_price'  => 'currency',
+            'unit_price'  => 'currency',
+            'quantity'    => 'quantity',
+        ];
+
+        if (!isset($allowed[$field])) {
+            echo json_encode(['success' => false, 'message' => 'Campo não editável']);
+            return;
+        }
+
+        $cur_item = $this->item->get_info($item_id);
+        if (!$cur_item) {
+            echo json_encode(['success' => false, 'message' => 'Produto não encontrado']);
+            return;
+        }
+
+        $employee_id = $this->employee->get_logged_in_employee_info()->person_id;
+
+        if ($field === 'quantity') {
+            $new_qty = parse_quantity($value);
+            $location_id = $this->item_lib->get_item_location();
+
+            $item_quantity = $this->item_quantity->get_item_quantity($item_id, $location_id);
+            $old_qty = (int) ($item_quantity->quantity ?? 0);
+
+            $new_status = ($new_qty > 0)
+                ? Item_quantity::STOCK_OK
+                : (($new_qty === 0)
+                    ? Item_quantity::STOCK_ZERADO
+                    : Item_quantity::STOCK_IRREGULAR);
+
+            $location_detail = [
+                'item_id'      => $item_id,
+                'location_id'  => $location_id,
+                'quantity'     => $new_qty,
+                'stock_status' => $new_status,
+            ];
+
+            $ok = $this->item_quantity->save_value($location_detail, $item_id, $location_id);
+
+            if ($ok && $new_qty !== $old_qty) {
+                $this->inventory->insert([
+                    'trans_date'      => date('Y-m-d H:i:s'),
+                    'trans_items'     => $item_id,
+                    'trans_user'      => $employee_id,
+                    'trans_location'  => $location_id,
+                    'trans_comment'   => lang('Items.manually_editing_of_quantity'),
+                    'trans_inventory' => $new_qty - $old_qty,
+                ], false);
+            }
+
+            echo json_encode([
+                'success' => $ok,
+                'message' => $ok ? 'Estoque atualizado' : 'Erro ao atualizar estoque',
+                'value'   => to_quantity_decimals($new_qty),
+            ]);
+            return;
+        }
+
+        // Text fields
+        if ($allowed[$field] === 'text') {
+            $item_data = [$field => trim((string) $value) ?: null];
+        } else {
+            // Currency fields
+            $item_data = [$field => parse_decimals($value)];
+        }
+
+        $item_data['last_modified'] = date('Y-m-d H:i:s');
+        $ok = $this->item->save_value($item_data, $item_id);
+
+        // Re-read the formatted value to return to the client
+        $refreshed = $this->item->get_info($item_id);
+
+        if ($field === 'cost_price' || $field === 'unit_price') {
+            $display = to_currency($refreshed->$field);
+        } else {
+            $display = $refreshed->$field ?? '';
+        }
+
+        echo json_encode([
+            'success' => $ok,
+            'message' => $ok ? 'Atualizado' : 'Erro ao atualizar',
+            'value'   => $display,
+        ]);
+    }
 }
