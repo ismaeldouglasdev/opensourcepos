@@ -71,16 +71,9 @@
                 <div class="input-group">
                     <span class="input-group-addon input-sm"><span class="glyphicon glyphicon-tag"></span></span>
                     <?php
-                    if ($config['category_dropdown']) {
-                        echo form_dropdown('category', $categories, $selected_category, ['class' => 'form-control']);
-                    } else {
-                        echo form_input([
-                            'name'  => 'category',
-                            'id'    => 'category',
-                            'class' => 'form-control input-sm',
-                            'value' => $item_info->category
-                        ]);
-                    }
+                    // Category is always a dropdown populated from the categories in use
+                    // (ospos_items.category) — see Items::getView().
+                    echo form_dropdown('category', $categories, $selected_category, ['id' => 'category', 'class' => 'form-control']);
                     ?>
                 </div>
             </div>

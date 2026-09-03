@@ -291,14 +291,23 @@ class Items extends Secure_Controller
         $data['include_hsn'] = $this->config['include_hsn'] === '1';
         $data['category_dropdown'] = $this->config['category_dropdown'];
 
-        if ($data['category_dropdown'] === '1') {
-            $categories = ['' => lang('Items.none')];
-            $category_options = $this->attribute->get_definition_values(CATEGORY_DEFINITION_ID);
-            $category_options = array_combine($category_options, $category_options);    // Overwrite indexes with values for saving in items table instead of attributes
-            $data['categories'] = array_merge($categories, $category_options);
-
-            $data['selected_category'] = $item_info->category;
+        // Always show the category as a dropdown populated from the categories already
+        // in use by products (ospos_items.category), regardless of the category_dropdown
+        // config. The native attribute-definition mechanism (ospos_category, definition_id -1)
+        // was empty in this install, leaving a blank/free-text field.
+        $categories = ['' => lang('Items.none')];
+        $category_options = $this->item->get_categories();
+        if ($category_options !== false) {
+            foreach ($category_options->getResultArray() as $row) {
+                $category = trim((string) ($row['category'] ?? ''));
+                if ($category !== '') {
+                    $categories[$category] = $category;
+                }
+            }
         }
+        $data['categories'] = $categories;
+
+        $data['selected_category'] = $item_info->category ?? '';
 
         if ($item_id === NEW_ENTRY) {
             $data['default_tax_1_rate'] = $this->config['default_tax_1_rate'];
