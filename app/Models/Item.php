@@ -71,6 +71,12 @@ class Item extends Model
             return false;
         }
 
+        // Columns are utf8mb3: a term with 4-byte chars (e.g. emoji) can never match,
+        // and comparing it raises MySQL 1267 (illegal mix of collations).
+        if (preg_match('/[\x{10000}-\x{10FFFF}]/u', $item_number) === 1) {
+            return false;
+        }
+
         $builder = $this->db->table('items');
         $builder->where('item_number', $item_number);
         $builder->where('deleted !=', 1);
@@ -340,6 +346,12 @@ class Item extends Model
      */
     public function get_info_by_id_or_number(string $item_id, bool $include_deleted = true)
     {
+        // Columns are utf8mb3: a term with 4-byte chars (e.g. emoji) can never match,
+        // and comparing it raises MySQL 1267 (illegal mix of collations).
+        if (preg_match('/[\x{10000}-\x{10FFFF}]/u', $item_id) === 1) {
+            return '';
+        }
+
         $builder = $this->db->table('items');
         $builder->groupStart();
         $builder->where('items.item_number', $item_id);

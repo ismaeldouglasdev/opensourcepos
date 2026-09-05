@@ -67,6 +67,12 @@ class Item_kit extends Model
             return false;
         }
 
+        // Columns are utf8mb3: a term with 4-byte chars (e.g. emoji) can never match,
+        // and comparing it raises MySQL 1267 (illegal mix of collations).
+        if (preg_match('/[\x{10000}-\x{10FFFF}]/u', $item_kit_number) === 1) {
+            return false;
+        }
+
         $builder = $this->db->table('item_kits');
         $builder->where('item_kit_number', $item_kit_number);
 
