@@ -1683,9 +1683,23 @@ class Sales extends Secure_Controller
 
     public function getSaleItems(): void
     {
+        $this->response->setContentType('application/json');
+
         $sale_id = $this->request->getGet('sale_id', FILTER_SANITIZE_NUMBER_INT);
-        $items = $this->sale->get_sale_items_ordered($sale_id);
-        echo json_encode($items->getResult());
+        $items = $this->sale->get_sale_items_ordered($sale_id)->getResultArray();
+
+        foreach ($items as &$item) {
+            $item['total'] = $this->sale_lib->get_item_total(
+                (string) $item['quantity_purchased'],
+                (string) $item['item_unit_price'],
+                (string) $item['discount'],
+                (int) $item['discount_type'],
+                true
+            );
+        }
+        unset($item);
+
+        echo json_encode($items);
     }
 
     public function getEditForm(int $sale_id): void
