@@ -833,9 +833,9 @@ class Items extends Secure_Controller
                 ];
 
                 $item_quantity = $this->item_quantity->get_item_quantity($item_id, $location['location_id']);
+                $new_status = ($updated_quantity > 0) ? Item_quantity::STOCK_OK : (($updated_quantity == 0) ? Item_quantity::STOCK_ZERADO : Item_quantity::STOCK_IRREGULAR);
 
                 if ($item_quantity->quantity != $updated_quantity || $new_item) {
-                    $new_status = ($updated_quantity > 0) ? Item_quantity::STOCK_OK : (($updated_quantity == 0) ? Item_quantity::STOCK_ZERADO : Item_quantity::STOCK_IRREGULAR);
                     $location_detail['stock_status'] = $new_status;
                     $success &= $this->item_quantity->save_value($location_detail, $item_id, $location['location_id']);
 
@@ -849,6 +849,9 @@ class Items extends Secure_Controller
                     ];
 
                     $success &= $this->inventory->insert($inv_data, false);
+                } elseif ((int)$item_quantity->stock_status !== $new_status) {
+                    // Quantity kept the same but status is stale → fix it without touching quantity/inventory.
+                    $success &= $this->item_quantity->set_stock_status($item_id, $location['location_id'], $new_status);
                 }
             }
             $this->saveItemAttributes($item_id);
