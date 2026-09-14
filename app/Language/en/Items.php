@@ -40,6 +40,7 @@ return [
     "empty_upc_items"                    => "Empty Barcode Items",
     "error_adding_updating"              => "Error adding/updating item",
     "error_updating_multiple"            => "Error updating items",
+    "extra_options"                      => "More options",
     "generate_barcodes"                  => "Generate Barcodes",
     "hsn_code"                           => "Harmonized System Nomenclature",
     "image"                              => "Avatar",

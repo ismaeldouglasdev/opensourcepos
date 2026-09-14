@@ -40,6 +40,7 @@ return [
     "empty_upc_items"                    => "Vazio UPC Itens",
     "error_adding_updating"              => "Erro ao adicionar/atualizar item",
     "error_updating_multiple"            => "Erro na atualização de itens",
+    "extra_options"                      => "Mais opções",
     "generate_barcodes"                  => "Gerar Códigos de Barras",
     "hsn_code"                           => "Nomenclatura do Sistema Harmonizado",
     "image"                              => "Imagem",

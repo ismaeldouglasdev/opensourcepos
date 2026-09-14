@@ -419,12 +419,12 @@ function item_headers(): array
         ['items.item_id' => lang('Common.id'), 'class' => 'items-col-id'],
         ['item_number'   => lang('Items.item_number'), 'class' => 'items-col-mono'],
         ['name'          => lang('Items.name'), 'class' => 'items-col-name items-col-wrap'],
+        ['quantity'      => lang('Items.quantity'), 'class' => 'items-col-num items-col-qty'],
         ['item_pic'      => lang('Items.image'), 'sortable' => false, 'visible' => true, 'class' => 'items-col-pic'],
         ['category'      => lang('Items.category'), 'class' => 'items-col-wrap'],
         ['company_name'  => lang('Suppliers.company_name'), 'visible' => false],
         ['cost_price'    => lang('Items.cost_price'), 'class' => 'items-col-num'],
         ['unit_price'    => lang('Items.unit_price'), 'class' => 'items-col-num'],
-        ['quantity'      => lang('Items.quantity'), 'class' => 'items-col-num items-col-qty'],
         ['last_modified' => lang('Items.last_modified'), 'visible' => false]
     ];
 }
