@@ -28,6 +28,12 @@
 <div id="required_fields_message"><?= lang('Common.fields_required_message') ?></div>
 <ul id="error_message_box" class="error_message_box"></ul>
 
+<div id="item_draft_notice" style="display:none; background:#fffbe6; border:1px solid #ffe58f; border-radius:3px; padding:5px 10px; margin-bottom:8px; font-size:12px; color:#8c6e1f;">
+    <span class="glyphicon glyphicon-pencil" style="margin-right:4px;"></span>
+    <span class="item_draft_when"></span>
+    <a href="#" id="item_draft_discard" style="float:right; font-weight:bold; margin-left:10px; color:#8c6e1f;">Descartar</a>
+</div>
+
 <?= form_open("items/save/$item_info->item_id", ['id' => 'item_form', 'enctype' => 'multipart/form-data']) ?>
     <fieldset id="item_basic_info">
 
@@ -75,8 +81,141 @@
 
         <div id="attributes">
             <script type="text/javascript">
-                $('#attributes').load('<?= "items/attributes/$item_info->item_id" ?>');
-            </script>
+                $('#attributes').load('<?= "items/attributes/$item_info->item_id" ?>', function() {
+                    // Reaplica o rascunho nos campos carregados de forma assíncrona (atributos)
+                    window.POSItemDraft && POSItemDraft.applyAttributes();
+                });
+</script>
+
+<script type="text/javascript">
+    // Rascunho automático estilo Google Forms: salva o formulário em localStorage
+    // a cada alteração (debounce) e restaura ao reabrir o modal, para não perder
+    // o trabalho se o modal fechar por acidente (clique fora do modal, ESC, X).
+    // O rascunho é limpo quando o item é salvo com sucesso, e o usuário pode
+    // descartá-lo pelo aviso amarelo "Rascunho restaurado".
+    (function() {
+        'use strict';
+
+        var ITEM_ID = <?= (int)$item_info->item_id ?>;
+        var KEY = 'ospos_item_draft_' + (ITEM_ID > 0 ? ITEM_ID : 'new');
+        var $root = $('#item_form');
+        var data = null;      // rascunho parseado {g, ts}
+        var suspend = false;  // após salvar com sucesso, não rascunhar mais
+        var armed = false;    // houve edição nesta abertura → salvar ao fechar
+        var timer = null;
+
+        function collect($scope) {
+            var groups = {};
+            $scope.find(':input').not('[type=file]').each(function() {
+                var $el = $(this), name = $el.attr('name');
+                if (!name) { return; }
+                if ($el.is(':radio') || $el.is(':checkbox')) {
+                    (groups[name] = groups[name] || []).push({v: $el.val(), c: $el.is(':checked')});
+                } else {
+                    (groups[name] = groups[name] || []).push({v: $el.val()});
+                }
+            });
+            return groups;
+        }
+
+        function apply(groups, $scope) {
+            if (!groups) { return; }
+            var idx = {};
+            $scope.find(':input').not('[type=file]').each(function() {
+                var $el = $(this), name = $el.attr('name');
+                if (!name || !groups[name]) { return; }
+                var entry = groups[name][idx[name] = (idx[name] || 0)];
+                if (entry === undefined) { return; }
+                idx[name]++;
+                if (entry.c !== undefined) {
+                    $el.prop('checked', !!entry.c);
+                } else {
+                    $el.val(entry.v);
+                }
+            });
+        }
+
+        function hhmm(ts) {
+            var d = ts ? new Date(ts) : new Date();
+            return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+        }
+
+        function saveNow() {
+            if (suspend) { return; }
+            try {
+                localStorage.setItem(KEY, JSON.stringify({g: collect($root), ts: Date.now()}));
+            } catch (e) { /* localStorage indisponível — segue sem rascunho */ }
+        }
+
+        function saveSoon() {
+            armed = true;
+            clearTimeout(timer);
+            timer = setTimeout(saveNow, 800);
+        }
+
+        function restore() {
+            data = null;
+            try {
+                var raw = localStorage.getItem(KEY);
+                if (raw) { data = JSON.parse(raw); }
+            } catch (e) { data = null; }
+            if (!data || !data.g) {
+                data = null;
+                return;
+            }
+            apply(data.g, $root);
+            $('#item_draft_notice').show()
+                .find('.item_draft_when').text('Rascunho restaurado (salvo às ' + hhmm(data.ts) + ')');
+        }
+
+        window.POSItemDraft = {
+            applyAttributes: function() {
+                if (data && data.g) { apply(data.g, $('#attributes')); }
+            },
+            successSaved: function() {
+                suspend = true;
+                try { localStorage.removeItem(KEY); } catch (e) { /* noop */ }
+                data = null;
+                $('#item_draft_notice').hide();
+            },
+            saveSoon: function() {
+                armed = true;
+                clearTimeout(timer);
+                timer = setTimeout(saveNow, 800);
+            },
+            discard: function() {
+                armed = false;
+                try { localStorage.removeItem(KEY); } catch (e) { /* noop */ }
+                data = null;
+                $('#item_draft_notice').hide();
+            },
+            restore: restore
+        };
+
+        $(function() {
+            var DRAFT = window.POSItemDraft;
+
+            // Salva a cada alteração (debounce) — inclui campos de atributos carregados async
+            $('#item_form').on('change input', ':input', function() { DRAFT.saveSoon(); });
+
+            // Descarta o rascunho (mantém aviso oculto e não restaura mais nesta abertura)
+            $('#item_draft_discard').on('click', function(e) {
+                e.preventDefault();
+                DRAFT.discard();
+            });
+
+            // Ao fechar o modal (clique fora / ESC / X), grava pendências na hora
+            $(document).on('hidden.bs.modal.posdraft', function(e) {
+                if ($root[0] && $(e.target).has($root[0]).length) {
+                    clearTimeout(timer);
+                    if (armed && !suspend) { saveNow(); }
+                }
+            });
+
+            DRAFT.restore();
+        });
+    })();
+</script>
         </div>
 
         <div class="row form-group form-group-sm">
@@ -536,6 +675,10 @@
                     $(form).ajaxSubmit({
                         success: function(response) {
                             let stay_open = dialog_support.clicked_id() != 'submit';
+                            // Rascunho salvo com sucesso: limpa o localStorage deste item
+                            if (typeof response !== 'undefined' && response !== null && response.success) {
+                                window.POSItemDraft && POSItemDraft.successSaved();
+                            }
                             if (stay_open) {
                                 // Set action of item_form to url without item id, so a new one can be created
                                 $('#item_form').attr('action', "<?= 'items/save/' ?>");
