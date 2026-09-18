@@ -1512,9 +1512,17 @@ if (isset($success)) {
                         <strong>RESTANTE:</strong><br><span id="checkout_restante" style="font-size: 24px; color: #c62828; font-weight: bold;">R$ 0,00</span>
                     </div>
                 </div>
-                
+
                 <div class="troco-display" id="troco_display" style="font-size: 16px; min-height: 24px; padding: 4px 5px; text-align: center; font-weight: bold;"></div>
                 <div id="troco_notes_display" style="min-height: 0; margin: 0 0 4px; text-align: center;"></div>
+
+                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 8px;">
+                    <label for="sale_date" style="margin: 0; font-weight: 600; font-size: 14px;">📅 Data da venda:</label>
+                    <input type="date" id="sale_date" class="form-control"
+                           value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>"
+                           style="width: auto; display: inline-block; text-align: center; font-size: 15px; padding: 4px 8px; height: 34px;"
+                           title="Use para registrar vendas de dias anteriores">
+                </div>
                 
                 <div id="payment_summary_list" style="margin: 4px 0;"></div>
                 
@@ -1788,6 +1796,11 @@ function openCheckoutModal() {
     document.getElementById('amount_group').style.display = 'none';
     document.getElementById('payment_summary_list').innerHTML = '';
     document.getElementById('finish_checkout_btn').disabled = true;
+
+    // Reset the sale date to today each time the checkout modal opens,
+    // so a backdated sale from a previous close does not carry over.
+    var sd = document.getElementById('sale_date');
+    if (sd) sd.value = '<?= date('Y-m-d') ?>';
     
     document.querySelectorAll('.payment-btn').forEach(function(btn) { btn.classList.remove('active'); });
 
@@ -2000,13 +2013,15 @@ function finishCheckout() {
     csrfData['<?= csrf_token() ?>'] = '<?= csrf_hash() ?>';
     
     var paymentsData = JSON.stringify(payments_list);
+    var saleDate = document.getElementById('sale_date') ? document.getElementById('sale_date').value : '';
     
     jQuery.ajax({
         url: '<?= site_url("sales/quickFinish") ?>',
         type: 'POST',
         data: Object.assign(csrfData, {
             payments_json: paymentsData,
-            discount_pct: sale_discount_pct || ''
+            discount_pct: sale_discount_pct || '',
+            sale_date: saleDate
         }),
         dataType: 'json',
         success: function(response) {

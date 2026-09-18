@@ -517,7 +517,8 @@ class Sale extends Model
         int $sale_type,
         ?array $payments,
         ?int $dinner_table_id,
-        ?array &$sales_taxes
+        ?array &$sales_taxes,
+        ?string $sale_time = null    // Optional backdated sale time (Y-m-d H:i:s); defaults to now. Added for backdated-sale support (register past sales).
     ): int {    // TODO: this method returns the sale_id but the override is expecting it to return a bool. The signature needs to be reworked.  Generally when there are more than 3 maybe 4 parameters, there's a good chance that an object needs to be passed rather than so many params.
         $config = config(OSPOS::class)->settings;
         $attribute = model(Attribute::class);
@@ -528,16 +529,34 @@ class Sale extends Model
 
         $item_quantity = model(Item_quantity::class);
 
+        // State of the original sale when this is an UPDATE (sale_id reused).
+        // Used to preserve the original sale_time and to restore the stock that a
+        // previously COMPLETED sale already debited (avoids double deduction).
+        $original_sale_status = null;
+        $original_sale_items = [];
+        $original_sale_time = null;
+
         if ($sale_id != NEW_ENTRY) {
+            $original_sale_status = $this->get_sale_status($sale_id);
+            $original_sale_time = $this->get_sale_time($sale_id);
+
+            if ($original_sale_status == COMPLETED) {
+                $original_sale_items = $this->get_sale_items($sale_id)->getResultArray();
+            }
+
             $this->clear_suspended_sale_detail($sale_id);
         }
+
+        // Respect an explicitly backdated sale_time; otherwise keep the original
+        // time for reused sale_ids (in-place update) or default to now for new sales.
+        $sale_time = $sale_time ?? ($original_sale_time ?? date('Y-m-d H:i:s'));
 
         if (count($items) == 0) {    // TODO: ===
             return -1;    // TODO: Replace -1 with a constant
         }
 
         $sales_data = [
-            'sale_time'         => date('Y-m-d H:i:s'),
+            'sale_time'         => $sale_time,
             'customer_id'       => $customer->exists($customer_id) ? $customer_id : null,
             'employee_id'       => $employee_id,
             'comment'           => $comment,
@@ -551,6 +570,27 @@ class Sale extends Model
 
         // Run these queries as a transaction, we want to make sure we do all or nothing
         $this->db->transStart();
+
+        // Restore the stock that the original COMPLETED sale debited, so that re-saving
+        // the same sale_id (in-place update) doesn't deduct the stock twice.
+        if ($original_sale_status == COMPLETED) {
+            foreach ($original_sale_items as $item_data) {
+                $cur_item_info = $item->get_info($item_data['item_id']);
+
+                if ($cur_item_info->stock_type == HAS_STOCK) {
+                    $inventory->insert([
+                        'trans_date'      => date('Y-m-d H:i:s'),
+                        'trans_items'     => $item_data['item_id'],
+                        'trans_user'      => $employee_id,
+                        'trans_location'  => $item_data['item_location'],
+                        'trans_comment'   => 'Reopen sale ' . $sale_id,
+                        'trans_inventory' => $item_data['quantity_purchased']
+                    ], false);
+
+                    $item_quantity->change_quantity($item_data['item_id'], $item_data['item_location'], $item_data['quantity_purchased']);
+                }
+            }
+        }
 
         if ($sale_id == NEW_ENTRY) {
             $builder = $this->db->table('sales');
@@ -665,7 +705,7 @@ class Sale extends Model
                 // Inventory Count Details
                 $sale_remarks = 'POS ' . $sale_id;    // TODO: Use string interpolation here.
                 $inv_data = [
-                    'trans_date'      => date('Y-m-d H:i:s'),
+                    'trans_date'      => $sale_time,
                     'trans_items'     => $item_data['item_id'],
                     'trans_user'      => $employee_id,
                     'trans_location'  => $item_data['item_location'],
@@ -1281,6 +1321,20 @@ class Sale extends Model
         $builder->where('sale_id', $sale_id);
 
         return $builder->get()->getRow()->sale_status;
+    }
+
+    /**
+     * Gets the original sale_time for the selected sale, or null if the sale doesn't exist
+     */
+    public function get_sale_time(int $sale_id): ?string
+    {
+        $builder = $this->db->table('sales');
+        $builder->select('sale_time');
+        $builder->where('sale_id', $sale_id);
+
+        $row = $builder->get()->getRow();
+
+        return $row->sale_time ?? null;
     }
 
     /**

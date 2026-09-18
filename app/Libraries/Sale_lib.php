@@ -1383,6 +1383,7 @@ class Sale_lib
     public function clear_all(): void
     {
         $this->session->set('sale_id', -1);    // TODO: Replace -1 with constant
+        $this->session->remove('sale_reopened');
         $this->clear_mode();
         $this->clear_table();
         $this->empty_cart();

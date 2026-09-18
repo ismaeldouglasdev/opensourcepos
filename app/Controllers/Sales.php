@@ -1293,6 +1293,17 @@ class Sales extends Secure_Controller
      */
     public function postCancel(): void
     {
+        // A reopened sale in the register is an EDIT of an existing completed sale.
+        // Cancel must abort the edit without touching the original sale — otherwise
+        // it would DELETE/CANCEL the historical sale (and restore its stock).
+        if ($this->session->get('sale_reopened')) {
+            $this->sale_lib->clear_all();
+
+            $this->_reload();    // TODO: Hungarian notation
+
+            return;
+        }
+
         $sale_id = $this->sale_lib->get_sale_id();
         if ($sale_id != NEW_ENTRY && $sale_id != '') {
             $sale_type = $this->sale_lib->get_sale_type();
@@ -1423,8 +1434,9 @@ class Sales extends Secure_Controller
     }
 
     /**
-     * Unsuspended sales are now left in the tables and are only removed
-     * when they are intentionally cancelled. Used in app/Views/sales/suspended.php.
+     * Reassume a suspended sale into the register. The suspended sale is
+     * marked as CANCELED so it no longer shows in the suspended list —
+     * finishing it creates a new COMPLETED sale (see postQuickFinish).
      *
      * @return void
      * @noinspection PhpUnused
@@ -1436,6 +1448,8 @@ class Sales extends Secure_Controller
 
         if ($sale_id > 0) {
             $this->sale_lib->copy_entire_sale($sale_id);
+            // A venda suspensa foi reassumida: marca como cancelada para sair da lista de suspensos
+            $this->sale->update_sale_status($sale_id, CANCELED);
         }
 
         // Set current register mode to reflect that of unsuspended order type
@@ -1446,8 +1460,10 @@ class Sales extends Secure_Controller
 
     /**
      * Reopen a completed sale in the register so it can be edited
-     * (prices, discounts, add/remove items) and finished as a new sale.
-     * The original completed sale is left intact for reference.
+     * (prices, discounts, add/remove items) and finished IN PLACE: the same
+     * sale_id is reused when the sale is finalized again (no duplicate sale
+     * record is created). The session flag "sale_reopened" lets postCancel
+     * abort the edit without touching the original sale.
      */
     public function postReopen(int $sale_id): \CodeIgniter\HTTP\RedirectResponse
     {
@@ -1458,8 +1474,9 @@ class Sales extends Secure_Controller
         }
 
         $this->sale_lib->copy_entire_sale($sale_id);
-        // Clear sale_id so suspend/finish create a NEW sale, not an update of the original
-        $this->session->set('sale_id', NEW_ENTRY);
+        // Keep the original sale_id in the session (set by copy_entire_sale) so
+        // finish/save_value UPDATE the same sale instead of creating a new one.
+        $this->session->set('sale_reopened', true);
 
         return redirect()->to('sales');
     }
@@ -1639,6 +1656,27 @@ class Sales extends Secure_Controller
             $sales_taxes = $this->tax_lib->get_taxes($cart);
         }
 
+        // Optional backdated sale time (register sales from previous days).
+        // HTML5 date input sends Y-m-d; we keep the current time on that date.
+        $sale_time = null;
+        $sale_date = trim((string) $this->request->getPost('sale_date', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
+        if ($sale_date !== '') {
+            $date_obj = \DateTime::createFromFormat('Y-m-d', $sale_date);
+            $date_errors = $date_obj !== false ? \DateTime::getLastErrors() : false;
+            // PHP 8.2+ returns false from getLastErrors() when the parse was clean
+            // (older PHP returned an array of zero counts). Accept both as "valid".
+            $date_clean = $date_errors === false
+                || (is_array($date_errors) && $date_errors['warning_count'] === 0 && $date_errors['error_count'] === 0);
+            $date_valid = $date_obj !== false
+                && $date_clean
+                && $date_obj->format('Y-m-d') === $sale_date    // round-trip: avoids 2026-02-30 style rollovers
+                && $sale_date !== date('Y-m-d')    // only apply when it's NOT today
+                && $sale_date < date('Y-m-d');    // never allow future dates
+            if ($date_valid) {
+                $sale_time = $date_obj->format('Y-m-d') . ' ' . date('H:i:s');
+            }
+        }
+
         $totals = $this->sale_lib->get_totals($sales_taxes[0] ?? []);
         $amount_due = $totals['total'];
         $payments_total = $this->sale_lib->get_payments_total();
@@ -1662,15 +1700,24 @@ class Sales extends Secure_Controller
             $this->sale_lib->set_payments($payments);
         }
 
+// When the sale was reopened from sales/manage, the original sale_id is
+        // kept in the session so finishing UPDATES that same sale in place (no
+        // duplicate record). A fresh sale (sale_id <= 0) creates a new entry.
+        $sale_id = $this->sale_lib->get_sale_id();
+        if ($sale_id <= 0) {
+            $sale_id = NEW_ENTRY;
+        }
+
         $data['sale_id_num'] = $this->sale->save_value(
-            -1, $sale_status, $cart,
+            $sale_id, $sale_status, $cart,
             $customer,
             $this->session->get('person_id'),
             $comment,
             null, null, null, SALE_TYPE_POS,
             $payments,
             $dinner_table,
-            $sales_taxes
+            $sales_taxes,
+            $sale_time
         );
 
         if ($data['sale_id_num'] == NEW_ENTRY) {
