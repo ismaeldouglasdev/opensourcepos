@@ -102,6 +102,7 @@
         var data = null;      // rascunho parseado {g, ts}
         var suspend = false;  // após salvar com sucesso, não rascunhar mais
         var armed = false;    // houve edição nesta abertura → salvar ao fechar
+        var discardSuppressUntil = 0;  // janela pós-descartar: ignora events disparados pelo clear
         var timer = null;
 
         function collect($scope) {
@@ -148,9 +149,23 @@
         }
 
         function saveSoon() {
+            if (Date.now() < discardSuppressUntil) { return; }  // após descartar, eventos de clear não re-salvam
             armed = true;
             clearTimeout(timer);
             timer = setTimeout(saveNow, 800);
+        }
+
+        function clearFields() {
+            $('#item_form').find(':input').not('[type=file], [type=hidden], [name=submit], [type=submit], [type=button]').each(function() {
+                var $el = $(this);
+                if ($el.is(':radio') || $el.is(':checkbox')) {
+                    $el.prop('checked', false);
+                } else if ($el.is('select')) {
+                    $el.prop('selectedIndex', 0);  // volta ao placeholder/primeira opção
+                } else {
+                    $el.val('');
+                }
+            });
         }
 
         function restore() {
@@ -179,15 +194,21 @@
                 $('#item_draft_notice').hide();
             },
             saveSoon: function() {
+                if (Date.now() < discardSuppressUntil) { return; }  // após descartar, eventos de clear não re-salvam
                 armed = true;
                 clearTimeout(timer);
                 timer = setTimeout(saveNow, 800);
             },
             discard: function() {
                 armed = false;
+                clearTimeout(timer);
                 try { localStorage.removeItem(KEY); } catch (e) { /* noop */ }
                 data = null;
                 $('#item_draft_notice').hide();
+                // Limpa TODOS os campos do formulário (usuário pediu). Suprime o
+                // re-salvamento durante a limpeza — senão o estado vazio viraria draft.
+                discardSuppressUntil = Date.now() + 1200;
+                clearFields();
             },
             restore: restore
         };
