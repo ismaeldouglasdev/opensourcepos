@@ -48,13 +48,11 @@
                     'value' => $item_info->item_number
                 ]) ?>
                 <span class="input-group-btn">
-                    <button type="button" id="barcode_web_lookup" class="btn btn-default btn-sm" title="Buscar nome e imagem do produto na internet pelo código" style="height: 30px;">
-                        <span class="glyphicon glyphicon-globe"></span> Internet
+                    <button type="button" id="barcode_generate" class="btn btn-default btn-sm" title="Gerar um código interno aleatório (letras e números) para produtos sem código de barras" style="height: 30px;">
+                        <span class="glyphicon glyphicon-random"></span> Gerar código
                     </button>
                 </span>
             </div>
-            <input type="hidden" name="internet_image_url" id="internet_image_url" value="">
-            <img id="internet_image_preview" src="" alt="" style="display:none; max-height:64px; margin-top:5px; border-radius:4px; border:1px solid var(--os-border-light,#ccc);">
         </div>
 
         <div class="form-group form-group-sm">
@@ -85,158 +83,7 @@
                     // Reaplica o rascunho nos campos carregados de forma assíncrona (atributos)
                     window.POSItemDraft && POSItemDraft.applyAttributes();
                 });
-</script>
-
-<script type="text/javascript">
-    // Rascunho automático estilo Google Forms: salva o formulário em localStorage
-    // a cada alteração (debounce) e restaura ao reabrir o modal, para não perder
-    // o trabalho se o modal fechar por acidente (clique fora do modal, ESC, X).
-    // O rascunho é limpo quando o item é salvo com sucesso, e o usuário pode
-    // descartá-lo pelo aviso amarelo "Rascunho restaurado".
-    (function() {
-        'use strict';
-
-        var ITEM_ID = <?= (int)$item_info->item_id ?>;
-        var KEY = 'ospos_item_draft_' + (ITEM_ID > 0 ? ITEM_ID : 'new');
-        var $root = $('#item_form');
-        var data = null;      // rascunho parseado {g, ts}
-        var suspend = false;  // após salvar com sucesso, não rascunhar mais
-        var armed = false;    // houve edição nesta abertura → salvar ao fechar
-        var discardSuppressUntil = 0;  // janela pós-descartar: ignora events disparados pelo clear
-        var timer = null;
-
-        function collect($scope) {
-            var groups = {};
-            $scope.find(':input').not('[type=file]').each(function() {
-                var $el = $(this), name = $el.attr('name');
-                if (!name) { return; }
-                if ($el.is(':radio') || $el.is(':checkbox')) {
-                    (groups[name] = groups[name] || []).push({v: $el.val(), c: $el.is(':checked')});
-                } else {
-                    (groups[name] = groups[name] || []).push({v: $el.val()});
-                }
-            });
-            return groups;
-        }
-
-        function apply(groups, $scope) {
-            if (!groups) { return; }
-            var idx = {};
-            $scope.find(':input').not('[type=file]').each(function() {
-                var $el = $(this), name = $el.attr('name');
-                if (!name || !groups[name]) { return; }
-                var entry = groups[name][idx[name] = (idx[name] || 0)];
-                if (entry === undefined) { return; }
-                idx[name]++;
-                if (entry.c !== undefined) {
-                    $el.prop('checked', !!entry.c);
-                } else {
-                    $el.val(entry.v);
-                }
-            });
-        }
-
-        function hhmm(ts) {
-            var d = ts ? new Date(ts) : new Date();
-            return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
-        }
-
-        function saveNow() {
-            if (suspend) { return; }
-            try {
-                localStorage.setItem(KEY, JSON.stringify({g: collect($root), ts: Date.now()}));
-            } catch (e) { /* localStorage indisponível — segue sem rascunho */ }
-        }
-
-        function saveSoon() {
-            if (Date.now() < discardSuppressUntil) { return; }  // após descartar, eventos de clear não re-salvam
-            armed = true;
-            clearTimeout(timer);
-            timer = setTimeout(saveNow, 800);
-        }
-
-        function clearFields() {
-            $('#item_form').find(':input').not('[type=file], [type=hidden], [name=submit], [type=submit], [type=button]').each(function() {
-                var $el = $(this);
-                if ($el.is(':radio') || $el.is(':checkbox')) {
-                    $el.prop('checked', false);
-                } else if ($el.is('select')) {
-                    $el.prop('selectedIndex', 0);  // volta ao placeholder/primeira opção
-                } else {
-                    $el.val('');
-                }
-            });
-        }
-
-        function restore() {
-            data = null;
-            try {
-                var raw = localStorage.getItem(KEY);
-                if (raw) { data = JSON.parse(raw); }
-            } catch (e) { data = null; }
-            if (!data || !data.g) {
-                data = null;
-                return;
-            }
-            apply(data.g, $root);
-            $('#item_draft_notice').show()
-                .find('.item_draft_when').text('Rascunho restaurado (salvo às ' + hhmm(data.ts) + ')');
-        }
-
-        window.POSItemDraft = {
-            applyAttributes: function() {
-                if (data && data.g) { apply(data.g, $('#attributes')); }
-            },
-            successSaved: function() {
-                suspend = true;
-                try { localStorage.removeItem(KEY); } catch (e) { /* noop */ }
-                data = null;
-                $('#item_draft_notice').hide();
-            },
-            saveSoon: function() {
-                if (Date.now() < discardSuppressUntil) { return; }  // após descartar, eventos de clear não re-salvam
-                armed = true;
-                clearTimeout(timer);
-                timer = setTimeout(saveNow, 800);
-            },
-            discard: function() {
-                armed = false;
-                clearTimeout(timer);
-                try { localStorage.removeItem(KEY); } catch (e) { /* noop */ }
-                data = null;
-                $('#item_draft_notice').hide();
-                // Limpa TODOS os campos do formulário (usuário pediu). Suprime o
-                // re-salvamento durante a limpeza — senão o estado vazio viraria draft.
-                discardSuppressUntil = Date.now() + 1200;
-                clearFields();
-            },
-            restore: restore
-        };
-
-        $(function() {
-            var DRAFT = window.POSItemDraft;
-
-            // Salva a cada alteração (debounce) — inclui campos de atributos carregados async
-            $('#item_form').on('change input', ':input', function() { DRAFT.saveSoon(); });
-
-            // Descarta o rascunho (mantém aviso oculto e não restaura mais nesta abertura)
-            $('#item_draft_discard').on('click', function(e) {
-                e.preventDefault();
-                DRAFT.discard();
-            });
-
-            // Ao fechar o modal (clique fora / ESC / X), grava pendências na hora
-            $(document).on('hidden.bs.modal.posdraft', function(e) {
-                if ($root[0] && $(e.target).has($root[0]).length) {
-                    clearTimeout(timer);
-                    if (armed && !suspend) { saveNow(); }
-                }
-            });
-
-            DRAFT.restore();
-        });
-    })();
-</script>
+            </script>
         </div>
 
         <div class="row form-group form-group-sm">
@@ -801,48 +648,173 @@
         init_validation();
     });
 
-    // --- Barcode web lookup (Open Food / Products / Beauty Facts) ---
-    function itemWebLookup(manual) {
-        var code = $('#item_number').val().trim();
-        if (!/^[0-9]{6,14}$/.test(code)) {
-            if (manual) {
-                $.notify({ message: 'Digite um código de barras numérico (6 a 14 dígitos) antes de buscar.' }, { type: 'warning', timer: 3500 });
-            }
-            return;
+    // --- Gerar código interno aleatório (produtos sem código de barras) ---
+    // Charset sem ambíguos (O/0, I/1, L/1); 5 chars → 32^5 ≈ 33 milhões de combinações.
+    var GERAR_CHARSET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+    function gerarCodigoInterno() {
+        var code = '';
+        for (var i = 0; i < 5; i++) {
+            code += GERAR_CHARSET.charAt(Math.floor(Math.random() * GERAR_CHARSET.length));
         }
-        var $btn = $('#barcode_web_lookup');
-        $btn.prop('disabled', true);
-        $.getJSON('<?= esc('items/barcodeLookup') ?>/' + code, function(res) {
-            if (!res || !res.found) {
-                if (manual) {
-                    $.notify({ message: 'Produto não encontrado nas bases abertas (alimentos, produtos e beleza).' }, { type: 'info', timer: 4000 });
-                }
-                return;
-            }
-            var full = res.name;
-            if (res.brand && full.toLowerCase().indexOf(res.brand.toLowerCase()) === -1) {
-                full += ' ' + res.brand;
-            }
-            if (res.quantity && full.toLowerCase().indexOf(res.quantity.toLowerCase()) === -1) {
-                full += ' ' + res.quantity;
-            }
-            if (!$('#name').val()) {
-                $('#name').val(full);
-            }
-            $('#internet_image_url').val(res.image_url || '');
-            if (res.image_url) {
-                $('#internet_image_preview').attr('src', res.image_url).show();
-            }
-            $.notify({ message: 'Dados encontrados (' + res.source + '): ' + full + (res.image_url ? ' — a imagem será anexada ao salvar.' : '') }, { type: 'success', timer: 6000 });
-        }).always(function() {
-            $btn.prop('disabled', false);
-        });
+        return code;
     }
 
-    $('#barcode_web_lookup').on('click', function() { itemWebLookup(true); });
+    $('#barcode_generate').on('click', function() {
+        var $field = $('#item_number');
+        $field.val(gerarCodigoInterno());
+        $field.trigger('change'); // re-valida remote (checkItemNumber) p/ feedback imediato de duplicado
+        $.notify({ message: 'Código gerado. Clique novamente se já existir.' }, { type: 'info', timer: 2500 });
+    });
+</script>
 
-<?php if ($item_info->item_id == NEW_ENTRY && preg_match('/^\d{6,}$/', trim((string) $item_info->item_number))): ?>
-    // New item opened with a barcode already set (e.g. unknown scan from sales): auto-lookup
-    itemWebLookup(false);
-<?php endif; ?>
+<script type="text/javascript">
+    // Rascunho automático estilo Google Forms: salva o formulário em localStorage
+    // a cada alteração (debounce) e restaura ao reabrir o modal, para não perder
+    // o trabalho se o modal fechar por acidente (clique fora do modal, ESC, X).
+    // O rascunho é limpo quando o item é salvo com sucesso, e o usuário pode
+    // descartá-lo pelo aviso amarelo "Rascunho restaurado".
+    (function() {
+        'use strict';
+
+        var ITEM_ID = <?= (int)$item_info->item_id ?>;
+        var KEY = 'ospos_item_draft_' + (ITEM_ID > 0 ? ITEM_ID : 'new');
+        var $root = $('#item_form');
+        var data = null;      // rascunho parseado {g, ts}
+        var suspend = false;  // após salvar com sucesso, não rascunhar mais
+        var armed = false;    // houve edição nesta abertura → salvar ao fechar
+        var discardSuppressUntil = 0;  // janela pós-descartar: ignora events disparados pelo clear
+        var timer = null;
+
+        function collect($scope) {
+            var groups = {};
+            $scope.find(':input').not('[type=file]').each(function() {
+                var $el = $(this), name = $el.attr('name');
+                if (!name) { return; }
+                if ($el.is(':radio') || $el.is(':checkbox')) {
+                    (groups[name] = groups[name] || []).push({v: $el.val(), c: $el.is(':checked')});
+                } else {
+                    (groups[name] = groups[name] || []).push({v: $el.val()});
+                }
+            });
+            return groups;
+        }
+
+        function apply(groups, $scope) {
+            if (!groups) { return; }
+            var idx = {};
+            $scope.find(':input').not('[type=file]').each(function() {
+                var $el = $(this), name = $el.attr('name');
+                if (!name || !groups[name]) { return; }
+                var entry = groups[name][idx[name] = (idx[name] || 0)];
+                if (entry === undefined) { return; }
+                idx[name]++;
+                if (entry.c !== undefined) {
+                    $el.prop('checked', !!entry.c);
+                } else {
+                    $el.val(entry.v);
+                }
+            });
+        }
+
+        function hhmm(ts) {
+            var d = ts ? new Date(ts) : new Date();
+            return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+        }
+
+        function saveNow() {
+            if (suspend) { return; }
+            try {
+                localStorage.setItem(KEY, JSON.stringify({g: collect($root), ts: Date.now()}));
+            } catch (e) { /* localStorage indisponível — segue sem rascunho */ }
+        }
+
+        function saveSoon() {
+            if (Date.now() < discardSuppressUntil) { return; }  // após descartar, eventos de clear não re-salvam
+            armed = true;
+            clearTimeout(timer);
+            timer = setTimeout(saveNow, 800);
+        }
+
+        function clearFields() {
+            $('#item_form').find(':input').not('[type=file], [type=hidden], [name=submit], [type=submit], [type=button]').each(function() {
+                var $el = $(this);
+                if ($el.is(':radio') || $el.is(':checkbox')) {
+                    $el.prop('checked', false);
+                } else if ($el.is('select')) {
+                    $el.prop('selectedIndex', 0);  // volta ao placeholder/primeira opção
+                } else {
+                    $el.val('');
+                }
+            });
+        }
+
+        function restore() {
+            data = null;
+            try {
+                var raw = localStorage.getItem(KEY);
+                if (raw) { data = JSON.parse(raw); }
+            } catch (e) { data = null; }
+            if (!data || !data.g) {
+                data = null;
+                return;
+            }
+            apply(data.g, $root);
+            $('#item_draft_notice').show()
+                .find('.item_draft_when').text('Rascunho restaurado (salvo às ' + hhmm(data.ts) + ')');
+        }
+
+        window.POSItemDraft = {
+            applyAttributes: function() {
+                if (data && data.g) { apply(data.g, $('#attributes')); }
+            },
+            successSaved: function() {
+                suspend = true;
+                try { localStorage.removeItem(KEY); } catch (e) { /* noop */ }
+                data = null;
+                $('#item_draft_notice').hide();
+            },
+            saveSoon: function() {
+                if (Date.now() < discardSuppressUntil) { return; }  // após descartar, eventos de clear não re-salvam
+                armed = true;
+                clearTimeout(timer);
+                timer = setTimeout(saveNow, 800);
+            },
+            discard: function() {
+                armed = false;
+                clearTimeout(timer);
+                try { localStorage.removeItem(KEY); } catch (e) { /* noop */ }
+                data = null;
+                $('#item_draft_notice').hide();
+                // Limpa TODOS os campos do formulário (usuário pediu). Suprime o
+                // re-salvamento durante a limpeza — senão o estado vazio viraria draft.
+                discardSuppressUntil = Date.now() + 1200;
+                clearFields();
+            },
+            restore: restore
+        };
+
+        $(function() {
+            var DRAFT = window.POSItemDraft;
+
+            // Salva a cada alteração (debounce) — inclui campos de atributos carregados async
+            $('#item_form').on('change input', ':input', function() { DRAFT.saveSoon(); });
+
+            // Descarta o rascunho (mantém aviso oculto e não restaura mais nesta abertura)
+            $('#item_draft_discard').on('click', function(e) {
+                e.preventDefault();
+                DRAFT.discard();
+            });
+
+            // Ao fechar o modal (clique fora / ESC / X), grava pendências na hora
+            $(document).on('hidden.bs.modal.posdraft', function(e) {
+                if ($root[0] && $(e.target).has($root[0]).length) {
+                    clearTimeout(timer);
+                    if (armed && !suspend) { saveNow(); }
+                }
+            });
+
+            DRAFT.restore();
+        });
+    })();
 </script>
