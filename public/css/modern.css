@@ -2756,12 +2756,12 @@ body {
     max-width: 100px !important;
 }
 
-/* Quantity column narrower still */
+/* Quantity column: wide enough for the full "Quantidade" header (18px, ~195px) */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-qty,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-qty {
-    width: 80px !important;
+    width: 200px !important;
     min-width: 0 !important;
-    max-width: 80px !important;
+    max-width: 200px !important;
 }
 
 /* Header text wraps instead of stretching the numeric column */
