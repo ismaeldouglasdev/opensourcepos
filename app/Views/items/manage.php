@@ -84,6 +84,8 @@ window._tutorialSteps = [
             headers: <?= $table_headers ?>,
             pageSize: <?= $config['lines_per_page'] ?>,
             uniqueId: 'items.item_id',
+            sortName: 'last_modified',
+            sortOrder: 'desc',
             queryParams: function() {
                 return $.extend(arguments[0], {
                     "start_date": start_date,

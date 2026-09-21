@@ -2675,9 +2675,8 @@ body {
 }
 
 /* Coluna Imagem: thumb pequena não precisa de 140px */
-#table_holder.items-manage .bootstrap-table .fixed-table-container .table th.items-col-pic,
-#table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-pic {
-    width: 72px !important;
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table th.items-col-pic {
+    width: 60px !important;
 }
 
 /* SALES MANAGE: mais compacto pra caber sem scroll/corte */
@@ -2689,7 +2688,7 @@ body {
 
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td {
-    padding: 5px 7px !important;
+    padding: 3px 5px !important;
 }
 
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-num {
@@ -2743,25 +2742,25 @@ body {
 }
 
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-wrap.items-col-name {
-    width: 260px !important;
-    min-width: 260px !important;
-    max-width: 260px !important;
+    width: 200px !important;
+    min-width: 200px !important;
+    max-width: 200px !important;
 }
 
 /* Numeric columns: keep narrow so they don't stretch with dead space */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-num,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-num {
-    width: 100px !important;
+    width: 90px !important;
     min-width: 0 !important;
-    max-width: 100px !important;
+    max-width: 90px !important;
 }
 
-/* Quantity column: wide enough for the full "Quantidade" header (18px, ~195px) */
+/* Quantity column: compact, "Quantidade" header rendered smaller to fit */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-qty,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-qty {
-    width: 200px !important;
+    width: 150px !important;
     min-width: 0 !important;
-    max-width: 200px !important;
+    max-width: 150px !important;
 }
 
 /* Header text wraps instead of stretching the numeric column */
@@ -2772,17 +2771,31 @@ body {
 /* ID column narrow */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-id,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-id {
-    width: 44px !important;
+    width: 40px !important;
     min-width: 0 !important;
-    max-width: 50px !important;
+    max-width: 40px !important;
 }
 
 /* UPC/item number capped (overflow ellipsis) */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-mono,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-mono {
-    width: 120px !important;
+    width: 95px !important;
     min-width: 0 !important;
-    max-width: 120px !important;
+    max-width: 95px !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Última Modificação: data/hora em 1 linha, não quebra, fonte minúscula estável */
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-dt,
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-dt {
+    width: 135px !important;
+    min-width: 0 !important;
+    max-width: 135px !important;
+    white-space: nowrap !important;
+    font-family: var(--os-font-mono) !important;
+    font-size: 12px !important;
+    text-align: left !important;
     overflow: hidden;
     text-overflow: ellipsis;
 }
@@ -2790,8 +2803,8 @@ body {
 /* Category capped, so name gets the leftover space */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-wrap:not(.items-col-name),
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-wrap:not(.items-col-name) {
-    width: 150px;
-    max-width: 150px;
+    width: 120px;
+    max-width: 120px;
 }
 
 /* Header titles wrap fully instead of being cut with ellipsis */
@@ -2799,6 +2812,7 @@ body {
     white-space: normal !important;
     overflow: visible !important;
     text-overflow: clip !important;
+    font-size: 13px !important;
 }
 
 /* Row hover highlight + sortable header hover */
@@ -2841,9 +2855,9 @@ body {
 /* Action (edit) column: narrow, centered, fixed */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table th.items-col-edit,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-edit {
-    width: 44px !important;
+    width: 36px !important;
     min-width: 0 !important;
-    max-width: 44px !important;
+    max-width: 36px !important;
     text-align: center !important;
 }
 

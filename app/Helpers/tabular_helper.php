@@ -425,7 +425,7 @@ function item_headers(): array
         ['company_name'  => lang('Suppliers.company_name'), 'visible' => false],
         ['cost_price'    => lang('Items.cost_price'), 'class' => 'items-col-num'],
         ['unit_price'    => lang('Items.unit_price'), 'class' => 'items-col-num'],
-        ['last_modified' => lang('Items.last_modified'), 'visible' => false]
+        ['last_modified' => lang('Items.last_modified'), 'visible' => true, 'class' => 'items-col-dt']
     ];
 }
 
