@@ -2671,7 +2671,8 @@ body {
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table {
     white-space: normal !important;
     table-layout: auto !important;
-    width: 100% !important;
+    width: auto !important;
+    max-width: 100% !important;
 }
 
 /* Coluna Imagem: thumb pequena não precisa de 140px */
@@ -2742,9 +2743,9 @@ body {
 }
 
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-wrap.items-col-name {
-    width: 200px !important;
-    min-width: 200px !important;
-    max-width: 200px !important;
+    width: 185px !important;
+    min-width: 185px !important;
+    max-width: 185px !important;
 }
 
 /* Numeric columns: keep narrow so they don't stretch with dead space */
@@ -2758,9 +2759,9 @@ body {
 /* Quantity column: compact, "Quantidade" header rendered smaller to fit */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-qty,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-qty {
-    width: 150px !important;
+    width: 140px !important;
     min-width: 0 !important;
-    max-width: 150px !important;
+    max-width: 140px !important;
 }
 
 /* Header text wraps instead of stretching the numeric column */
@@ -2803,8 +2804,8 @@ body {
 /* Category capped, so name gets the leftover space */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-wrap:not(.items-col-name),
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-wrap:not(.items-col-name) {
-    width: 120px;
-    max-width: 120px;
+    width: 110px;
+    max-width: 110px;
 }
 
 /* Header titles wrap fully instead of being cut with ellipsis */
