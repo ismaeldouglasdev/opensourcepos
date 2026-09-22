@@ -3287,3 +3287,25 @@ body {
     max-height: 80px !important;
     margin-bottom: 4px !important;
 }
+
+/* ============================================
+   PREVIEW DE IMAGEM no hover (items grid)
+   Aproximado do cursor (top/left: 8px no
+   manage.js onLoadSuccess) + proteções: nunca
+   estoura a viewport e não captura o mouse
+   (senão o hover da célula pisca).
+   ============================================ */
+#imgPreviewContainer {
+    pointer-events: none !important;
+    z-index: 9990 !important;
+    max-width: calc(100vw - 40px) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+    border-radius: 4px !important;
+    overflow: hidden !important;
+}
+
+#imgPreviewContainer img {
+    display: block !important;
+    max-width: 100% !important;
+    height: auto !important;
+}

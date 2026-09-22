@@ -102,8 +102,8 @@ window._tutorialSteps = [
                         width: 200
                     },
                     distanceFromCursor: {
-                        top: 10,
-                        left: -210
+                        top: 8,
+                        left: 8
                     }
                 })
             }

@@ -50,6 +50,18 @@
 
         $img = $('img', $container).css(s.imgCSS),
 
+        // Detect page zoom (site uses CSS zoom on html) so the preview is
+        // placed next to the cursor: pageX/Y are in rendered px but left/top
+        // are in CSS px, which the browser scales by zoom again.
+        zoom = (function() {
+            var probe = document.createElement('div');
+            probe.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:100px;height:100px;';
+            document.body.appendChild(probe);
+            var w = probe.getBoundingClientRect().width;
+            document.body.removeChild(probe);
+            return w > 0 ? w / 100 : 1;
+        })(),
+
         // Get all valid elements (linking to images / ATTR with image link):
         $collection = this.filter(':linkingToImage(' + s.srcAttr + ')');
 
@@ -76,9 +88,27 @@
         $collection
             .mousemove(function(e){
 
+                var vw = window.innerWidth,
+                    vh = window.innerHeight,
+                    sx = window.scrollX || 0,
+                    sy = window.scrollY || 0,
+                    // rect is in rendered px, same space as pageX/Y and
+                    // innerWidth/Height, so the clamp math is consistent.
+                    cw = $container[0].getBoundingClientRect().width,
+                    ch = $container[0].getBoundingClientRect().height,
+                    left = e.pageX + s.distanceFromCursor.left,
+                    top = e.pageY + s.distanceFromCursor.top;
+
+                if (cw) {
+                    left = Math.min(Math.max(left, sx + 4), sx + vw - cw - 4);
+                }
+                if (ch) {
+                    top = Math.min(Math.max(top, sy + 4), sy + vh - ch - 4);
+                }
+
                 $container.css({
-                    top: e.pageY + s.distanceFromCursor.top + 'px',
-                    left: e.pageX + s.distanceFromCursor.left + 'px'
+                    top: top / zoom + 'px',
+                    left: left / zoom + 'px'
                 });
 
             })
