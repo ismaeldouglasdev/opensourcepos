@@ -115,10 +115,10 @@ app.baseURL = 'http://localhost:8080/'
 database.default.hostname = 'localhost'
 database.default.database = 'ospos_test'
 database.default.username = 'admin'
-database.default.password = 'Arroz123@'
+database.default.password = 'CHANGE-ME'
 database.default.DBDriver = 'MySQLi'
 database.default.DBPrefix = 'ospos_'
-encryption.key = 39375001af541e8f9645a2fade5d491f
+encryption.key = REDACTED-CHANGE-ME
 app.allowedHostnames = 'localhost'
 ```
 
