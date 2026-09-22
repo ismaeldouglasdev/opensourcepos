@@ -37,21 +37,34 @@
 <?= form_open("items/save/$item_info->item_id", ['id' => 'item_form', 'enctype' => 'multipart/form-data']) ?>
     <fieldset id="item_basic_info">
 
-        <div class="form-group form-group-sm">
-            <?= form_label(lang('Items.item_number'), 'item_number', ['class' => 'control-label']) ?>
-            <div class="input-group">
-                <span class="input-group-addon input-sm"><span class="glyphicon glyphicon-barcode"></span></span>
-                <?= form_input([
-                    'name'  => 'item_number',
-                    'id'    => 'item_number',
-                    'class' => 'form-control input-sm',
-                    'value' => $item_info->item_number
-                ]) ?>
-                <span class="input-group-btn">
-                    <button type="button" id="barcode_generate" class="btn btn-default btn-sm" title="Gerar um código interno aleatório (letras e números) para produtos sem código de barras" style="height: 30px;">
-                        <span class="glyphicon glyphicon-random"></span> Gerar código
-                    </button>
-                </span>
+        <div class="row form-group form-group-sm">
+            <div class="col-xs-6">
+                <?= form_label(lang('Items.item_number'), 'item_number', ['class' => 'control-label']) ?>
+                <div class="input-group">
+                    <span class="input-group-addon input-sm"><span class="glyphicon glyphicon-barcode"></span></span>
+                    <?= form_input([
+                        'name'  => 'item_number',
+                        'id'    => 'item_number',
+                        'class' => 'form-control input-sm',
+                        'value' => $item_info->item_number
+                    ]) ?>
+                    <span class="input-group-btn">
+                        <button type="button" id="barcode_generate" class="btn btn-default btn-sm" title="Gerar um código interno aleatório (letras e números) para produtos sem código de barras" style="height: 30px;">
+                            <span class="glyphicon glyphicon-random"></span> Gerar código
+                        </button>
+                    </span>
+                </div>
+            </div>
+            <div class="col-xs-6">
+                <?= form_label(lang('Items.category'), 'category', ['class' => 'required control-label']) ?>
+                <div class="input-group">
+                    <span class="input-group-addon input-sm"><span class="glyphicon glyphicon-tag"></span></span>
+                    <?php
+                    // Category is always a dropdown populated from the categories in use
+                    // (ospos_items.category) — see Items::getView().
+                    echo form_dropdown('category', $categories, $selected_category, ['id' => 'category', 'class' => 'form-control']);
+                    ?>
+                </div>
             </div>
         </div>
 
@@ -63,18 +76,6 @@
                 'class' => 'form-control input-sm',
                 'value' => $item_info->name
             ]) ?>
-        </div>
-
-        <div class="form-group form-group-sm">
-            <?= form_label(lang('Items.category'), 'category', ['class' => 'required control-label']) ?>
-            <div class="input-group">
-                <span class="input-group-addon input-sm"><span class="glyphicon glyphicon-tag"></span></span>
-                <?php
-                // Category is always a dropdown populated from the categories in use
-                // (ospos_items.category) — see Items::getView().
-                echo form_dropdown('category', $categories, $selected_category, ['id' => 'category', 'class' => 'form-control']);
-                ?>
-            </div>
         </div>
 
         <div id="attributes">
@@ -155,7 +156,8 @@
             <?= form_textarea([
                 'name'  => 'description',
                 'id'    => 'description',
-                'class' => 'form-control input-sm',
+                'rows'  => 3,
+                'class' => 'form-control input-sm description-box',
                 'value' => $item_info->description
             ]) ?>
         </div>

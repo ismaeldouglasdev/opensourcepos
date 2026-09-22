@@ -533,7 +533,7 @@ function get_item_data_row(object $item): array
             "$controller/view/$item->item_id",
             '<span class="glyphicon glyphicon-edit"></span>',
             [
-                'class'           => 'modal-dlg',
+                'class'           => 'modal-dlg modal-dlg-1000',
                 'data-btn-submit' => lang('Common.submit'),
                 'title'           => lang(ucfirst($controller) . ".update")
             ]

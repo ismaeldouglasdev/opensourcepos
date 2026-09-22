@@ -2694,7 +2694,7 @@ body {
 
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td {
-    padding: 3px 5px !important;
+    padding: 4px 7px !important;
 }
 
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-num {
@@ -2771,18 +2771,18 @@ body {
 /* Numeric columns: keep narrow so they don't stretch with dead space */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-num,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-num {
-    width: 90px !important;
+    width: 100px !important;
     min-width: 0 !important;
-    max-width: 90px !important;
+    max-width: 100px !important;
 }
 
 /* Quantity column: compact — header is the short "Qtd" (titleTooltip shows
    the full "Quantidade" on hover), so 140px is no longer needed */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-qty,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-qty {
-    width: 70px !important;
+    width: 80px !important;
     min-width: 0 !important;
-    max-width: 70px !important;
+    max-width: 80px !important;
 }
 
 /* Header text wraps instead of stretching the numeric column */
@@ -2793,17 +2793,17 @@ body {
 /* ID column narrow — but wide enough for 5-digit ids without "..." */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-id,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-id {
-    width: 52px !important;
-    min-width: 52px !important;
-    max-width: 52px !important;
+    width: 60px !important;
+    min-width: 60px !important;
+    max-width: 60px !important;
 }
 
 /* UPC/item number — EAN-13 (13 digits) plus a few 14-char codes need ~135px */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-mono,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-mono {
-    width: 135px !important;
-    min-width: 135px !important;
-    max-width: 135px !important;
+    width: 140px !important;
+    min-width: 140px !important;
+    max-width: 140px !important;
     overflow: hidden;
     text-overflow: ellipsis;
 }
@@ -2811,9 +2811,9 @@ body {
 /* Última Modificação: data/hora em 1 linha, não quebra, fonte minúscula estável */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-dt,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-dt {
-    width: 170px !important;
-    min-width: 170px !important;
-    max-width: 170px !important;
+    width: 150px !important;
+    min-width: 150px !important;
+    max-width: 150px !important;
     white-space: nowrap !important;
     font-family: var(--os-font-mono) !important;
     font-size: 12px !important;
@@ -3170,4 +3170,120 @@ body {
 
 .pos-ac-diversos .glyphicon {
     margin-right: 6px !important;
+}
+
+/* ============================================
+   MODAL WIDE — item novo/editar (items/view)
+   O loader do manage_tables.js reconhece classes `modal-dlg-XXX`
+   e aplica como cssClass do BootstrapDialog. 1000px de largura
+   + corpo mais alto na tela = form sem scroll vertical.
+   ============================================ */
+.modal-dlg-1000 .modal-dialog {
+    width: 1000px !important;
+}
+
+.modal-dlg-1000 .modal-body {
+    max-height: calc(100vh - 150px) !important;
+    overflow-y: auto;
+}
+
+/* ============================================
+   MODAL COMPACTO — item novo/editar
+   O accessible.css (presente em /items, excluído
+   só do /sales) infla inputs p/ 55px/20px/14px,
+   padding do body/header/footer 20-25px e labels
+   18px — o form estoura o viewport (dialog 918px
+   CSS > 900px) e o rodapé fica fora da tela.
+   Overrides escopados no modal de item para
+   devolver altura normal de formulário.
+   ============================================ */
+.modal-dlg-1000 .modal-dialog .modal-content {
+    border-radius: 6px !important;
+}
+
+.modal-dlg-1000 .modal-header {
+    padding: 8px 20px !important;
+    background: #1d63a8 !important;
+    color: #fff !important;
+}
+
+.modal-dlg-1000 .modal-header .modal-title {
+    font-size: 16px !important;
+    line-height: 1.3 !important;
+    color: #fff !important;
+}
+
+.modal-dlg-1000 .modal-header .close {
+    color: #fff !important;
+    opacity: 0.9 !important;
+    font-size: 24px !important;
+    margin-top: -2px !important;
+}
+
+.modal-dlg-1000 .modal-body {
+    padding: 12px 20px 8px !important;
+}
+
+.modal-dlg-1000 .modal-body .form-group {
+    margin-bottom: 10px !important;
+}
+
+.modal-dlg-1000 .modal-body .control-label {
+    font-size: 13px !important;
+    margin-bottom: 2px !important;
+    line-height: 1.2 !important;
+}
+
+.modal-dlg-1000 .modal-body .form-control,
+.modal-dlg-1000 .modal-body input[type='text'],
+.modal-dlg-1000 .modal-body input[type='number'],
+.modal-dlg-1000 .modal-body input[type='password'],
+.modal-dlg-1000 .modal-body input[type='email'],
+.modal-dlg-1000 .modal-body select,
+.modal-dlg-1000 .modal-body textarea {
+    min-height: 34px !important;
+    height: 34px !important;
+    font-size: 14px !important;
+    padding: 5px 10px !important;
+    line-height: 1.3 !important;
+    border-radius: 4px !important;
+    border-width: 1px !important;
+}
+
+.modal-dlg-1000 .modal-body textarea {
+    height: auto !important;
+    min-height: 72px !important;
+    resize: vertical;
+}
+
+.modal-dlg-1000 .modal-body .input-group-addon {
+    padding: 5px 10px !important;
+    font-size: 13px !important;
+    line-height: 1.3 !important;
+    border-radius: 0 !important;
+}
+
+.modal-dlg-1000 .modal-footer {
+    padding: 8px 20px !important;
+}
+
+.modal-dlg-1000 .modal-footer .btn,
+.modal-dlg-1000 .modal-body .fileinput-btn .btn {
+    font-size: 14px !important;
+    padding: 6px 14px !important;
+    min-height: 0 !important;
+    line-height: 1.3 !important;
+}
+
+.modal-dlg-1000 .modal-body input[name='quantity'] {
+    width: 100% !important;
+    min-height: 34px !important;
+    font-size: 14px !important;
+    text-align: left !important;
+}
+
+.modal-dlg-1000 .fileinput .thumbnail {
+    max-width: 80px !important;
+    max-height: 80px !important;
+    margin-bottom: 4px !important;
 }
