@@ -511,7 +511,7 @@ function get_item_data_row(object $item): array
     $definition_names = $attribute->get_definitions_by_flags($attribute::SHOW_IN_ITEMS);
 
     $last_modified = !empty($item->last_modified)
-        ? to_datetime(strtotime($item->last_modified))
+        ? date($config['dateformat'] . ' ' . str_replace(':s', '', $config['timeformat']), strtotime($item->last_modified))
         : '-';
 
     $columns = [

@@ -170,11 +170,19 @@ window._tutorialSteps = [
             var field = $td.attr('data-efield');
             if (!INLINE_FIELDS[field]) return;
             if ($td.find('input, select').length) return;
-            if ($td.closest('tr').find('input[type="checkbox"]').is(':checked')) return;
 
             var $tr = $td.closest('tr');
             var itemId = $tr.data('uniqueid');
             if (!itemId) return;
+
+            // clickToSelect toggles the row checkbox on each click of the
+            // double-click (bootstrap-table checks the td), which would leave
+            // the caixinha checked/parity-blocked. Deselect the row so the
+            // edit always opens and the checkbox is never left marked.
+            var rowIdx = $tr.data('index');
+            if (rowIdx !== undefined && $.fn.bootstrapTable) {
+                $('#table').bootstrapTable('uncheck', rowIdx);
+            }
 
             var raw = $.trim($td.text());
             var cfg = INLINE_FIELDS[field];
