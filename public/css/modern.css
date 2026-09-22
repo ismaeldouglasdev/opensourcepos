@@ -3234,6 +3234,10 @@ body {
     line-height: 1.2 !important;
 }
 
+.modal-dlg-1000 .modal-body .form-group {
+    margin-bottom: 6px !important;
+}
+
 .modal-dlg-1000 .modal-body .form-control,
 .modal-dlg-1000 .modal-body input[type='text'],
 .modal-dlg-1000 .modal-body input[type='number'],
@@ -3252,7 +3256,7 @@ body {
 
 .modal-dlg-1000 .modal-body textarea {
     height: auto !important;
-    min-height: 72px !important;
+    min-height: 48px !important;
     resize: vertical;
 }
 
@@ -3283,8 +3287,8 @@ body {
 }
 
 .modal-dlg-1000 .fileinput .thumbnail {
-    max-width: 80px !important;
-    max-height: 80px !important;
+    max-width: 64px !important;
+    max-height: 64px !important;
     margin-bottom: 4px !important;
 }
 

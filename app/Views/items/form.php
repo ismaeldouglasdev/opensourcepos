@@ -78,15 +78,6 @@
             ]) ?>
         </div>
 
-        <div id="attributes">
-            <script type="text/javascript">
-                $('#attributes').load('<?= "items/attributes/$item_info->item_id" ?>', function() {
-                    // Reaplica o rascunho nos campos carregados de forma assíncrona (atributos)
-                    window.POSItemDraft && POSItemDraft.applyAttributes();
-                });
-            </script>
-        </div>
-
         <div class="row form-group form-group-sm">
             <div class="col-xs-6">
                 <?= form_label(lang('Items.cost_price'), 'cost_price', ['class' => 'required control-label']) ?>
@@ -156,7 +147,7 @@
             <?= form_textarea([
                 'name'  => 'description',
                 'id'    => 'description',
-                'rows'  => 3,
+                'rows'  => 2,
                 'class' => 'form-control input-sm description-box',
                 'value' => $item_info->description
             ]) ?>
@@ -767,9 +758,6 @@
         }
 
         window.POSItemDraft = {
-            applyAttributes: function() {
-                if (data && data.g) { apply(data.g, $('#attributes')); }
-            },
             successSaved: function() {
                 suspend = true;
                 try { localStorage.removeItem(KEY); } catch (e) { /* noop */ }
@@ -799,7 +787,7 @@
         $(function() {
             var DRAFT = window.POSItemDraft;
 
-            // Salva a cada alteração (debounce) — inclui campos de atributos carregados async
+            // Salva a cada alteração (debounce)
             $('#item_form').on('change input', ':input', function() { DRAFT.saveSoon(); });
 
             // Descarta o rascunho (mantém aviso oculto e não restaura mais nesta abertura)
