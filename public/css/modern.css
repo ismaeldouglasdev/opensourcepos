@@ -2670,8 +2670,11 @@ body {
    ============================================ */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table {
     white-space: normal !important;
-    table-layout: auto !important;
-    width: auto !important;
+    /* fixed: caps below become hard, no column stretches, table fills
+       the container (no blank space on the right); leftover space is
+       distributed evenly (~4px) which is harmless */
+    table-layout: fixed !important;
+    width: 100% !important;
     max-width: 100% !important;
 }
 
@@ -2769,20 +2772,20 @@ body {
     white-space: normal !important;
 }
 
-/* ID column narrow */
+/* ID column narrow — but wide enough for 5-digit ids without "..." */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-id,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-id {
-    width: 40px !important;
-    min-width: 0 !important;
-    max-width: 40px !important;
+    width: 52px !important;
+    min-width: 52px !important;
+    max-width: 52px !important;
 }
 
-/* UPC/item number capped (overflow ellipsis) */
+/* UPC/item number — EAN-13 (13 digits) needs ~120px rendered */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-mono,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-mono {
-    width: 95px !important;
-    min-width: 0 !important;
-    max-width: 95px !important;
+    width: 120px !important;
+    min-width: 120px !important;
+    max-width: 120px !important;
     overflow: hidden;
     text-overflow: ellipsis;
 }
@@ -2790,9 +2793,9 @@ body {
 /* Última Modificação: data/hora em 1 linha, não quebra, fonte minúscula estável */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-dt,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-dt {
-    width: 135px !important;
-    min-width: 0 !important;
-    max-width: 135px !important;
+    width: 160px !important;
+    min-width: 160px !important;
+    max-width: 160px !important;
     white-space: nowrap !important;
     font-family: var(--os-font-mono) !important;
     font-size: 12px !important;
