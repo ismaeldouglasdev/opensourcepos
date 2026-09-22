@@ -81,6 +81,7 @@ return [
     "pack_name"                          => "Nome do pacote",
     "qty_per_pack"                       => "Quantidade por embalagem",
     "quantity"                           => "Quantidade",
+    "quantity_short"                     => "Qtd",
     "quantity_number"                    => "Quantidade deve ser um número.",
     "quantity_required"                  => "Quantidade é um campo obrigatório.",
     "receiving_quantity"                 => "Quantidade a receber",

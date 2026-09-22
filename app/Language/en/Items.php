@@ -81,6 +81,7 @@ return [
     "pack_name"                          => "Pack Name",
     "qty_per_pack"                       => "Quantity per pack",
     "quantity"                           => "Quantity",
+    "quantity_short"                     => "Qty",
     "quantity_number"                    => "Quantity must be a number.",
     "quantity_required"                  => "Quantity is a required field.",
     "receiving_quantity"                 => "Receiving Quantity",

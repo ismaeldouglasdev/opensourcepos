@@ -2678,9 +2678,11 @@ body {
     max-width: 100% !important;
 }
 
-/* Coluna Imagem: thumb pequena não precisa de 140px */
+/* Coluna Imagem: thumb pequena não precisa de 140px; header "Imagem" fica
+   centralizado e largo o suficiente para não encostar no header vizinho */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table th.items-col-pic {
-    width: 60px !important;
+    width: 72px !important;
+    text-align: center !important;
 }
 
 /* SALES MANAGE: mais compacto pra caber sem scroll/corte */
@@ -2702,6 +2704,21 @@ body {
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+}
+
+/* Colored columns: cost muted (internal), retail green (money in),
+   category amber — scan-friendly at a glance */
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-cost {
+    color: var(--os-text-muted) !important;
+}
+
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-price {
+    color: var(--os-success) !important;
+    font-weight: 700 !important;
+}
+
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-cat {
+    color: var(--os-warning) !important;
 }
 
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-id {
@@ -2759,12 +2776,13 @@ body {
     max-width: 90px !important;
 }
 
-/* Quantity column: compact, "Quantidade" header rendered smaller to fit */
+/* Quantity column: compact — header is the short "Qtd" (titleTooltip shows
+   the full "Quantidade" on hover), so 140px is no longer needed */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-qty,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-qty {
-    width: 140px !important;
+    width: 70px !important;
     min-width: 0 !important;
-    max-width: 140px !important;
+    max-width: 70px !important;
 }
 
 /* Header text wraps instead of stretching the numeric column */
@@ -2780,12 +2798,12 @@ body {
     max-width: 52px !important;
 }
 
-/* UPC/item number — EAN-13 (13 digits) needs ~120px rendered */
+/* UPC/item number — EAN-13 (13 digits) plus a few 14-char codes need ~135px */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-mono,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-mono {
-    width: 120px !important;
-    min-width: 120px !important;
-    max-width: 120px !important;
+    width: 135px !important;
+    min-width: 135px !important;
+    max-width: 135px !important;
     overflow: hidden;
     text-overflow: ellipsis;
 }
@@ -2793,9 +2811,9 @@ body {
 /* Última Modificação: data/hora em 1 linha, não quebra, fonte minúscula estável */
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > thead > tr > th.items-col-dt,
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table > tbody > tr > td.items-col-dt {
-    width: 160px !important;
-    min-width: 160px !important;
-    max-width: 160px !important;
+    width: 170px !important;
+    min-width: 170px !important;
+    max-width: 170px !important;
     white-space: nowrap !important;
     font-family: var(--os-font-mono) !important;
     font-size: 12px !important;
@@ -2817,6 +2835,13 @@ body {
     overflow: visible !important;
     text-overflow: clip !important;
     font-size: 13px !important;
+}
+
+/* Zebra no escopo items (o table-striped genérico não pega nesta tabela).
+   Aplica bg no <tr> — os td são transparentes e o hover (mais abaixo) pinta
+   por cima, então o highlight continua vencendo a listra */
+#table_holder.items-manage .bootstrap-table .fixed-table-body .table > tbody > tr:nth-child(odd) {
+    background-color: #f0f5f2 !important;
 }
 
 /* Row hover highlight + sortable header hover */
@@ -2842,6 +2867,12 @@ body {
     object-fit: cover !important;
     border-radius: 6px !important;
     border: 1px solid var(--os-border) !important;
+}
+
+/* Header da coluna Imagem: "Imagem" a 13px sangraria ~3px sobre Categoria
+   (th-inner tem overflow:visible). 12px cabe no content box de 75px. */
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table thead th.items-col-pic .th-inner {
+    font-size: 12px !important;
 }
 
 #table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-pic img:hover {

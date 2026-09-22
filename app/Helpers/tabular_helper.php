@@ -53,7 +53,8 @@ function transform_headers(array $headers, bool $readonly = false, bool $editabl
             'checkbox'   => $element['checkbox'] ?? false,
             'visible'    => $element['visible'] ?? true,
             'class'      => $element['class'] ?? (isset($element['checkbox']) || preg_match('(^$|&nbsp)', current($element)) ? 'print_hide' : ''),
-            'sorter'     => $element['sorter'] ?? ''
+            'sorter'     => $element['sorter'] ?? '',
+            'titleTooltip' => $element['titleTooltip'] ?? ''
         ];
     }
 
@@ -419,12 +420,12 @@ function item_headers(): array
         ['items.item_id' => lang('Common.id'), 'class' => 'items-col-id'],
         ['item_number'   => lang('Items.item_number'), 'class' => 'items-col-mono'],
         ['name'          => lang('Items.name'), 'class' => 'items-col-name items-col-wrap'],
-        ['quantity'      => lang('Items.quantity'), 'class' => 'items-col-num items-col-qty'],
+        ['quantity'      => lang('Items.quantity_short'), 'class' => 'items-col-num items-col-qty', 'titleTooltip' => lang('Items.quantity')],
         ['item_pic'      => lang('Items.image'), 'sortable' => false, 'visible' => true, 'class' => 'items-col-pic'],
-        ['category'      => lang('Items.category'), 'class' => 'items-col-wrap'],
+        ['category'      => lang('Items.category'), 'class' => 'items-col-wrap items-col-cat'],
         ['company_name'  => lang('Suppliers.company_name'), 'visible' => false],
-        ['cost_price'    => lang('Items.cost_price'), 'class' => 'items-col-num'],
-        ['unit_price'    => lang('Items.unit_price'), 'class' => 'items-col-num'],
+        ['cost_price'    => lang('Items.cost_price'), 'class' => 'items-col-num items-col-cost'],
+        ['unit_price'    => lang('Items.unit_price'), 'class' => 'items-col-num items-col-price'],
         ['last_modified' => lang('Items.last_modified'), 'visible' => true, 'class' => 'items-col-dt']
     ];
 }
