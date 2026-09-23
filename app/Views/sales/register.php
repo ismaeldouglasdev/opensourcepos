@@ -299,7 +299,7 @@ if (isset($success)) {
                     <span class="ui-helper-hidden-accessible" role="status"></span>
                 </li>
                 <li class="pull-right">
-                    <button type="button" id="new_item_button" class="btn btn-info btn-sm pull-right modal-dlg" data-btn-new="<?= lang('Common.new') ?>" data-btn-submit="<?= lang('Common.submit') ?>" data-href="<?= "items/view" ?>" title="<?= lang(ucfirst($controller_name) . ".new_item") ?>">
+                    <button type="button" id="new_item_button" class="btn btn-info btn-sm pull-right modal-dlg modal-dlg-1000" data-btn-new="<?= lang('Common.new') ?>" data-btn-submit="<?= lang('Common.submit') ?>" data-href="<?= "items/view" ?>" title="<?= lang(ucfirst($controller_name) . ".new_item") ?>">
                         <span class="glyphicon glyphicon-tag">&nbsp;</span><?= lang(ucfirst($controller_name) . ".new_item") ?>
                     </button>
                 </li>
@@ -943,12 +943,15 @@ if (isset($success)) {
         // try to fill the name/brand from an internet lookup (Open Food Facts).
         function openNewItemWithBarcode(barcode) {
             $.notify({ message: 'Código não cadastrado. Abrindo cadastro do produto...' }, { type: 'warning', timer: 2500 });
-            var $link = $('<a>').addClass('modal-dlg').attr({
+            var $link = $('<a>').addClass('modal-dlg modal-dlg-1000').attr({
                 'data-href': '<?= esc("items/view") ?>?item_number=' + encodeURIComponent(barcode),
                 'data-btn-new': 'Novo',
                 'data-btn-submit': 'Enviar',
                 'title': 'Novo produto'
             }).hide().appendTo('body');
+            // dialog_support.init usa binding direto — o link criado aqui
+            // dinamicamente não teria handler; liga no elemento novo
+            dialog_support.init($link);
             $link[0].click();
             setTimeout(function() { $link.remove(); }, 1500);
 

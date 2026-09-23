@@ -256,6 +256,15 @@
     $(document).ready(function() {
         $('#tutorialFab').on('click', window.startTutorial);
 
+        // FAB (z-index 9997) fica acima do modal Bootstrap (1050) e cobre
+        // botões do rodapé (ex.: "Novo" no modal de item em /sales);
+        // esse BootstrapDialog só emite shown/hidden.bs.modal
+        $(document)
+            .on('shown.bs.modal', function() { $('#tutorialFab').hide(); })
+            .on('hidden.bs.modal', function() {
+                if (!$('.modal.in').length) $('#tutorialFab').fadeIn(150);
+            });
+
         $('#tutorialNext').on('click', function() {
             if (current < tutorialSteps.length - 1) {
                 current++;
