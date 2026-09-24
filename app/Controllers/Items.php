@@ -271,6 +271,8 @@ class Items extends Secure_Controller
             $data = [];
         }
 
+        $data['quick_mode'] = ($this->request->getGet('quick') === '1') && $item_id === NEW_ENTRY;
+
         $data['allow_temp_item'] = $this->session->get('allow_temp_items'); // allow_temp_items is set in the index function of items.php or sales.php
         $data['item_tax_info'] = $this->item_taxes->get_info($item_id);
         $data['default_tax_1_rate'] = '';
@@ -308,6 +310,11 @@ class Items extends Secure_Controller
         $data['categories'] = $categories;
 
         $data['selected_category'] = $item_info->category ?? '';
+
+        // Quick mode (cadastro rápido a partir de /sales): categoria default UTILIDADES.
+        if ($data['quick_mode']) {
+            $data['selected_category'] = 'UTILIDADES';
+        }
 
         if ($item_id === NEW_ENTRY) {
             $data['default_tax_1_rate'] = $this->config['default_tax_1_rate'];
