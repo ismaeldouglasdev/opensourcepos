@@ -299,7 +299,7 @@ if (isset($success)) {
                     <span class="ui-helper-hidden-accessible" role="status"></span>
                 </li>
                 <li class="pull-right">
-                    <button type="button" id="new_item_button" class="btn btn-info btn-sm pull-right modal-dlg modal-dlg-1000" data-btn-new="<?= lang('Common.new') ?>" data-btn-submit="<?= lang('Common.submit') ?>" data-href="<?= "items/view" ?>" title="<?= lang(ucfirst($controller_name) . ".new_item") ?>">
+                    <button type="button" id="new_item_button" class="btn btn-info btn-sm pull-right modal-dlg modal-dlg-1000" data-btn-new="<?= lang('Common.new') ?>" data-btn-submit="<?= lang('Common.submit') ?>" data-href="<?= "items/view?quick=1" ?>" title="<?= lang(ucfirst($controller_name) . ".new_item") ?>">
                         <span class="glyphicon glyphicon-tag">&nbsp;</span><?= lang(ucfirst($controller_name) . ".new_item") ?>
                     </button>
                 </li>
@@ -944,7 +944,7 @@ if (isset($success)) {
         function openNewItemWithBarcode(barcode) {
             $.notify({ message: 'Código não cadastrado. Abrindo cadastro do produto...' }, { type: 'warning', timer: 2500 });
             var $link = $('<a>').addClass('modal-dlg modal-dlg-1000').attr({
-                'data-href': '<?= esc("items/view") ?>?item_number=' + encodeURIComponent(barcode),
+                'data-href': '<?= esc("items/view") ?>?quick=1&item_number=' + encodeURIComponent(barcode),
                 'data-btn-new': 'Novo',
                 'data-btn-submit': 'Enviar',
                 'title': 'Novo produto'

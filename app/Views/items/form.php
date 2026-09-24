@@ -22,7 +22,9 @@
  * @var int $selected_low_sell_item_id
  * @var string $controller_name
  * @var array $config
+ * @var bool $quick_mode
  */
+$quick_mode = $quick_mode ?? false;
 ?>
 
 <div id="required_fields_message"><?= lang('Common.fields_required_message') ?></div>
@@ -38,7 +40,7 @@
     <fieldset id="item_basic_info">
 
         <div class="row form-group form-group-sm">
-            <div class="col-xs-6">
+            <div class="col-xs-<?= $quick_mode ? 12 : 6 ?>">
                 <?= form_label(lang('Items.item_number'), 'item_number', ['class' => 'control-label']) ?>
                 <div class="input-group">
                     <span class="input-group-addon input-sm"><span class="glyphicon glyphicon-barcode"></span></span>
@@ -55,6 +57,9 @@
                     </span>
                 </div>
             </div>
+            <?php if ($quick_mode): ?>
+                <?= form_hidden('category', $selected_category) ?>
+            <?php else: ?>
             <div class="col-xs-6">
                 <?= form_label(lang('Items.category'), 'category', ['class' => 'required control-label']) ?>
                 <div class="input-group">
@@ -66,6 +71,7 @@
                     ?>
                 </div>
             </div>
+            <?php endif; ?>
         </div>
 
         <div class="form-group form-group-sm">
@@ -79,6 +85,9 @@
         </div>
 
         <div class="row form-group form-group-sm">
+            <?php if ($quick_mode): ?>
+                <?= form_hidden('cost_price', to_currency_no_money($item_info->cost_price)) ?>
+            <?php else: ?>
             <div class="col-xs-6">
                 <?= form_label(lang('Items.cost_price'), 'cost_price', ['class' => 'required control-label']) ?>
                 <div class="input-group input-group-sm">
@@ -97,7 +106,8 @@
                     <?php endif; ?>
                 </div>
             </div>
-            <div class="col-xs-6">
+            <?php endif; ?>
+            <div class="col-xs-<?= $quick_mode ? 12 : 6 ?>">
                 <?= form_label(lang('Items.unit_price'), 'unit_price', ['class' => 'required control-label']) ?>
                 <div class="input-group input-group-sm">
                     <?php if (!is_right_side_currency_symbol()): ?>
@@ -117,6 +127,7 @@
             </div>
         </div>
 
+        <?php if (!$quick_mode): ?>
         <div class="row form-group form-group-sm">
             <?php foreach ($stock_locations as $key => $location_detail) { ?>
                 <div class="col-xs-6">
@@ -180,7 +191,9 @@
                 <span class="glyphicon glyphicon-chevron-down" id="item_extra_caret" style="font-size: 10px;"></span>&nbsp;<?= lang('Items.extra_options') ?>
             </a>
         </div>
+        <?php endif; // !$quick_mode — quantity/reorder, description, image e extra options são defaults no cadastro rápido ?>
 
+        <?php if (!$quick_mode): ?>
         <div id="item_extra_fields" class="collapse">
             <div style="padding: 8px 2px 2px;">
 
@@ -453,6 +466,7 @@
 
             </div>
         </div>
+        <?php endif; // !$quick_mode — supplier/stock_type/item_type/taxes/etc. são defaults no cadastro rápido ?>
 
     </fieldset>
 <?= form_close() ?>
@@ -661,6 +675,7 @@
     });
 </script>
 
+<?php if (!$quick_mode): ?>
 <script type="text/javascript">
     // Rascunho automático estilo Google Forms: salva o formulário em localStorage
     // a cada alteração (debounce) e restaura ao reabrir o modal, para não perder
@@ -808,3 +823,4 @@
         });
     })();
 </script>
+<?php endif; // !$quick_mode — rascunho desativado no cadastro rápido (não pode sobrescrever a categoria default) ?>
