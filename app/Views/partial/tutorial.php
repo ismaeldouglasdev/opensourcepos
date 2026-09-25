@@ -123,13 +123,21 @@
     transition: outline 0.2s;
 }
 
+/* Reservar a faixa onde o botao flutuante fica, senao ele cobre a ultima
+   coluna das tabelas (ver DESIGN.md P0). A reserva vive no container de
+   rolagem, entao a tabela nao e estreitada: apenas o scroll horizontal
+   reserva 64px a direita. */
+body:has(.tutorial-fab) .bootstrap-table .fixed-table-container,
+body:has(.tutorial-fab) #table_holder .fixed-table-body {
+    padding-right: 64px !important;
+}
 .tutorial-fab {
     position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 9997;
-    width: 56px;
-    height: 56px;
+    bottom: 16px;
+    right: 16px;
+    z-index: 1040;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     background: #1a9c6a;
     color: #fff;
