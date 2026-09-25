@@ -176,7 +176,7 @@ if (isset($error_message)) {
         ?>
             <tr>
                 <td colspan="3" class="blank"> </td>
-                <td colspan="2" class="total-line"><?= $splitpayment[0] ?></td>
+                <td colspan="2" class="total-line"><?= esc($splitpayment[0], 'html') ?></td>
                 <td class="total-value" id="paid"><?= to_currency($payment['payment_amount']) ?></td>
             </tr>
         <?php } ?>

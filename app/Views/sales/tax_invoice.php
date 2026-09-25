@@ -139,7 +139,7 @@ if (isset($error_message)) {
             if ($item['print_option'] == PRINT_YES) {    // TODO: === ?
         ?>
                 <tr class="item-row">
-                    <td><?= $item['item_number'] ?></td>
+                       <td><?= esc($item['item_number'], 'html') ?></td>
                     <?php if ($include_hsn): ?>
                         <td style="text-align: center;"><?= esc($item['hsn_code']) ?></td>
                     <?php endif; ?>
@@ -200,7 +200,7 @@ if (isset($error_message)) {
         ?>
             <tr>
                 <td colspan="<?= $invoice_columns - 3 ?>" class="blank"> </td>
-                <td colspan="2" class="total-line"><?= $splitpayment[0] ?></td>
+                   <td colspan="2" class="total-line"><?= esc($splitpayment[0], 'html') ?></td>
                 <td class="total-value" id="paid"><?= to_currency($payment['payment_amount'] * -1) ?></td>
             </tr>
         <?php } ?>

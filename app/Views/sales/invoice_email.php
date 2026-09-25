@@ -98,7 +98,7 @@
                 if ($item['print_option'] == PRINT_YES) {
             ?>
                     <tr class="item-row">
-                        <td><?= $item['item_number'] ?></td>
+                        <td><?= esc($item['item_number'], 'html') ?></td>
                         <td class="item-name"><?= esc($item['name']) ?></td>
                         <td><?= to_quantity_decimals($item['quantity']) ?></td>
                         <td><?= to_currency($item['price']) ?></td>
@@ -148,7 +148,7 @@
             ?>
                 <tr>
                     <td colspan="<?= $invoice_columns - 3 ?>" class="blank"> </td>
-                    <td colspan="2" class="total-line"><?= $splitpayment[0] ?></td>
+                    <td colspan="2" class="total-line"><?= esc($splitpayment[0], 'html') ?></td>
                     <td class="total-value"><?= to_currency(-$payment['payment_amount']) ?></td>
                 </tr>
             <?php } ?>

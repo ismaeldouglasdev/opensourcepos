@@ -681,7 +681,7 @@ if (isset($success)) {
                             <?php foreach ($payments as $payment_id => $payment) { ?>
                                 <tr>
                                     <td><?= anchor("$controller_name/deletePayment/". base64_encode($payment_id), '<span class="glyphicon glyphicon-trash"></span>', ['class' => 'delete_payment_button', 'data-payment-id' => base64_encode($payment_id)]) ?></td>
-                                    <td><?= $payment['payment_type'] ?></td>
+                                       <td><?= esc($payment['payment_type'], 'html') ?></td>
                                     <td style="text-align: right;"><?= to_currency($payment['payment_amount']) ?></td>
                                 </tr>
                             <?php } ?>
@@ -2078,15 +2078,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Enter em campos de edição inline no carrinho (preço, qtd, desconto)
-    document.querySelectorAll('#cart_contents input').forEach(function(el) {
-        el.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                var form = el.closest('form');
-                if (form) form.submit();
-            }
-        });
+    // Enter em campos de edição inline no carrinho (preço, qtd, desconto).
+    // Delegado em #cart_contents porque posSubmitRow() substitui o HTML da
+    // tabela a cada edição: um addEventListener direto nos inputs seria
+    // descartado na primeira atualização AJAX. E não pode usar
+    // closest('form').submit() — o <form> da linha vive dentro de <table> e o
+    // parser HTML o ergue para fora (foster parenting), então o input nunca é
+    // descendente do form, closest() devolve null e o Enter não fazia nada.
+    $('#cart_contents').on('keypress', 'input', function(e) {
+        if (e.key !== 'Enter' && e.keyCode !== 13) return;
+        e.preventDefault();
+        if (typeof posSubmitRow === 'function') posSubmitRow($(this).closest('tr'));
     });
 
     // Enter no campo de observação

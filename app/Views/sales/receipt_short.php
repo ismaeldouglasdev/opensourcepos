@@ -126,7 +126,7 @@
             $show_giftcard_remainder |= $splitpayment[0] == lang('Sales.giftcard');
         ?>
             <tr>
-                <td colspan="2" style="text-align: right;"><?= $splitpayment[0] ?> </td>
+                   <td colspan="2" style="text-align: right;"><?= esc($splitpayment[0], 'html') ?> </td>
                 <td class="total-value"><?= to_currency($payment['payment_amount'] * -1) ?></td>
             </tr>
         <?php } ?>
