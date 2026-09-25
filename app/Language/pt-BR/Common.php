@@ -38,7 +38,7 @@ return [
     "id"                             => "Id",
     "import"                         => "Importar",
     "import_change_file"             => "Requerido",
-    "import_csv"                     => "Importar do CSV",
+    "import_csv"                     => "Importar CSV",
     "import_full_path"               => "Caminho completo para o arquivo do CSV é necessário",
     "import_remove_file"             => "Remover",
     "import_select_file"             => "Selecionar o arquivo",

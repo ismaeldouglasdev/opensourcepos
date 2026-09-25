@@ -123,21 +123,19 @@
     transition: outline 0.2s;
 }
 
-/* Reservar a faixa onde o botao flutuante fica, senao ele cobre a ultima
-   coluna das tabelas (ver DESIGN.md P0). A reserva vive no container de
-   rolagem, entao a tabela nao e estreitada: apenas o scroll horizontal
-   reserva 64px a direita. */
-body:has(.tutorial-fab) .bootstrap-table .fixed-table-container,
-body:has(.tutorial-fab) #table_holder .fixed-table-body {
-    padding-right: 64px !important;
-}
+/* O botao e position:fixed e cobre a ultima coluna da tabela (ver DESIGN.md
+   P0). A correcao definitiva e mover o botao para dentro da barra do topo,
+   que nao disputa espaco com dado. Enquanto isso ele recua visualmente e
+   fica menor. Nao se reserva padding na tabela: isso estreita a coluna de
+   nome e faz o produto quebrar em varias linhas, que e pior que a
+   sobreposicao. */
 .tutorial-fab {
     position: fixed;
-    bottom: 16px;
-    right: 16px;
+    bottom: 12px;
+    right: 12px;
     z-index: 1040;
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     background: #1a9c6a;
     color: #fff;

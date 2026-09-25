@@ -168,22 +168,22 @@ try {
                         ?>
                         <li class="<?= $is_home ? 'active' : '' ?>">
                             <a href="<?= base_url('home') ?>">
-                                🏠 HOME
+                                <span class="glyphicon glyphicon-home" aria-hidden="true"></span> HOME
                             </a>
                         </li>
                         <li class="<?= $is_resumo ? 'active' : '' ?>">
                             <a href="<?= base_url('sales/manage') ?>">
-                                📊 RESUMO
+                                <span class="glyphicon glyphicon-list-alt" aria-hidden="true"></span> RESUMO
                             </a>
                         </li>
                         <li class="<?= $is_vendas ? 'active' : '' ?>">
                             <a href="<?= base_url('sales/add') ?>">
-                                💰 VENDAS
+                                <span class="glyphicon glyphicon-usd" aria-hidden="true"></span> VENDAS
                             </a>
                         </li>
                         <li class="<?= $is_itens ? 'active' : '' ?>">
                             <a href="<?= base_url('items') ?>">
-                                📦 ITENS
+                                <span class="glyphicon glyphicon-th-large" aria-hidden="true"></span> ITENS
                                 <?php if ($stock_alert_count > 0): ?>
                                     <span class="stock-badge"><?= $stock_alert_count > 99 ? '99+' : $stock_alert_count ?></span>
                                 <?php endif; ?>
@@ -191,7 +191,7 @@ try {
                         </li>
                         <li class="<?= $is_clientes ? 'active' : '' ?>">
                             <a href="<?= base_url('customers') ?>">
-                                👥 CLIENTES
+                                <span class="glyphicon glyphicon-user" aria-hidden="true"></span> CLIENTES
                             </a>
                         </li>
                     </ul>

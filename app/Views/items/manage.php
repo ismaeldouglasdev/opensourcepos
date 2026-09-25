@@ -344,7 +344,10 @@ window._tutorialSteps = [
 
 <div id="toolbar">
     <div class="pull-left form-inline" role="toolbar">
-        <button id="delete" class="btn btn-default btn-sm print_hide">
+        <?php /* P1/DESIGN.md: acao destrutiva com sinal proprio. Antes era
+               btn-default, identica a "Editar Multiplos" e "Gerar Codigos",
+               e nao dava para distinguir sem passar o mouse. */ ?>
+        <button id="delete" class="btn btn-sm btn-danger-outline print_hide" data-destructive="1">
             <span class="glyphicon glyphicon-trash">&nbsp;</span><?= lang('Common.delete') ?>
         </button>
         <button id="bulk_edit" class="btn btn-default btn-sm modal-dlg print_hide" data-btn-submit="<?= lang('Common.submit') ?>" data-href="<?= "items/bulkEdit" ?>" title="<?= lang('Items.edit_multiple_items') ?>">
