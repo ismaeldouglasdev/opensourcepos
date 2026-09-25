@@ -50,7 +50,7 @@ class Secure_Controller extends BaseController
             !$this->employee->has_module_grant($module_id, $logged_in_employee_info->person_id)
             || (isset($submodule_id) && !$this->employee->has_module_grant($submodule_id, $logged_in_employee_info->person_id))
         ) {
-            header("Location:" . base_url("no_access/$module_id/$submodule_id"));
+            header("Location:" . base_url("no_access/index/$module_id/$submodule_id"));
             exit();
         }
 
