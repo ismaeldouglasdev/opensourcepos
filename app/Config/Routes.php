@@ -286,8 +286,6 @@ $routes->get('attributes/view', 'Attributes::getView');
 $routes->get('attributes/view/(:num)', 'Attributes::getView/$1');
 $routes->get('attributes/suggestAttribute/(:num)', 'Attributes::getSuggestAttribute/$1');
 
-$routes->post('attributes/save', 'Attributes::postSave');
-$routes->post('attributes/save/([0-9-]+)', 'Attributes::postSave/$1');
 $routes->post('attributes/delete', 'Attributes::postDelete');
 $routes->post('attributes/saveAttributeValue', 'Attributes::postSaveAttributeValue');
 $routes->post('attributes/deleteDropdownAttributeValue', 'Attributes::postDeleteDropdownAttributeValue');
@@ -436,31 +434,11 @@ $routes->post('tax_jurisdictions/delete', 'Tax_jurisdictions::postDelete');
 $routes->get('reports', 'Reports::getIndex');
 $routes->get('reports/index', 'Reports::getIndex');
 
-$routes->get('reports/summary_(:any)/(:any)/(:any)', 'Reports::Summary_$1/$2/$3/$4');
-$routes->get('reports/summary_expenses_categories', 'Reports::date_input_only');
-$routes->get('reports/summary_payments', 'Reports::date_input_only');
-$routes->get('reports/summary_discounts', 'Reports::summary_discounts_input');
-$routes->get('reports/summary_(:any)', 'Reports::date_input');
-
-$routes->get('reports/graphical_(:any)/(:any)/(:any)', 'Reports::Graphical_$1/$2/$3/$4');
-$routes->get('reports/graphical_summary_expenses_categories', 'Reports::date_input_only');
-$routes->get('reports/graphical_summary_discounts', 'Reports::summary_discounts_input');
-$routes->get('reports/graphical_(:any)', 'Reports::date_input');
-
-$routes->get('reports/inventory_(:any)/(:any)', 'Reports::Inventory_$1/$2');
-$routes->get('reports/inventory_low', 'Reports::inventory_low');
-$routes->get('reports/inventory_summary', 'Reports::inventory_summary_input');
-$routes->get('reports/inventory_summary/(:any)/(:any)/(:any)', 'Reports::inventory_summary/$1/$2/$3');
-
-$routes->get('reports/detailed_(:any)/(:any)/(:any)/(:any)', 'Reports::Detailed_$1/$2/$3/$4');
-$routes->get('reports/detailed_sales', 'Reports::date_input_sales');
-$routes->get('reports/detailed_receivings', 'Reports::date_input_recv');
-
-$routes->get('reports/specific_(:any)/(:any)/(:any)/(:any)', 'Reports::Specific_$1/$2/$3/$4');
-$routes->get('reports/specific_customers', 'Reports::specific_customer_input');
-$routes->get('reports/specific_employees', 'Reports::specific_employee_input');
-$routes->get('reports/specific_discounts', 'Reports::specific_discount_input');
-$routes->get('reports/specific_suppliers', 'Reports::specific_supplier_input');
+// NOTA: as rotas de summary_/graphical_/inventory_/detailed_/specific_ ja estao
+// declaradas no topo deste arquivo (linhas ~31-55) com ->add(). Este bloco
+// repetia as mesmas 23 rotas com ->get(), que nunca eram alcancadas: o add()
+// declarado antes casa primeiro e aceita qualquer verbo HTTP. Duplicatas
+// removidas em 25/09/2026.
 
 $routes->get('reports/get_detailed_sales_row/(:segment)', 'Reports::getGet_detailed_sales_row/$1');
 $routes->get('reports/get_detailed_receivings_row/(:segment)', 'Reports::getGet_detailed_receivings_row/$1');
@@ -482,29 +460,24 @@ $routes->post('printer/quickPrintLast', 'Printer::postQuickPrintLast');
 // ═══════════════════════════════════════════════════════════
 //  REST API
 // ═══════════════════════════════════════════════════════════
-$routes->group('api', function ($routes) {
-    $routes->post('auth/login', 'Api\Auth::login');
-
-    $routes->get('items', 'Api\Items::index');
-    $routes->get('items/(:num)', 'Api\Items::show/$1');
-    $routes->post('items', 'Api\Items::create');
-    $routes->put('items/(:num)', 'Api\Items::update/$1');
-    $routes->delete('items/(:num)', 'Api\Items::delete/$1');
-    $routes->get('items/(:num)/stock', 'Api\Items::stock/$1');
-
-    $routes->get('sales', 'Api\Sales::index');
-    $routes->get('sales/(:num)', 'Api\Sales::show/$1');
-    $routes->get('sales/(:num)/receipt', 'Api\Sales::receipt/$1');
-
-    $routes->get('customers', 'Api\Customers::index');
-    $routes->get('customers/(:num)', 'Api\Customers::show/$1');
-    $routes->post('customers', 'Api\Customers::create');
-    $routes->put('customers/(:num)', 'Api\Customers::update/$1');
-
-    $routes->get('inventory', 'Api\Inventory::index');
-    $routes->get('inventory/alerts', 'Api\Inventory::alerts');
-    $routes->get('inventory/low', 'Api\Inventory::low');
-});
+//  REMOVIDO em 25/09/2026.
+//
+//  Estas 17 rotas foram mergeadas em 9565b2809 SEM os controllers que elas
+//  chamam (Api\Auth, Api\Items, Api\Sales, Api\Customers, Api\Inventory) e SEM
+//  o filtro App\Filters\ApiAuth que Filters.php aplicava em api/*.
+//  Resultado: todo /api/* devolvia HTTP 500 (filtro quebrava antes do controller).
+//
+//  Nenhum consumidor interno usava essa API (verificado em app/ e public/js).
+//  A implementacao COMPLETA e funcional continua no branch:
+//      origin/feature/rest-api-implementation  (commit e45af91e2)
+//  com Api\BaseController, Api\Items, Api\Sales, Api\Customers, Api\Inventory,
+//  Api\Suppliers, ApiKeys, App\Filters\ApiAuth, App\Models\ApiKey e a migration
+//  20250310000000_ApiKeys.
+//
+//  Para reativar: restaurar este bloco, restaurar os 11 arquivos do branch
+//  acima, remover as entradas 'api_auth' de app/Config/Filters.php e rodar a
+//  migration de ApiKeys. Nao ha nada a recuperar do lado do banco porque a API
+//  nunca chegou a funcionar.
 
 // 404 com log: POSTs/XHR que nao acharam rota viram incidente no guardrail
 // (ex.: form submit para rota quebrada -> 404 silencioso no modal).

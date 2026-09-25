@@ -34,7 +34,6 @@ class Filters extends BaseFilters
         'forcehttps'    => ForceHTTPS::class,
         'pagecache'     => PageCache::class,
         'performance'   => PerformanceMetrics::class,
-        'api_auth'      => \App\Filters\ApiAuth::class,
     ];
 
     /**
@@ -106,6 +105,8 @@ class Filters extends BaseFilters
      * @var array<string, array<string, list<string>>>
      */
     public array $filters = [
-        'api_auth' => ['before' => ['api/*']],
+        // 'api_auth' => ['before' => ['api/*']],  // removido 25/09/2026: o
+        // filtro App\Filters\ApiAuth nao existe neste branch e fazia todo
+        // /api/* devolver 500. Ver app/Config/Routes.php (bloco REST API).
     ];
 }
