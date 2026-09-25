@@ -923,6 +923,40 @@ class Sales extends Secure_Controller
     }
 
     /**
+     * Troca o modo do register entre 'sale' e 'return'.
+     *
+     * Adicionado em 25/09/2026: o seletor de modo em sales/register.php tem
+     * onchange que submete #mode_form para sales/changeMode, mas o controller
+     * nao possuia o metodo e a rota nao existia, entao trocar de modo
+     * devolvia HTTP 404. Espelha Receivings::postChangeMode().
+     *
+     * @return void
+     */
+    public function postChangeMode(): void
+    {
+        $mode = (string) $this->request->getPost('mode', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+        // So aceita os modos que o register oferece; qualquer outro valor
+        // deixaria a sessao num estado que addAjax nao sabe tratar.
+        $allowed = $this->sale_lib->get_register_mode_options();
+        $valid   = false;
+        foreach ($allowed as $option) {
+            $value = is_array($option) ? ($option['value'] ?? null) : $option;
+            if ($value === $mode) {
+                $valid = true;
+                break;
+            }
+        }
+
+        if ($valid) {
+            $this->sale_lib->clear_mode();
+            $this->sale_lib->set_mode($mode);
+        }
+
+        $this->_reload();
+    }
+
+    /**
      * @param array $data
      * @return void
      */

@@ -82,6 +82,11 @@ $routes->get('sales/getPaymentSummary/(:num)', 'Sales::getPaymentSummary/$1');
 
 $routes->post('sales/add', 'Sales::postAdd');
 $routes->post('sales/addAjax', 'Sales::addAjax');
+// Adicionada 25/09/2026: o seletor de modo (Venda/Devolucao) do register tem
+// onchange que submete #mode_form para sales/changeMode, mas nao havia rota
+// nem metodo no controller — trocar de modo devolvia 404. O Sale_lib ja tem
+// get_mode/set_mode/clear_mode e addAjax ja respeita mode == 'return'.
+$routes->post('sales/changeMode', 'Sales::postChangeMode');
 $routes->post('sales/addDiversos', 'Sales::addDiversos');
 $routes->post('sales/save/([0-9-]+)', 'Sales::postSave/$1');
 $routes->post('sales/reopen/([0-9-]+)', 'Sales::postReopen/$1');
@@ -287,6 +292,12 @@ $routes->get('attributes/view/(:num)', 'Attributes::getView/$1');
 $routes->get('attributes/suggestAttribute/(:num)', 'Attributes::getSuggestAttribute/$1');
 
 $routes->post('attributes/delete', 'Attributes::postDelete');
+// Addicionada 25/09/2026: o form app/Views/attributes/form.php submete para
+// attributes/saveDefinition/{id} desde sempre, mas a rota nunca existiu — o
+// metodo Attributes::postSaveDefinition() ficava inalcancavel e criar/editar
+// uma definicao de atributo retornava 404. Aceita 0 (NO_DEFINITION_ID), ids
+// positivos e -1, como em attributes/attributes/(:any) usado no form de item.
+$routes->post('attributes/saveDefinition/([0-9-]+)', 'Attributes::postSaveDefinition/$1');
 $routes->post('attributes/saveAttributeValue', 'Attributes::postSaveAttributeValue');
 $routes->post('attributes/deleteDropdownAttributeValue', 'Attributes::postDeleteDropdownAttributeValue');
 
