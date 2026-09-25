@@ -3187,6 +3187,11 @@ body {
     max-height: calc(100% - 40px) !important;
 }
 
+.modal-dlg-quick .modal-dialog {
+    width: 760px !important;
+    max-width: calc(100% - 24px) !important;
+}
+
 .modal-dlg-1000 .modal-dialog .modal-content {
     display: flex;
     flex-direction: column;
