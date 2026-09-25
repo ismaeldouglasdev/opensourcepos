@@ -37,11 +37,11 @@
 
         var buttons = function(event) {
             var buttons = [];
-            var dialog_class = 'modal-dlg';
+            var dialog_classes = ['modal-dlg'];
             $.each($(this).attr('class').split(/\s+/), function(classIndex, className) {
                 var width_class = className.split("modal-dlg-");
                 if (width_class && width_class.length > 1) {
-                    dialog_class = className;
+                    dialog_classes.push(className);
                 }
             });
 
@@ -73,7 +73,7 @@
             });
             return { buttons: buttons.sort(function(a, b) {
                 return ($(b).text()) < ($(a).text()) ? -1 : 1;
-            }), cssClass: dialog_class};
+            }), cssClass: dialog_classes.join(' ')};
         };
 
         $(selector).each(function(index, $element) {
