@@ -3355,3 +3355,16 @@ body {
     background: var(--os-alerta, #c0392b) !important;
     border-color: var(--os-alerta, #c0392b) !important;
 }
+
+/* ---- P3 / DESIGN.md: alinhamento vertical de numero ------------------
+   Sem tabular-nums, cada digito tem largura propria e a coluna de moeda
+   fica com borda irregular, impossibilitando comparar valores em uma
+   varredura vertical. QTD deixa de ser negrito para nao competir com o
+   preco, que e o dado que o operador realmente compara. */
+#table_holder .fixed-table-body td,
+#table_holder .fixed-table-body th {
+    font-variant-numeric: tabular-nums;
+}
+#table_holder.items-manage .fixed-table-body td.items-col-qty {
+    font-weight: 400 !important;
+}

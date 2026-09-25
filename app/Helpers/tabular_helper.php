@@ -421,7 +421,10 @@ function item_headers(): array
         ['item_number'   => lang('Items.item_number'), 'class' => 'items-col-mono'],
         ['name'          => lang('Items.name'), 'class' => 'items-col-name items-col-wrap'],
         ['quantity'      => lang('Items.quantity_short'), 'class' => 'items-col-num items-col-qty', 'titleTooltip' => lang('Items.quantity')],
-        ['item_pic'      => lang('Items.image'), 'sortable' => false, 'visible' => true, 'class' => 'items-col-pic'],
+        // P2/DESIGN.md: 155 de 10.335 itens (1,5%) tem foto. Com a coluna
+        // visivel por padrao, 98,5% das linhas gastavam 72px exibindo "-".
+        // Oculta por padrao, continua no seletor de colunas para quem usa.
+        ['item_pic'      => lang('Items.image'), 'sortable' => false, 'visible' => false, 'switchable' => true, 'class' => 'items-col-pic'],
         ['category'      => lang('Items.category'), 'class' => 'items-col-wrap items-col-cat'],
         ['company_name'  => lang('Suppliers.company_name'), 'visible' => false],
         ['cost_price'    => lang('Items.cost_price'), 'class' => 'items-col-num items-col-cost'],
