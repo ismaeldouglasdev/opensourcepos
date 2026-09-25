@@ -119,7 +119,7 @@ class Sales extends Secure_Controller
         if (!$this->employee->has_grant('reports_sales', $person_id)) {
             // Bare redirect() is discarded in a void method (blank screen) —
             // set the Location on the framework response instead.
-            $this->response->setStatusCode(302)->setHeader('Location', site_url('no_access/sales/reports_sales'));
+            $this->response->setStatusCode(302)->setHeader('Location', site_url('no_access/index/sales/reports_sales'));
             return;
         } else {
             $data['table_headers'] = get_sales_manage_table_headers();
