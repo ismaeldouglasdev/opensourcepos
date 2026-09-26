@@ -3452,13 +3452,6 @@ body {
      byte-a-byte igual, entao nenhuma regra daqui pode escapar.
      =================================================================== */
 
-  /* (a) A data da venda sai do modal no Modo Simples. A tarefa 10 a recoloca
-     na barra do carrinho, entao aqui e so nao ocupa espaco no caminho. */
-  .simple-mode #checkoutModal #sale_date,
-  .simple-mode #checkoutModal label[for="sale_date"] {
-      display: none !important;
-  }
-
   /* (d) O modal ja se chama FINALIZAR no botao do rodape; repetir "FINALIZAR
      VENDA" no cabecaco e redundancia. Some so o titulo — o X de fechar
      continua, senao nao ha como sair sem finalizar. */
@@ -3506,4 +3499,39 @@ body {
       font-size: 17px;
       border-radius: 6px;
       margin: 0;
+  }
+
+  /* ===================================================================
+     Venda de outro dia na barra do carrinho (tarefa 10 do plano
+     simplificar-fluxo-venda-pdv)
+     Este e o par da regra que a tarefa 9 deixou sem uso: antes a data do
+     modal era escondida por CSS no Modo Simples; agora ela e renderizada
+     condicionalmente em PHP, entao aquela regra virou codigo morto e sai
+     junto (abaixo).
+     =================================================================== */
+
+  .simple-mode .cart-sale-date {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 8px 0;
+      padding: 8px 10px;
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+  }
+
+  .simple-mode .cart-sale-date label {
+      margin: 0;
+      font-weight: 600;
+      font-size: 15px;
+      white-space: nowrap;
+  }
+
+  .simple-mode .cart-sale-date input {
+      width: auto;
+      min-width: 160px;
+      min-height: 44px;
+      font-size: 16px;
+      text-align: center;
   }

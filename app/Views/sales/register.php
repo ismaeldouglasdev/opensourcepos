@@ -589,6 +589,19 @@ if (isset($success)) {
             </tr>
         </table>
 
+        <?php /* Tarefa 10: no Modo Simples a data da venda vive aqui, na barra do
+                 carrinho, e nao dentro do checkout. O id e o campo sao os mesmos
+                 do modal (sale_date) de proposito — quem le o valor em
+                 finishCheckout() nao muda, e o controller nao sabe da diferenca. */ ?>
+        <?php if (! empty($simpleMode)) { ?>
+        <div class="cart-sale-date">
+            <label for="sale_date"><span class="glyphicon glyphicon-calendar"></span> Venda de outro dia</label>
+            <input type="date" id="sale_date" class="form-control"
+                   value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>"
+                   title="Deixe como está para registrar a venda de hoje">
+        </div>
+        <?php } ?>
+
         <?php /* Tarefa 8 do plano simplificar-fluxo-venda-pdv: o desconto saiu do
                  modal de pagamento e passou para a area do carrinho, logo abaixo
                  dos totais. Motivo: quem opera precisa ver o total cair ANTES de
@@ -1603,6 +1616,16 @@ if (isset($success)) {
                 <div class="troco-display" id="troco_display" style="font-size: 16px; min-height: 24px; padding: 4px 5px; text-align: center; font-weight: bold;"></div>
                 <div id="troco_notes_display" style="min-height: 0; margin: 0 0 4px; text-align: center;"></div>
 
+                <?php /* Tarefa 10 do plano simplificar-fluxo-venda-pdv: a data da
+                         venda sai do modal. No Modo Simples ela vira um controle
+                         na barra do carrinho (abaixo dos totais), porque quem
+                         registra venda de outro dia nao deveria precisar abrir o
+                         checkout para isso. Renderizada condicionalmente, e nao
+                         escondida por CSS, para nao existirem dois #sale_date na
+                         mesma pagina — id duplicado faria getElementById
+                         devolver sempre o primeiro. No Modo Completo ela fica
+                         aqui dentro, exatamente como antes. */ ?>
+                <?php if (empty($simpleMode)) { ?>
                 <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 8px;">
                     <label for="sale_date" style="margin: 0; font-weight: 600; font-size: 14px;">📅 Data da venda:</label>
                     <input type="date" id="sale_date" class="form-control"
@@ -1610,6 +1633,7 @@ if (isset($success)) {
                            style="width: auto; display: inline-block; text-align: center; font-size: 15px; padding: 4px 8px; height: 34px;"
                            title="Use para registrar vendas de dias anteriores">
                 </div>
+                <?php } ?>
                 
                 <div id="payment_summary_list" style="margin: 4px 0;"></div>
                 
@@ -1927,10 +1951,18 @@ function openCheckoutModal() {
     document.getElementById('payment_summary_list').innerHTML = '';
     document.getElementById('finish_checkout_btn').disabled = true;
 
+    <?php /* Tarefa 10: no Modo Completo o reset continua valendo — a data mora
+             no modal, e a de uma venda anterior nao deve vazar para a proxima.
+             No Modo Simples o campo esta na barra do carrinho e o operador
+             escolheu a data de proposito; resetar aqui apagaria a venda
+             retroativa na mao dele, que e exatamente o que a tarefa 10
+             precisa viabilizar. */ ?>
+    <?php if (empty($simpleMode)) { ?>
     // Reset the sale date to today each time the checkout modal opens,
     // so a backdated sale from a previous close does not carry over.
     var sd = document.getElementById('sale_date');
     if (sd) sd.value = '<?= date('Y-m-d') ?>';
+    <?php } ?>
     
     document.querySelectorAll('.payment-btn').forEach(function(btn) { btn.classList.remove('active'); });
 
