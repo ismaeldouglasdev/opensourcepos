@@ -1066,6 +1066,14 @@ class Sales extends Secure_Controller
             $data['customer_required'] = lang('Sales.customer_optional');
         }
 
+        // Tarefa 6 do plano simplificar-fluxo-venda-pdv. Este e o caminho do
+        // CARREGAMENTO INICIAL da pagina do caixa, e ele monta o $data por conta
+        // propria — nao passa por _build_reload_data(), que so serve o fragmento
+        // de AJAX. Sem injetar aqui o modo chegava vazio na primeira carga e so
+        // passaria a valer depois da primeira leitura.
+        $data['simpleMode'] = $this->isSimpleMode();
+        $data['showGuide']  = $this->showGuide();
+
         echo view("sales/register", $data);
     }
 

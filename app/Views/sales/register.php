@@ -631,8 +631,16 @@ if (isset($success)) {
                  abrir o checkout — no modal, o desconto era um passo a mais no
                  meio do caminho que importa. Os ids foram mantidos de proposito:
                  applyDiscountPreset/applyDiscountInput/toggleDiscountMode/
-                 removeDiscount procuram exatamente estes ids. */ ?>
-        <?php if (count($cart) > 0) { ?>
+                 removeDiscount procuram exatamente estes ids.
+
+                 Esta secao e renderizada SEM a guarda count($cart) > 0 de
+                 proposito. O fragmento de AJAX troca #cart_contents, o miolo de
+                 #sale_totals, #payment_totals e #sale_buttons — e nada mais. Com
+                 a guarda, a secao nao existia no HTML inicial (carrinho vazio) e
+                 nao via em nenhum dos fragmentos, entao na primeira venda da
+                 sessao o desconto simplesmente nao aparecia ate recarregar a
+                 pagina. Sem a guarda ele ja vem no load e o fragmento nunca
+                 precisa mexer nele. */ ?>
         <div class="cart-discount-section">
             <div class="cart-discount-head">
                 <strong><span class="glyphicon glyphicon-tags"></span> DESCONTO</strong>
@@ -653,7 +661,6 @@ if (isset($success)) {
                 </div>
             </div>
         </div>
-        <?php } ?>
 
         <?php if (count($cart) > 0) { // Only show this part if there are Items already in the register ?>
             <table class="sales_table_100" id="payment_totals">
