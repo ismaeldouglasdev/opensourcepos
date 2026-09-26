@@ -1613,13 +1613,32 @@ if (isset($success)) {
                 
                 <div id="payment_summary_list" style="margin: 4px 0;"></div>
                 
-                <div class="payment-list">
-                    <button type="button" class="btn payment-btn cash" id="payment_btn_cash" onclick="selectPayment('cash', '<?= lang("Sales.cash") ?>')">💵 Dinheiro</button>
-                    <button type="button" class="btn payment-btn debit" id="payment_btn_debit" onclick="selectPayment('debit', '<?= lang("Sales.debit") ?>')">💳 Débito</button>
-                    <button type="button" class="btn payment-btn credit" id="payment_btn_credit" onclick="selectPayment('credit', '<?= lang("Sales.credit") ?>')">💳 Crédito</button>
-                    <button type="button" class="btn payment-btn pix" id="payment_btn_pix" onclick="selectPayment('pix', '<?= lang("Sales.pix") ?>')">📱 PIX</button>
-                    <button type="button" class="btn payment-btn fiado" id="payment_btn_fiado" onclick="selectPayment('fiado', '<?= lang("Sales.account_receivable") ?>')">📝 Fiado</button>
-                </div>
+                <?php /* Tarefa 9 do plano simplificar-fluxo-venda-pdv: no Modo Simples
+                         o dinheiro e o PIX ganham prominence real, porque sao o
+                         caminho do dia a dia; as outras tres formas ficam num
+                         bloco secundario, mas NENHUMA e removida. Os ids
+                         payment_btn_* sao os mesmos dos dois lados porque
+                         selectPayment() os procura por id. */ ?>
+                <?php if (! empty($simpleMode)) { ?>
+                    <div class="payment-list simple-primary">
+                        <button type="button" class="btn payment-btn cash" id="payment_btn_cash" onclick="simplePay('cash', '<?= lang("Sales.cash") ?>')"><span class="glyphicon glyphicon-usd"></span> Dinheiro</button>
+                        <button type="button" class="btn payment-btn pix" id="payment_btn_pix" onclick="simplePay('pix', '<?= lang("Sales.pix") ?>')"><span class="glyphicon glyphicon-phone"></span> PIX</button>
+                    </div>
+                    <div class="simple-secondary-label">Outra forma de pagamento</div>
+                    <div class="payment-list simple-secondary">
+                        <button type="button" class="btn payment-btn debit" id="payment_btn_debit" onclick="selectPayment('debit', '<?= lang("Sales.debit") ?>')"><span class="glyphicon glyphicon-credit-card"></span> Débito</button>
+                        <button type="button" class="btn payment-btn credit" id="payment_btn_credit" onclick="selectPayment('credit', '<?= lang("Sales.credit") ?>')"><span class="glyphicon glyphicon-credit-card"></span> Crédito</button>
+                        <button type="button" class="btn payment-btn fiado" id="payment_btn_fiado" onclick="selectPayment('fiado', '<?= lang("Sales.account_receivable") ?>')"><span class="glyphicon glyphicon-book"></span> Fiado</button>
+                    </div>
+                <?php } else { ?>
+                    <div class="payment-list">
+                        <button type="button" class="btn payment-btn cash" id="payment_btn_cash" onclick="selectPayment('cash', '<?= lang("Sales.cash") ?>')">💵 Dinheiro</button>
+                        <button type="button" class="btn payment-btn debit" id="payment_btn_debit" onclick="selectPayment('debit', '<?= lang("Sales.debit") ?>')">💳 Débito</button>
+                        <button type="button" class="btn payment-btn credit" id="payment_btn_credit" onclick="selectPayment('credit', '<?= lang("Sales.credit") ?>')">💳 Crédito</button>
+                        <button type="button" class="btn payment-btn pix" id="payment_btn_pix" onclick="selectPayment('pix', '<?= lang("Sales.pix") ?>')">📱 PIX</button>
+                        <button type="button" class="btn payment-btn fiado" id="payment_btn_fiado" onclick="selectPayment('fiado', '<?= lang("Sales.account_receivable") ?>')">📝 Fiado</button>
+                    </div>
+                <?php } ?>
                 <div class="form-group" id="amount_group" style="margin: 6px 0; display: none;">
                     <div class="input-group">
                         <span class="input-group-addon" id="payment_type_label">R$</span>
@@ -1925,6 +1944,27 @@ function openCheckoutModal() {
     jQuery('.ui-autocomplete').hide();
 
     jQuery('#checkoutModal').modal('show');
+}
+
+function simplePay(type, lang_key) {
+    // Tarefa 9 do plano simplificar-fluxo-venda-pdv. O plano proibe mexer em
+    // selectPayment() e addPayment(), entao o atalho do Modo Simples mora aqui:
+    // escolhe a forma normalmente e, no Dinheiro, ja registra o pagamento com o
+    // total exato. Sem isso o "1 toque" nao funcionaria — so preencher o campo
+    // nao registra nada em payments_list, e o FINALIZAR continua desabilitado
+    // porque checkIfCanFinish() exige pagamento.
+    selectPayment(type, lang_key);
+
+    if (type !== 'cash') return;
+
+    var amt = document.getElementById('checkout_amount');
+    if (!amt) return;
+
+    // total_venda ja vem com o desconto aplicado (refreshDiscountedTotal). Vai
+    // com virgula e sem separador de milhar para nao deixar duvida de onde e o
+    // decimal, ainda que o parseCurrency aceite os dois formatos.
+    amt.value = String(total_venda.toFixed(2)).replace('.', ',');
+    addPayment();
 }
 
 function selectPayment(type, lang_key) {
