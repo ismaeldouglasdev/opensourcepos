@@ -3407,3 +3407,40 @@ body {
   .simple-mode #register tbody tr td .form-control {
       min-height: 36px;
   }
+
+  /* ===================================================================
+     Desconto na area do carrinho (tarefa 8 do plano simplificar-fluxo-venda-pdv)
+     A secao saiu do modal de pagamento e passou para baixo dos totais. Esta
+     CSS e GLOBAL de proposito: o plano exige que o desconto funcione nos DOIS
+     modos, entao nao pode ficar presa em .simple-mode.
+     =================================================================== */
+
+  .cart-discount-section {
+      margin: 8px 0;
+      padding: 8px 10px;
+      background: #fff8e1;
+      border: 1px solid #ffe0b2;
+      border-radius: 6px;
+  }
+
+  .cart-discount-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 14px;
+  }
+
+  .cart-discount-section .discount-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+  }
+
+  .cart-discount-section .input-group {
+      flex: 1 1 220px;
+      min-width: 200px;
+      width: auto !important;
+      font-size: 14px;
+  }

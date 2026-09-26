@@ -589,6 +589,36 @@ if (isset($success)) {
             </tr>
         </table>
 
+        <?php /* Tarefa 8 do plano simplificar-fluxo-venda-pdv: o desconto saiu do
+                 modal de pagamento e passou para a area do carrinho, logo abaixo
+                 dos totais. Motivo: quem opera precisa ver o total cair ANTES de
+                 abrir o checkout — no modal, o desconto era um passo a mais no
+                 meio do caminho que importa. Os ids foram mantidos de proposito:
+                 applyDiscountPreset/applyDiscountInput/toggleDiscountMode/
+                 removeDiscount procuram exatamente estes ids. */ ?>
+        <?php if (count($cart) > 0) { ?>
+        <div class="cart-discount-section">
+            <div class="cart-discount-head">
+                <strong><span class="glyphicon glyphicon-tags"></span> DESCONTO</strong>
+                <span id="discount_value_display" style="color:#e65100; font-weight:bold; font-size:14px;"></span>
+            </div>
+            <div class="discount-row">
+                <button type="button" class="btn btn-sm btn-default disc-preset" data-disc="5" onclick="applyDiscountPreset(5); renderCartDiscountedTotal()">5%</button>
+                <button type="button" class="btn btn-sm btn-default disc-preset" data-disc="10" onclick="applyDiscountPreset(10); renderCartDiscountedTotal()">10%</button>
+                <button type="button" class="btn btn-sm btn-default disc-preset" data-disc="15" onclick="applyDiscountPreset(15); renderCartDiscountedTotal()">15%</button>
+                <button type="button" class="btn btn-sm btn-default disc-preset" data-disc="20" onclick="applyDiscountPreset(20); renderCartDiscountedTotal()">20%</button>
+                <button type="button" class="btn btn-sm btn-default" onclick="removeDiscount(); renderCartDiscountedTotal()" title="Remover desconto"><span class="glyphicon glyphicon-remove"></span></button>
+                <div class="input-group">
+                    <span class="input-group-addon" id="discount_toggle_btn" onclick="toggleDiscountMode()" style="cursor:pointer; user-select:none;" title="Clique para alternar % / R$">%</span>
+                    <input type="text" class="form-control" id="checkout_discount" inputmode="decimal" placeholder="Desconto" style="text-align:center;">
+                    <span class="input-group-btn">
+                        <button type="button" class="btn btn-warning" onclick="applyDiscountInput(); renderCartDiscountedTotal()">OK</button>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <?php } ?>
+
         <?php if (count($cart) > 0) { // Only show this part if there are Items already in the register ?>
             <table class="sales_table_100" id="payment_totals">
                 <tr>
@@ -783,6 +813,12 @@ if (isset($success)) {
             window.location.href = "<?= site_url('sales'); ?>";
         };
 
+        // Tarefa 8: captura o total sem desconto que o servidor entregou. Sem
+        // esta linha cart_total_original ficaria 0, e renderCartDiscountedTotal
+        // sairia pelo guard de guarda — os presets de desconto nao fariam nada
+        // ate o primeiro item ser escaneado.
+        if (typeof syncCartTotalBase === 'function') syncCartTotalBase();
+
         // Delegated events: cart HTML is replaced by the AJAX add flow, so
         // direct .click()/.change() bindings would die after the first add.
         // NOTE: delete item/payment trash icons stay NATIVE anchors — they
@@ -934,6 +970,10 @@ if (isset($success)) {
                 $('#cart_contents').html($h.find('#cart_contents').html());
                 var $t = $('#sale_totals');
                 if ($t.length && $h.find('#sale_totals').length) $t.html($h.find('#sale_totals').html());
+                // Tarefa 8: o servidor re-renderizou #sale_total com o valor
+                // cheio; recaptura a base antes de redesenhar o desconto, senao
+                // o desconto some (ou, pior, aplica duas vezes) ao editar linha.
+                if (typeof syncCartTotalBase === 'function') syncCartTotalBase();
                 var $pay = $('#payment_totals');
                 if (!$pay.length) {
                     $pay = $('<table class="sales_table_100" id="payment_totals">');
@@ -1040,6 +1080,12 @@ if (isset($success)) {
                         // Totals table exists since page load
                         var $totals = $('#sale_totals');
                         if ($totals.length && res.totals_html !== undefined) $totals.html(res.totals_html);
+                        // Tarefa 8: este e o caminho do scanner, o mesmo que o
+                        // plano usa como teste de regressao. O desconto vive so
+                        // no cliente e o servidor devolve #sale_total cheio, entao
+                        // sem esta chamada o desconto aplicado some assim que o
+                        // proximo produto e escaneado.
+                        if (typeof syncCartTotalBase === 'function') syncCartTotalBase();
 
                         // When the cart goes from empty to non-empty, the
                         // payments table and buttons container don't exist yet:
@@ -1529,18 +1575,11 @@ if (isset($success)) {
     color: #fff;
     border-color: #e65100;
 }
-.checkout-modal .discount-section {
-    margin: 10px 0 4px;
-    padding-top: 10px;
-    border-top: 1px dashed #ddd;
-}
-.checkout-modal .discount-row {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-    margin-top: 6px;
-}
 .checkout-modal .discount-row .input-group { flex: 1 1 auto; margin: 0; }
+/* Tarefa 8: as regras .checkout-modal .discount-section / .discount-row sairam
+   daqui de proposito — a secao de desconto migrou para a area do carrinho e
+   ganhou CSS propria em modern.css (.cart-discount-section), que e global
+   porque o desconto precisa funcionar nos dois modos. */
 </style>
 <div class="modal fade checkout-modal" id="checkoutModal" tabindex="-1" role="dialog">
     <div class="modal-dialog">
@@ -1591,26 +1630,6 @@ if (isset($success)) {
                     </div>
                 </div>
 
-                <div class="discount-section">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <strong style="font-size:14px;">🏷️ DESCONTO</strong>
-                        <span id="discount_value_display" style="color:#e65100; font-weight:bold; font-size:14px;"></span>
-                    </div>
-                    <div class="discount-row">
-                        <button type="button" class="btn btn-sm btn-default disc-preset" data-disc="5" onclick="applyDiscountPreset(5)">5%</button>
-                        <button type="button" class="btn btn-sm btn-default disc-preset" data-disc="10" onclick="applyDiscountPreset(10)">10%</button>
-                        <button type="button" class="btn btn-sm btn-default disc-preset" data-disc="15" onclick="applyDiscountPreset(15)">15%</button>
-                        <button type="button" class="btn btn-sm btn-default disc-preset" data-disc="20" onclick="applyDiscountPreset(20)">20%</button>
-                        <button type="button" class="btn btn-sm btn-default" onclick="removeDiscount()" title="Remover desconto">✕</button>
-                        <div class="input-group">
-                            <span class="input-group-addon" id="discount_toggle_btn" onclick="toggleDiscountMode()" style="cursor:pointer; user-select:none;" title="Clique para alternar % / R$">%</span>
-                            <input type="text" class="form-control" id="checkout_discount" inputmode="decimal" placeholder="Desconto" style="text-align:center;">
-                            <span class="input-group-btn">
-                                <button type="button" class="btn btn-warning" onclick="applyDiscountInput()">OK</button>
-                            </span>
-                        </div>
-                    </div>
-                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-success btn-block" id="finish_checkout_btn" onclick="finishCheckout()" disabled>
@@ -1659,6 +1678,11 @@ var total_venda = 0;
 var total_venda_original = 0;
 var sale_discount_pct = 0;
 var discount_is_percent = true;
+// Tarefa 8: total do carrinho como o SERVIDOR entregou, sem desconto. O
+// fragmento AJAX re-renderiza #sale_total a cada item escaneado, entao este
+// valor precisa ser recapturado a cada reload — sem ele, aplicar o desconto
+// duas vezes descontaria sobre o valor ja descontado.
+var cart_total_original = 0;
 
 function showDiversosModal() {
     $('#diversos_valor').val('');
@@ -1775,6 +1799,39 @@ function refreshDiscountedTotal() {
     checkIfCanFinish();
 }
 
+/* Tarefa 8 do plano simplificar-fluxo-venda-pdv.
+   Desconto exibido no carrinho, antes de abrir o checkout.
+
+   refreshDiscountedTotal() acima cuida so do que esta DENTRO do modal. Com a
+   secao migrada para a area do carrinho, o operador precisa ver o total cair
+   sem abrir nada — entao estas duas funcoes cuidam do #sale_total, que e o
+   total do carrinho. Nao reescrevi refreshDiscountedTotal nem as funcoes de
+   desconto: o onclick dos botoes chama a original e depois chama
+   renderCartDiscountedTotal(). */
+function renderCartDiscountedTotal() {
+    var el = document.getElementById('sale_total');
+    if (!el || !(cart_total_original > 0)) return;
+
+    var desconto = cart_total_original * (sale_discount_pct / 100);
+    var final = Math.max(0, Math.round((cart_total_original - desconto) * 100) / 100);
+    el.textContent = 'R$ ' + fmtMoney(final);
+
+    var dd = document.getElementById('discount_value_display');
+    if (dd) dd.textContent = sale_discount_pct > 0 ? ('-R$ ' + fmtMoney(cart_total_original - final)) : '';
+
+    highlightPreset(sale_discount_pct);
+}
+
+/* Recaptura o total que o servidor acabou de entregar. Precisa rodar depois
+   de TODO reload de fragmento, porque o servidor sempre re-renderiza
+   #sale_total com o valor cheio e o desconto vive so no cliente. */
+function syncCartTotalBase() {
+    var el = document.getElementById('sale_total');
+    if (!el) return;
+    cart_total_original = parseCurrency(el.textContent || '0');
+    renderCartDiscountedTotal();
+}
+
 function highlightPreset(pct) {
     document.querySelectorAll('.disc-preset').forEach(function(b) {
         b.classList.toggle('active', Math.abs(parseFloat(b.getAttribute('data-disc')) - pct) < 0.001);
@@ -1821,18 +1878,24 @@ function openCheckoutModal() {
     var totalText = span.textContent || '0';
     total_venda = parseCurrency(totalText);
     if (total_venda <= 0) { alert('Carrinho vazio'); return; }
-    
-    total_venda_original = total_venda;
-    sale_discount_pct = 0;
-    discount_is_percent = true;
-    highlightPreset(0);
-    var dt = document.getElementById('discount_toggle_btn');
-    if (dt) dt.textContent = '%';
-    var dd = document.getElementById('discount_value_display');
-    if (dd) dd.textContent = '';
-    var di = document.getElementById('checkout_discount');
-    if (di) di.value = '';
-    
+
+    // Tarefa 8: o desconto agora mora no CARRINHO, nao no modal. Duas
+    // consequencias que este bloco resolve:
+    //
+    // 1) #sale_total exibe o total JA descontado (e renderCartDiscountedTotal
+    //    que escreve nele), entao usa-lo como base do modal daria desconto
+    //    duas vezes. A base correta e cart_total_original, que o servidor
+    //    entregou sem desconto.
+    // 2) Nao zeramos mais sale_discount_pct nem limpamos os controles de
+    //    desconto: eles sao do carrinho agora. Antes, abrir o checkout apagava
+    //    o desconto que o operador tinha acabado de aplicar — o desconto
+    //    sumia da tela na mao dele.
+    total_venda_original = (cart_total_original > 0) ? cart_total_original : total_venda;
+    if (sale_discount_pct > 0) {
+        // mantem o desconto visivel e reaplica no modal
+        refreshDiscountedTotal();
+    }
+
     payments_list = [];
     payment_type_selected = '';
     
