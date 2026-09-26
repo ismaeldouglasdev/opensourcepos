@@ -81,7 +81,11 @@ class Secure_Controller extends BaseController
         $this->global_view_data += [
             'user_info'       => $logged_in_employee_info,
             'controller_name' => $module_id,
-            'config'          => $config
+            'config'          => $config,
+            // Tarefa 5 do plano simplificar-fluxo-venda-pdv: o header e
+            // renderizado em todas as paginas, entao e daqui que o botao de
+            // troca rapida do topo descobre em que modo o employee esta.
+            'simple_mode'     => $this->isSimpleMode()
         ];
         view('viewData', $this->global_view_data);
     }

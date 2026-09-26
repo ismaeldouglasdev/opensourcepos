@@ -292,8 +292,11 @@ class Config extends Secure_Controller
     {
         $this->db->transStart();
 
-        // checkbox desmarcado nao chega no POST, entao ausencia = desligar
-        $simple_mode = $this->request->getPost('simple_mode') !== null ? 1 : 0;
+        // Trata os dois casos de quem chama: o checkbox de Configuracoes chega
+        // AUSENTE quando desmarcado, e o botao do topo (tarefa 5) chega com
+        // '0' explicito. Aqui so 1 liga; '0' e ausente desligam. Usar
+        // "!= null" apenas deixaria o '0' do botao LIGAR o modo de novo.
+        $simple_mode = ((int) $this->request->getPost('simple_mode')) === 1 ? 1 : 0;
         $person_id   = (int) $this->employee->get_logged_in_employee_info()->person_id;
 
         $success = $this->employee->set_simple_mode($person_id, $simple_mode);

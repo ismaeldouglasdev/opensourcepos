@@ -195,7 +195,51 @@ try {
                             </a>
                         </li>
                     </ul>
-                    
+
+                    <!-- Botao de troca rapida do Modo de venda (tarefa 5 do plano
+                         simplificar-fluxo-venda-pdv). Fica no topo porque e o
+                         unico lugar visivel de toda pagina, e o dono precisa
+                         trocar rapido sem entrar em Configuracoes. No Modo Simples
+                         ele usa btn-danger-outline: sair do modo simplificado e
+                         uma acao, nao uma acao de venda. -->
+                    <div class="simple-mode-toggle pull-right" style="margin: 6px 8px 0 0;">
+                        <?php $__sm = ! empty($simple_mode); ?>
+                        <button type="button"
+                                id="simple_mode_toggle"
+                                class="btn btn-sm <?= $__sm ? 'btn-danger-outline' : 'btn-default' ?>"
+                                title="<?= $__sm
+                                    ? 'Você está no Modo Simples. Clique para voltar ao Modo Completo.'
+                                    : 'Você está no Modo Completo. Clique para ativar o Modo Simples.' ?>"
+                                data-on="<?= $__sm ? '1' : '0' ?>">
+                            <span class="glyphicon glyphicon-adjust" aria-hidden="true"></span>
+                            <span class="simple-mode-toggle-label"><?= $__sm ? 'Modo Simples: LIGADO' : 'Modo Completo' ?></span>
+                        </button>
+                    </div>
+
+                    <script type="text/javascript">
+                    // Tarefa 5 do plano simplificar-fluxo-venda-pdv: troca rapida
+                    // de modo. Faz POST no mesmo endpoint da aba de Configuracoes,
+                    // entao os dois lugares usam a mesma fonte da verdade (a coluna
+                    // do employee). Recarrega porque o modo muda o layout do caixa.
+                    $(function() {
+                        var $btn = $('#simple_mode_toggle');
+                        if (!$btn.length) return;
+
+                        $btn.on('click', function() {
+                            var querLigar = $(this).data('on') !== '1';
+                            // trava o botao durante o POST: clique duplo enviaria
+                            // duas vezes e o estado final ficaria indeterminate
+                            $btn.prop('disabled', true);
+
+                            $.post('<?= site_url('config/saveSimpleMode') ?>', {
+                                simple_mode: querLigar ? 1 : 0
+                            }).always(function() {
+                                window.location.reload();
+                            });
+                        });
+                    });
+                    </script>
+
                     <!-- Menu Hamburger -->
                     <ul class="nav navbar-nav navbar-right">
                         <li class="dropdown">
