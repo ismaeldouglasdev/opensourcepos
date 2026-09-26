@@ -45,6 +45,25 @@ use App\Models\Employee;
 
 <?= view('partial/header') ?>
 <script>
+/* Tarefas 12 e 14 do plano simplificar-fluxo-venda-pdv.
+   simpleMode e lido pelo motor de anotacoes em partial/tutorial.php. Ele so
+   desenha as setinhas no Modo Simples; nas demais telas do sistema este
+   arquivo nao define _guideAnnotations e o motor simplesmente nao age.
+   showGuide (interruptor independente, tarefa 14) ainda nao tem coluna: enquanto
+   o motor trata a ausencia como "ligado", o default do plano e ligado. */
+window.simpleMode = <?= ! empty($simpleMode) ? 'true' : 'false' ?>;
+
+/* Anotacoes fixas na ordem real da venda. Os textos sao os literais da tarefa
+   13; aqui entram as quatro que vivem no register — as duas do modal (⑤ e ⑥)
+   entram na tarefa 13. Target orfao nao quebra nada: o motor esconde o selo e
+   a legenda mostra o texto sem ancora. */
+window._guideAnnotations = [
+    { target: '#item', text: '<strong>Comece por aqui.</strong> Escaneie o produto ou digite o nome. Ele entra sozinho no carrinho.' },
+    { target: '#cart_contents', text: '<strong>Confira a quantidade.</strong> Aqui você troca a quantidade e o preço, se precisar.' },
+    { target: '.cart-discount-section', text: '<strong>Se der desconto, é aqui</strong> — toque no valor que o cliente pediu.' },
+    { target: '#btn_finalizar_venda', text: '<strong>Clique em FINALIZAR</strong> quando tiver acabado.' }
+];
+
 window._tutorialSteps = [
     {
         target: '#item',
