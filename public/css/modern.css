@@ -3535,3 +3535,15 @@ body {
       font-size: 16px;
       text-align: center;
   }
+
+  /* ===================================================================
+     Botao de troco do Modo Simples
+     Fica fora do caminho de um toque de proposito: a maioria das vendas nao
+     tem troco. So aparece no Modo Simples e so ocupa o modal.
+     =================================================================== */
+
+  .simple-mode #checkoutModal .simple-troco-btn {
+      margin-top: 10px;
+      min-height: 44px;
+      font-size: 16px;
+  }

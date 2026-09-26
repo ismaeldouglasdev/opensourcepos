@@ -1668,6 +1668,9 @@ if (isset($success)) {
                         <button type="button" class="btn payment-btn credit" id="payment_btn_credit" onclick="selectPayment('credit', '<?= lang("Sales.credit") ?>')"><span class="glyphicon glyphicon-credit-card"></span> Crédito</button>
                         <button type="button" class="btn payment-btn fiado" id="payment_btn_fiado" onclick="selectPayment('fiado', '<?= lang("Sales.account_receivable") ?>')"><span class="glyphicon glyphicon-book"></span> Fiado</button>
                     </div>
+                    <button type="button" class="btn btn-block btn-default simple-troco-btn" onclick="simpleTroco()">
+                        <span class="glyphicon glyphicon-random"></span> O cliente entregou mais? Dar troco
+                    </button>
                 <?php } else { ?>
                     <div class="payment-list">
                         <button type="button" class="btn payment-btn cash" id="payment_btn_cash" onclick="selectPayment('cash', '<?= lang("Sales.cash") ?>')">💵 Dinheiro</button>
@@ -1992,26 +1995,45 @@ function openCheckoutModal() {
     jQuery('#checkoutModal').modal('show');
 }
 
-function simplePay(type, lang_key) {
-    // Tarefa 9 do plano simplificar-fluxo-venda-pdv. O plano proibe mexer em
-    // selectPayment() e addPayment(), entao o atalho do Modo Simples mora aqui:
-    // escolhe a forma normalmente e, no Dinheiro, ja registra o pagamento com o
-    // total exato. Sem isso o "1 toque" nao funcionaria — so preencher o campo
-    // nao registra nada em payments_list, e o FINALIZAR continua desabilitado
-    // porque checkIfCanFinish() exige pagamento.
-    selectPayment(type, lang_key);
+    function simplePay(type, lang_key) {
+        // Tarefa 4 do pedido do dono: no Modo Simples, escolher a forma de
+        // pagamento JA e dar baixa na venda. Um toque, sem segunda confirmacao.
+        //
+        // O total exato vai preenchido porque e o que a venda vale. Se o cliente
+        // entregou mais, o troco e uma questao de dar o dinheiro de volta, nao
+        // de mudar o valor da venda — por isso o caminho do troco e separado
+        // (simpleTroco) e nao contamina este.
+        selectPayment(type, lang_key);
 
-    if (type !== 'cash') return;
+        var amt = document.getElementById('checkout_amount');
+        if (amt) amt.value = String(total_venda.toFixed(2)).replace('.', ',');
 
-    var amt = document.getElementById('checkout_amount');
-    if (!amt) return;
+        addPayment();
 
-    // total_venda ja vem com o desconto aplicado (refreshDiscountedTotal). Vai
-    // com virgula e sem separador de milhar para nao deixar duvida de onde e o
-    // decimal, ainda que o parseCurrency aceite os dois formatos.
-    amt.value = String(total_venda.toFixed(2)).replace('.', ',');
-    addPayment();
-}
+        // Em debito/credito/fiado addPayment() ja chama finishCheckout() e
+        // retorna. Em dinheiro/PIX ele so registra e mostra o troco. Chamar
+        // finishCheckout() de novo e seguro: o guard `if (finishingCheckout)
+        // return` no topo dele absorve o segundo chamado, entao nao ha risco de
+        // venda duplicada.
+        finishCheckout();
+    }
+
+    /* Caminho do troco: o cliente entregou uma nota maior que o total. Aqui o
+       operador digita o que recebeu, ve o troco e confirma. Fica fora do caminho
+       de um toque de proposito — a maioria das vezes nao ha troco. */
+    function simpleTroco() {
+        var g = document.getElementById('amount_group');
+        if (!g) return;
+        g.style.display = 'block';
+        var lbl = document.getElementById('payment_type_label');
+        if (lbl) lbl.textContent = 'R$';
+        var amt = document.getElementById('checkout_amount');
+        if (amt) {
+            amt.value = '';
+            amt.placeholder = fmtMoney(total_venda);
+            amt.focus();
+        }
+    }
 
 function selectPayment(type, lang_key) {
     payment_type_selected = lang_key;
