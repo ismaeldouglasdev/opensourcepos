@@ -933,6 +933,14 @@ if (isset($success)) {
                     $('#payment_totals').after($btns);
                 }
                 if ($h.find('#sale_buttons').length) $btns.html($h.find('#sale_buttons').html());
+                // mesma correcao no fluxo de edicao de linha: sem isto,
+                // Suspender/Cancelar somem ao editar quantidade ou preco.
+                var $actHtml = $h.find('#buttons_sale').html();
+                if ($actHtml) {
+                    var $act2 = $('#buttons_sale');
+                    if (!$act2.length) { $act2 = $('<div class="form-group" id="buttons_sale"></div>'); $btns.after($act2); }
+                    $act2.html($actHtml);
+                }
             }, 'html').fail(function() {
                 posAjaxPending = false;
                 window.location.reload();
@@ -1036,6 +1044,18 @@ if (isset($success)) {
                             $('#payment_totals').after($btns);
                         }
                         if (res.buttons_html) $btns.html(res.buttons_html);
+
+                        // Suspender/Cancelar (#buttons_sale) sao renderizados
+                        // fora de #sale_buttons; sem este fragmento o operador
+                        // perde as duas acoes apos o primeiro item escaneado.
+                        var $act = $('#buttons_sale');
+                        if (res.sale_actions_html) {
+                            if (!$act.length) {
+                                $act = $('<div class="form-group" id="buttons_sale"></div>');
+                                $btns.after($act);
+                            }
+                            $act.html(res.sale_actions_html);
+                        }
                     }
                     // Suppress any late autocomplete response from reopening
                     // the menu right after we cleared the field.

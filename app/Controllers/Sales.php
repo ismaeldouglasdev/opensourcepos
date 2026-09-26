@@ -1901,6 +1901,11 @@ class Sales extends Secure_Controller
         $data['totals_html'] = $this->_extract_fragment($full_html, 'sale_totals');
         $data['payments_html'] = $this->_extract_fragment($full_html, 'payment_totals');
         $data['buttons_html'] = $this->_extract_fragment($full_html, 'sale_buttons');
+        // Suspender/Cancelar vivem em #buttons_sale, dentro de #payment_details,
+        // e nao dentro de #sale_buttons. Sem este fragmento eles vanish a cada
+        // atualizacao AJAX do carrinho e o operador fica sem como suspender ou
+        // cancelar a venda.
+        $data['sale_actions_html'] = $this->_extract_fragment($full_html, 'buttons_sale');
 
         $data['success'] = $added;
 
