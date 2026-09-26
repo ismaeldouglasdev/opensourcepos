@@ -226,7 +226,11 @@ try {
                         if (!$btn.length) return;
 
                         $btn.on('click', function() {
-                            var querLigar = $(this).data('on') !== '1';
+                            // .attr() e nao .data(): o jQuery converte data-on="1"
+                            // para o NUMERO 1, e 1 !== '1' e verdadeiro (numero
+                            // contra string). Com .data() o botao ficava sempre
+                            // em "ligar" e nunca voltava para o Modo Completo.
+                            var querLigar = String($(this).attr('data-on')) !== '1';
                             // trava o botao durante o POST: clique duplo enviaria
                             // duas vezes e o estado final ficaria indeterminate
                             $btn.prop('disabled', true);
