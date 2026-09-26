@@ -234,7 +234,10 @@ if (isset($success)) {
 }
 ?>
 
-<div id="register_wrapper">
+<!-- Tarefa 7 do plano simplificar-fluxo-venda-pdv. A classe 'simple-mode' e o
+     unico gancho que o CSS e o JS consultam: TODA regra do Modo Simples fica
+     presa nela, entao o Modo Completo nao tem como mudar por acidente. -->
+<div id="register_wrapper" class="<?= ! empty($simpleMode) ? 'simple-mode' : '' ?>">
 
     <!-- Top register controls -->
     <?= form_open("$controller_name/changeMode", ['id' => 'mode_form', 'class' => 'form-horizontal panel panel-default']) ?>
@@ -297,10 +300,20 @@ if (isset($success)) {
                 <li class="pull-left">
                     <?= form_input(['name' => 'item', 'id' => 'item', 'class' => 'form-control input-sm', 'size' => '50', 'tabindex' => ++$tabindex]) ?>
                     <span class="ui-helper-hidden-accessible" role="status"></span>
+                    <?php /* Tarefa 7: no Modo Simples o campo precisa explicar o que
+                             fazer, porque quem opera esta aqui nao conhece o
+                             sistema. Fora do Modo Simples o texto nao existe. */ ?>
+                    <?php if (! empty($simpleMode)) { ?>
+                        <span class="simple-mode-hint">Escaneie o produto ou digite o nome e aperte Enter</span>
+                    <?php } ?>
                 </li>
                 <li class="pull-right">
-                    <button type="button" id="new_item_button" class="btn btn-info btn-sm pull-right modal-dlg modal-dlg-1000 modal-dlg-quick" data-btn-new="<?= lang('Common.new') ?>" data-btn-submit="<?= lang('Common.submit') ?>" data-href="<?= "items/view?quick=1" ?>" title="<?= lang(ucfirst($controller_name) . ".new_item") ?>">
-                        <span class="glyphicon glyphicon-tag">&nbsp;</span><?= lang(ucfirst($controller_name) . ".new_item") ?>
+                    <?php /* Tarefa 7: 'Novo Item' e um rotulo de sistema. No Modo Simples
+                             a pergunta real do operador e "e se o produto nao
+                             existir?", e a resposta esta no proprio botao. */ ?>
+                    <?php $__newItemLabel = ! empty($simpleMode) ? 'Produto não encontrado? Cadastrar' : lang(ucfirst($controller_name) . '.new_item'); ?>
+                    <button type="button" id="new_item_button" class="btn btn-info btn-sm pull-right modal-dlg modal-dlg-1000 modal-dlg-quick" data-btn-new="<?= lang('Common.new') ?>" data-btn-submit="<?= lang('Common.submit') ?>" data-href="<?= "items/view?quick=1" ?>" title="<?= $__newItemLabel ?>">
+                        <span class="glyphicon glyphicon-tag">&nbsp;</span><?= $__newItemLabel ?>
                     </button>
                 </li>
             </ul>
@@ -1154,6 +1167,18 @@ if (isset($success)) {
 
             return $('<li></li>').data('item.autocomplete', item).append(html).appendTo(ul);
         };
+
+        // Tarefa 7 do plano simplificar-fluxo-venda-pdv: no Modo Simples a
+        // primeira coisa que o operador faz e escanear, entao o campo de
+        // busca ja entra focado. Colocado DEPOIS do init do autocomplete de
+        // proposito — focar antes do widget existir pode ser engolido pelo
+        // plugin. Fora do Modo Simples estas linhas nao existem.
+        <?php if (! empty($simpleMode)) { ?>
+        setTimeout(function() {
+            var $f = $('#item');
+            if ($f.length && !$f.is(':disabled')) $f.focus();
+        }, 0);
+        <?php } ?>
 
         // After an item is added the field is cleared and kept focused; a late
         // itemSearch response can reopen the menu — force-close during the

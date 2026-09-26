@@ -3368,3 +3368,42 @@ body {
 #table_holder.items-manage .fixed-table-body td.items-col-qty {
     font-weight: 400 !important;
 }
+
+  /* ===================================================================
+     Modo Simples de venda (tarefa 7 do plano simplificar-fluxo-venda-pdv)
+     Tudo aqui fica preso em .simple-mode. O wrapper #register_wrapper ganha
+     a classe simple-mode, e nenhuma regra deste bloco existe fora dela — e
+     por isso que o Modo Completo nao muda. Para conferir: em modo completo,
+     o getBoundingClientRect do campo de busca e o placeholder tem de ser
+     exatamente o baseline.
+     =================================================================== */
+
+  .simple-mode #item {
+      min-height: 56px;
+      font-size: 22px;
+      border-width: 2px;
+  }
+
+  .simple-mode .simple-mode-hint {
+      display: block;
+      margin: 4px 0 0;
+      color: #556;
+      font-size: 15px;
+      line-height: 1.3;
+  }
+
+  /* Alvos de toque maiores nas linhas do carrinho: quem opera noModo Simples
+     precisa acertar a linha sem mirar. Medido em px, nao em rem, para nao
+     depender da raiz escalada. */
+  .simple-mode #register tbody tr {
+      height: 44px;
+  }
+
+  .simple-mode #register tbody td {
+      padding-top: 6px;
+      padding-bottom: 6px;
+  }
+
+  .simple-mode #register tbody tr td .form-control {
+      min-height: 36px;
+  }
