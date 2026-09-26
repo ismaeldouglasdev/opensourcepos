@@ -647,7 +647,13 @@ if (isset($success)) {
             <div id="sale_buttons">
                 <div style="margin: 6px 0;">
     <button type="button" class="btn btn-success btn-lg btn-block" id="btn_finalizar_venda" onclick="openCheckoutModal()">
-        <span class="glyphicon glyphicon-shopping-cart"></span> FINALIZAR VENDA (F2)
+        <span class="glyphicon glyphicon-shopping-cart"></span>
+        <?php /* Tarefa 11 do plano simplificar-fluxo-venda-pdv: no Modo Simples o
+                 rotulo e a frase exata "Finalizar venda" e o atalho F2 some do
+                 texto — quem esta começando nao sabe o que e F2, e um atalho que
+                 ele nao pode descobrir e pior que nenhum. No Modo Completo o
+                 rotulo antigo, com o F2, permanece. */ ?>
+        <?= ! empty($simpleMode) ? 'Finalizar venda' : 'FINALIZAR VENDA (F2)' ?>
     </button>
 </div>
 
