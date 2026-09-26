@@ -125,6 +125,58 @@ class Employee extends Person
     }
 
     /**
+     * Le o flag de Modo Simples de um employee.
+     *
+     * Tarefa 2 do plano simplificar-fluxo-venda-pdv. Leitura defensiva: se a
+     * coluna ainda nao existir (migration nao aplicada), devolve 0 em vez de
+     * estourar, para nunca travar quem esta vendendo.
+     *
+     * @param int $person_id
+     * @return int 1 = Modo Simples, 0 = Modo Completo
+     */
+    public function get_simple_mode(int $person_id): int
+    {
+        try {
+            $row = $this->db->table('employees')
+                ->select('simple_mode')
+                ->where('person_id', $person_id)
+                ->get()
+                ->getRow();
+
+            return $row !== null ? (int) $row->simple_mode : 0;
+        } catch (\Throwable $e) {
+            // Coluna ausente ou banco indisponivel: Modo Completo e o seguro.
+            return 0;
+        }
+    }
+
+    /**
+     * Grava o flag de Modo Simples de um employee.
+     *
+     * Update dirigido numa unica coluna, separado de save_employee() de proposito:
+     * save_employee() monta o UPDATE apenas com os campos que o formulario
+     * enviou, entao um checkbox de configuracao que passasse por ali seria
+     * apagado por qualquer edicao de nome ou telefone. Aqui o valor so muda
+     * quando alguem realmente alterna o modo.
+     *
+     * @param int $person_id
+     * @param int $mode 1 = Modo Simples, 0 = Modo Completo
+     */
+    public function set_simple_mode(int $person_id, int $mode): bool
+    {
+        $mode = $mode ? 1 : 0;
+
+        try {
+            return (bool) $this->db->table('employees')
+                ->where('person_id', $person_id)
+                ->update(['simple_mode' => $mode]);
+        } catch (\Throwable $e) {
+            // Coluna ausente: devolve false, o chamador mantem o Modo Completo.
+            return false;
+        }
+    }
+
+    /**
      * Inserts or updates an employee
      */
     public function save_employee(array &$person_data, array &$employee_data, array &$grants_data, int $employee_id = NEW_ENTRY): bool
