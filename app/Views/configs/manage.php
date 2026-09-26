@@ -38,6 +38,9 @@
     <li role="presentation">
         <a data-toggle="tab" href="#system_tab" title="<?= lang('Config.system_conf') ?>"><?= lang('Config.system_conf') ?></a>
     </li>
+    <li role="presentation">
+        <a data-toggle="tab" href="#sale_mode_tab" title="<?= lang('Config.simple_mode_conf') ?>"><?= lang('Config.simple_mode') ?></a>
+    </li>
 </ul>
 
 <div class="tab-content">
@@ -73,6 +76,9 @@
     </div>
     <div class="tab-pane" id="system_tab">
         <?= view('configs/system_config') ?>
+    </div>
+    <div class="tab-pane" id="sale_mode_tab">
+        <?= view('configs/sale_mode_config') ?>
     </div>
 </div>
 

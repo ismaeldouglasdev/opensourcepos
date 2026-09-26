@@ -272,7 +272,52 @@ class Config extends Secure_Controller
 
         $data['mailchimp']['lists'] = $this->_mailchimp();
 
+        // Tarefa 4 do plano simplificar-fluxo-venda-pdv: o flag do Modo Simples
+        // pertence ao employee logado, nao a loja. O dono atende sozinho no
+        // mesmo terminal, entao um valor global obrigaria a ligar e desligar
+        // todo dia.
+        $data['simple_mode'] = $this->isSimpleMode();
+
         echo view('configs/manage', $data);
+    }
+
+    /**
+     * Liga ou desliga o Modo Simples para o employee logado.
+     *
+     * Tarefa 4 do plano simplificar-fluxo-venda-pdv. Grava no employee, nunca em
+     * ospos_app_config: o modo e por pessoa. A coluna e a fonte da verdade; o
+     * botao do topo (tarefa 5) tambem chama este mesmo metodo.
+     */
+    public function postSaveSimpleMode(): void
+    {
+        $this->db->transStart();
+
+        // checkbox desmarcado nao chega no POST, entao ausencia = desligar
+        $simple_mode = $this->request->getPost('simple_mode') !== null ? 1 : 0;
+        $person_id   = (int) $this->employee->get_logged_in_employee_info()->person_id;
+
+        $success = $this->employee->set_simple_mode($person_id, $simple_mode);
+
+        $this->db->transComplete();
+
+        if (! $success) {
+            // Coluna ausente (migration nao aplicada): avisa em vez de fingir
+            // que salvou, para ninguem ficar sem entender por que o modo nao
+            // mudou. Nao e erro 500: o Modo Completo continua funcionando.
+            $this->response->setContentType('application/json');
+            echo json_encode([
+                'success' => false,
+                'message' => lang('Config.simple_mode_not_saved'),
+            ]);
+
+            return;
+        }
+
+        $this->response->setContentType('application/json');
+        echo json_encode([
+            'success' => true,
+            'message' => lang('Config.saved_successfully'),
+        ]);
     }
 
     /**

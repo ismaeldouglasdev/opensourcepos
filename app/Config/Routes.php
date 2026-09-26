@@ -252,6 +252,10 @@ $routes->post('config/saveRewards', 'Config::postSaveRewards');
 $routes->post('config/saveBarcode', 'Config::postSaveBarcode');
 $routes->post('config/saveReceipt', 'Config::postSaveReceipt');
 $routes->post('config/saveInvoice', 'Config::postSaveInvoice');
+// Tarefa 4 do plano simplificar-fluxo-venda-pdv: liga/desliga o Modo Simples
+// do employee logado. Fica em config/ porque e a fonte da verdade; o botao do
+// topo (tarefa 5) chama o mesmo metodo.
+$routes->post('config/saveSimpleMode', 'Config::postSaveSimpleMode');
 $routes->post('config/removeLogo', 'Config::postRemoveLogo');
 
 // ═══════════════════════════════════════════════════════════
