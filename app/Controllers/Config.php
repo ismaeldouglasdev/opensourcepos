@@ -278,6 +278,11 @@ class Config extends Secure_Controller
         // todo dia.
         $data['simple_mode'] = $this->isSimpleMode();
 
+        // Tarefa 14: o interruptor das setinhas e independente do modo. Vive na
+        // mesma tela porque e a mesma intencao — "como este terminal me ajuda" —
+        // mas nao se anulam: o modo define o caminho, o interruptor a bussola.
+        $data['show_guide'] = $this->showGuide();
+
         echo view('configs/manage', $data);
     }
 
@@ -311,6 +316,58 @@ class Config extends Secure_Controller
             echo json_encode([
                 'success' => false,
                 'message' => lang('Config.simple_mode_not_saved'),
+            ]);
+
+            return;
+        }
+
+        $this->response->setContentType('application/json');
+        echo json_encode([
+            'success' => true,
+            'message' => lang('Config.saved_successfully'),
+        ]);
+    }
+
+    /**
+     * Tarefa 14 do plano simplificar-fluxo-venda-pdv. Grava o interruptor das
+     * setinhas de ajuda, que e independente do Modo Simples.
+     *
+     * Diferenca importante em relacao ao postSaveSimpleMode(): aqui a ausencia
+     * do campo significa "nao mexeu no interruptor", e nao "desligou". O
+     * simple_mode e default 0, entao ausencia = desligar faz sentido; o
+     * show_guide e default 1, e tratar a ausencia como 0 desligaria as
+     * setinhas de quem so queria salvar o modo. Por isso o campo chega
+     * sempre com o valor explicito.
+     *
+     * @throws ReflectionException
+     * @return void
+     * @noinspection PhpUnused
+     */
+    public function postSaveShowGuide(): void
+    {
+        $posted   = $this->request->getPost('show_guide');
+        $show     = $posted === null ? null : (((int) $posted) === 1 ? 1 : 0);
+        $person_id = (int) $this->employee->get_logged_in_employee_info()->person_id;
+
+        // Nao veio o campo: nada a fazer, e nao e erro.
+        if ($show === null) {
+            $this->response->setContentType('application/json');
+            echo json_encode(['success' => true, 'message' => lang('Config.saved_successfully')]);
+
+            return;
+        }
+
+        $this->db->transStart();
+        $success = $this->employee->set_show_guide($person_id, $show);
+        $this->db->transComplete();
+
+        if (! $success) {
+            // Coluna ausente (migration nao aplicada): avisa em vez de fingir.
+            // Nao e 500 — as setinhas sao aditivas e a venda continua.
+            $this->response->setContentType('application/json');
+            echo json_encode([
+                'success' => false,
+                'message' => lang('Config.show_guide_not_saved'),
             ]);
 
             return;

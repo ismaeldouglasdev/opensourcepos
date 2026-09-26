@@ -1960,6 +1960,7 @@ class Sales extends Secure_Controller
         // sintoma de o botao do topo alternar o modo mas o fragmento recarregado
         // continuar no modo antigo.
         $data['simpleMode'] = $this->isSimpleMode();
+        $data['showGuide'] = $this->showGuide();
         $data['cart'] = $this->sale_lib->get_cart();
         $customer_info = $this->_load_customer_data($this->sale_lib->get_customer(), $data, true);
 

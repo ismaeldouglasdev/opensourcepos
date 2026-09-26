@@ -290,6 +290,7 @@ return [
     "simple_mode_show_guide"                    => "Show the help pointers",
     "simple_mode_show_guide_help"               => "The pointers highlight each part of the register and explain what to do. You can keep them on in Complete Mode while training.",
     "simple_mode_not_saved"                     => "Could not save the mode. The simple_mode column may be missing from the database: run the Simple Mode migration.",
+    "show_guide_not_saved"                      => "Could not save the pointers setting. The show_guide column may be missing from the database: run the help pointers migration.",
     "saved_unsuccessfully"                      => "Configuration save failed.",
     "security_issue"                            => "Security Vulnerability Warning",
     "server_notice"                             => "Please use the below info for issue reporting.",

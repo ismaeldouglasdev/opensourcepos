@@ -177,6 +177,54 @@ class Employee extends Person
     }
 
     /**
+     * Tarefa 14 do plano simplificar-fluxo-venda-pdv. Le o interruptor das
+     * setinhas de ajuda. Mesma leitura defensiva do simple_mode, mas o default
+     * e 1: o interruptor nasce ligado.
+     *
+     * @param int $person_id
+     * @return int 1 = setinhas ligadas, 0 = setinhas desligadas
+     */
+    public function get_show_guide(int $person_id): int
+    {
+        try {
+            $row = $this->db->table('employees')
+                ->select('show_guide')
+                ->where('person_id', $person_id)
+                ->get()
+                ->getRow();
+
+            return $row !== null ? (int) $row->show_guide : 1;
+        } catch (\Throwable $e) {
+            // Coluna ausente: setinhas ligadas e o padrao do plano, e como o
+            // guia e aditivo nunca quebra a venda.
+            return 1;
+        }
+    }
+
+    /**
+     * Grava o interruptor das setinhas de ajuda.
+     *
+     * Update dirigido numa unica coluna, pelo mesmo motivo do set_simple_mode():
+     * save_employee() monta o UPDATE so com o que o formulario enviou, entao
+     * este valor passaria a ser apagado por qualquer edicao de nome.
+     *
+     * @param int $person_id
+     * @param int $show 1 = ligadas, 0 = desligadas
+     */
+    public function set_show_guide(int $person_id, int $show): bool
+    {
+        $show = $show ? 1 : 0;
+
+        try {
+            return (bool) $this->db->table('employees')
+                ->where('person_id', $person_id)
+                ->update(['show_guide' => $show]);
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
      * Inserts or updates an employee
      */
     public function save_employee(array &$person_data, array &$employee_data, array &$grants_data, int $employee_id = NEW_ENTRY): bool

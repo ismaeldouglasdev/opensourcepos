@@ -290,6 +290,7 @@ return [
     "simple_mode_show_guide"                    => "Mostrar as setinhas de ajuda",
     "simple_mode_show_guide_help"               => "As setinhas apontam cada parte do caixa e explicam o que fazer. Dá para usar no Modo Completo durante o treinamento.",
     "simple_mode_not_saved"                     => "Não foi possível salvar o modo. A coluna simple_mode pode não existir no banco: rode a migration do Modo Simples.",
+    "show_guide_not_saved"                      => "Não foi possível salvar a opção das setinhas. A coluna show_guide pode não existir no banco: rode a migration das setinhas de ajuda.",
     "saved_unsuccessfully"                      => "Configuração não salva.",
     "security_issue"                            => "Security Vulnerability Warning",
     "server_notice"                             => "Por favor, use as informações abaixo para o relatório de problemas.",

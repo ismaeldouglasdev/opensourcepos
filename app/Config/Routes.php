@@ -256,6 +256,7 @@ $routes->post('config/saveInvoice', 'Config::postSaveInvoice');
 // do employee logado. Fica em config/ porque e a fonte da verdade; o botao do
 // topo (tarefa 5) chama o mesmo metodo.
 $routes->post('config/saveSimpleMode', 'Config::postSaveSimpleMode');
+$routes->post('config/saveShowGuide', 'Config::postSaveShowGuide');
 $routes->post('config/removeLogo', 'Config::postRemoveLogo');
 
 // ═══════════════════════════════════════════════════════════

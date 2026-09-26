@@ -7,11 +7,13 @@
  * valor global obrigaria a ligar e desligar todo dia.
  *
  * @var bool $simple_mode  estado atual do employee logado
+ * @var bool $show_guide   interruptor das setinhas (tarefa 14)
  * @var string $controller_name
  *
- * O checkbox "Mostrar as setinhas de ajuda" NAO entra aqui de proposito:
- * ele pertence a tarefa 14 do plano, e um interruptor que aparece e nao faz
- * nada e pior do que nenhum.
+ * Sao dois forms porque sao duas preferencias independentes, com endpoints
+ * separados. O modo define o CAMINHO (a interface) e o interruptor define a
+ * BUSSOLA (as setinhas) — nao se anulam, e o dono precisa poder treinar no
+ * Modo Completo com as setinhas ligadas.
  */
 ?>
 <?= form_open('config/saveSimpleMode/', ['id' => 'simple_mode_config_form', 'class' => 'form-horizontal']) ?>
@@ -50,8 +52,63 @@
     </div>
 <?= form_close() ?>
 
+<?php /* Tarefa 14: este interruptor nasce LIGADO, ao contrario do modo logo
+         acima, que nasce desligado. Nao e inconsistencia. */ ?>
+<?= form_open('config/saveShowGuide/', ['id' => 'show_guide_config_form', 'class' => 'form-horizontal']) ?>
+    <div id="config_wrapper">
+        <fieldset id="config_info">
+
+            <ul id="show_guide_error_message_box" class="error_message_box"></ul>
+
+            <div class="form-group form-group-sm">
+                <?= form_label(lang('Config.simple_mode_show_guide'), 'show_guide', ['class' => 'control-label col-xs-2']) ?>
+                <div class="col-xs-1">
+                    <?= form_checkbox([
+                        'name'    => 'show_guide',
+                        'value'   => '1',
+                        'id'      => 'show_guide',
+                        'checked' => $show_guide === true
+                    ]) ?>
+                </div>
+                <div class="col-xs-9">
+                    <span class="help-block"><?= lang('Config.simple_mode_show_guide_help') ?></span>
+                </div>
+            </div>
+
+        </fieldset>
+
+        <fieldset class="form-buttons">
+            <div class="form-group form-group-sm">
+                <div class="col-sm-offset-2 col-sm-10">
+                    <button class="btn btn-primary" type="submit" name="submit" value="submit">
+                        <?= lang('Common.submit') ?>
+                    </button>
+                </div>
+            </div>
+        </fieldset>
+    </div>
+<?= form_close() ?>
+
 <script type="text/javascript">
-    // Mesmo padrao das outras abas de Config: o form_support faz ajaxSubmit e
+    // Mesmo padrao da aba do modo: o form_support faz ajaxSubmit e mostra a
+    // resposta com $.notify. Sao dois binds porque sao dois forms.
+    $('#show_guide_config_form').validate($.extend(form_support.handler, {
+        submitHandler: function(form) {
+            $(form).ajaxSubmit({
+                success: function(response) {
+                    $.notify({
+                        message: response.message
+                    }, {
+                        type: response.success ? 'success' : 'danger',
+                        placement: { from: 'top', align: 'center' }
+                    });
+                },
+                dataType: 'json'
+            });
+        }
+    }));
+
+    //Mesmo padrao das outras abas de Config: o form_support faz ajaxSubmit e
     // mostra a resposta com $.notify. Sem isto o POST seria um submit comum e a
     // tela trocaria pelo JSON cru.
     $('#simple_mode_config_form').validate($.extend(form_support.handler, {

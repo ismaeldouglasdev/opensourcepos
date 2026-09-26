@@ -517,7 +517,13 @@
     }
 
     function visible() {
-        return annotations().length > 0 && window.simpleMode === true && window.showGuide !== false;
+        // Tarefa 14. O gate e so o interruptor (showGuide), NAO o modo.
+        // A tabela de aceitacao do plano exige "modo completo + setinhas
+        // ligadas -> setas visiveis sobre a interface atual", e o proprio
+        // motivo declarado e treinar no Modo Completo com as setinhas. O modo
+        // define o caminho; o interruptor define a bussola.
+        // A ausencia de showGuide trata como ligado, que e o default.
+        return annotations().length > 0 && window.showGuide !== false;
     }
 
     function apply() {
