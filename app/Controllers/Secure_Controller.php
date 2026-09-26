@@ -29,6 +29,13 @@ class Secure_Controller extends BaseController
     protected Session $session;
 
     /**
+     * Cache do flag de Modo Simples dentro do request atual.
+     *
+     * @var bool|null null = ainda nao consultado nesta request
+     */
+    protected ?bool $simpleModeCache = null;
+
+    /**
      * @param string $module_id
      * @param string|null $submodule_id
      * @param string|null $menu_group
@@ -77,6 +84,37 @@ class Secure_Controller extends BaseController
             'config'          => $config
         ];
         view('viewData', $this->global_view_data);
+    }
+
+    /**
+     * O employee logado esta no Modo Simples?
+     *
+     * Tarefa 3 do plano simplificar-fluxo-venda-pdv. O modo e porfuncionario,
+     * nao por loja: o dono atende sozinho no mesmo terminal, entao um flag
+     * global obrigaria a ligar e desligar todo dia.
+     *
+     * Seguranca: qualquer falha (migration nao aplicada, banco indisponivel)
+     * devolve false, que e o Modo Completo. Falhar para o lado seguro importa
+     * aqui: um erro nao pode trancar quem esta vendendo no caixa.
+     *
+     * @return bool true = Modo Simples, false = Modo Completo
+     */
+    protected function isSimpleMode(): bool
+    {
+        // cache por request: varias views e fragmentos AJAX perguntam no mesmo
+        // request, e a resposta nao muda no meio de uma request.
+        if (isset($this->simpleModeCache)) {
+            return $this->simpleModeCache;
+        }
+
+        try {
+            $person_id = (int) $this->employee->get_logged_in_employee_info()->person_id;
+            $this->simpleModeCache = $this->employee->get_simple_mode($person_id) === 1;
+        } catch (\Throwable $e) {
+            $this->simpleModeCache = false;
+        }
+
+        return $this->simpleModeCache;
     }
 
     public function sanitizeSortColumn($headers, $field, $default): string
