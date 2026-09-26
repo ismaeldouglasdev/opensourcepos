@@ -61,7 +61,9 @@ window._guideAnnotations = [
     { target: '#item', text: '<strong>Comece por aqui.</strong> Escaneie o produto ou digite o nome. Ele entra sozinho no carrinho.' },
     { target: '#cart_contents', text: '<strong>Confira a quantidade.</strong> Aqui você troca a quantidade e o preço, se precisar.' },
     { target: '.cart-discount-section', text: '<strong>Se der desconto, é aqui</strong> — toque no valor que o cliente pediu.' },
-    { target: '#btn_finalizar_venda', text: '<strong>Clique em FINALIZAR</strong> quando tiver acabado.' }
+    { target: '#btn_finalizar_venda', text: '<strong>Clique em FINALIZAR</strong> quando tiver acabado.' },
+    { target: '.payment-list.simple-primary', text: '<strong>Escolha como vai pagar.</strong> Dinheiro e PIX estão em cima; o resto fica em \'Outra forma\'.' },
+    { target: '#troco_display', text: '<strong>Confira o troco e toque em FINALIZAR.</strong>' }
 ];
 
 window._tutorialSteps = [
