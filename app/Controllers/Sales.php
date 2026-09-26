@@ -1954,6 +1954,12 @@ class Sales extends Secure_Controller
 
         $data = $extra;
         $data['cash_rounding'] = $cash_rounding;
+        // Tarefa 6 do plano simplificar-fluxo-venda-pdv. Este e o unico ponto
+        // que monta o register, tanto na carga da pagina quanto nos fragmentos
+        // que voltam por AJAX depois de escanear. Injetar aqui evita o
+        // sintoma de o botao do topo alternar o modo mas o fragmento recarregado
+        // continuar no modo antigo.
+        $data['simpleMode'] = $this->isSimpleMode();
         $data['cart'] = $this->sale_lib->get_cart();
         $customer_info = $this->_load_customer_data($this->sale_lib->get_customer(), $data, true);
 
