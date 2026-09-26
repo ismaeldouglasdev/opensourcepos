@@ -34,7 +34,6 @@ class Secure_Controller extends BaseController
      * @var bool|null null = ainda nao consultado nesta request
      */
     protected ?bool $simpleModeCache = null;
-    protected ?bool $showGuideCache = null;
 
     /**
      * @param string $module_id
@@ -122,31 +121,6 @@ class Secure_Controller extends BaseController
         return $this->simpleModeCache;
     }
 
-    /**
-     * Tarefa 14 do plano simplificar-fluxo-venda-pdv. O interruptor das
-     * setinhas de ajuda, que e INDEPENDENTE do modo: o modo define o caminho
-     * (a interface) e o interruptor define a bussola (as setinhas). O dono
-     * precisa poder treinar no Modo Completo com as setinhas ligadas.
-     *
-     * Por isso, diferente do isSimpleMode(), aqui o fallback seguro e TRUE:
-     * setinhas sao aditivas e nunca impedem uma venda, entao na duvida e
-     * melhor mostrar a ajuda do que esconder.
-     */
-    protected function showGuide(): bool
-    {
-        if (isset($this->showGuideCache)) {
-            return $this->showGuideCache;
-        }
-
-        try {
-            $person_id = (int) $this->employee->get_logged_in_employee_info()->person_id;
-            $this->showGuideCache = $this->employee->get_show_guide($person_id) === 1;
-        } catch (\Throwable $e) {
-            $this->showGuideCache = true;
-        }
-
-        return $this->showGuideCache;
-    }
 
     public function sanitizeSortColumn($headers, $field, $default): string
     {

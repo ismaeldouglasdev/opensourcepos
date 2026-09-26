@@ -45,28 +45,6 @@ use App\Models\Employee;
 
 <?= view('partial/header') ?>
 <script>
-/* Tarefas 12 e 14 do plano simplificar-fluxo-venda-pdv.
-   simpleMode e showGuide sao lidos pelo motor de anotacoes em
-   partial/tutorial.php. Nas demais telas do sistema este arquivo nao define
-   _guideAnnotations e o motor simplesmente nao age.
-   As duas opcoes sao independentes: o modo define o caminho e o interruptor
-   define a bussola, entao o dono pode treinar no Modo Completo com as
-   setinhas ligadas. */
-window.simpleMode = <?= ! empty($simpleMode) ? 'true' : 'false' ?>;
-window.showGuide = <?= ! empty($showGuide) ? 'true' : 'false' ?>;
-
-/* Anotacoes fixas na ordem real da venda. Os textos sao os literais da tarefa
-   13; aqui entram as quatro que vivem no register — as duas do modal (⑤ e ⑥)
-   entram na tarefa 13. Target orfao nao quebra nada: o motor esconde o selo e
-   a legenda mostra o texto sem ancora. */
-window._guideAnnotations = [
-    { target: '#item', text: '<strong>Comece por aqui.</strong> Escaneie o produto ou digite o nome. Ele entra sozinho no carrinho.' },
-    { target: '#cart_contents', text: '<strong>Confira a quantidade.</strong> Aqui você troca a quantidade e o preço, se precisar.' },
-    { target: '.cart-discount-section', text: '<strong>Se der desconto, é aqui</strong> — toque no valor que o cliente pediu.' },
-    { target: '#btn_finalizar_venda', text: '<strong>Clique em FINALIZAR</strong> quando tiver acabado.' },
-    { target: '.payment-list.simple-primary', text: '<strong>Escolha como vai pagar.</strong> Dinheiro e PIX estão em cima; o resto fica em \'Outra forma\'.' },
-    { target: '#troco_display', text: '<strong>Confira o troco e toque em FINALIZAR.</strong>' }
-];
 
 window._tutorialSteps = [
     {
