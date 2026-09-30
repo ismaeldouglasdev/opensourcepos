@@ -3,6 +3,7 @@
 
 <p align="center">
   <a href="#-introduction">Introduction</a> · <a href="#-live-demo">Demo</a> · <a href="#-installation">Installation</a> · 
+  <a href="#-modificações-deste-fork-ismael-douglas">🇧🇷 Modificações deste fork</a> · 
   <a href="#-contributing">Contributing</a> · <a href="#-reporting-bugs">Bugs</a> · <a href="#-faq">FAQ</a> · 
   <a href="#-keep-the-machine-running">Donate</a> · <a href="#-license">License</a> · <a href="#-credits">Credits</a>
 </p>
@@ -59,6 +60,104 @@ If you bump into an issue, please check [the status page here](https://status.op
 Besides the demo of the latest master, we also have a development server that builds when there's a new commit to our repository. It's mainly used for testing out new code before merging it into the master. [It can be found here](https://dev.opensourcepos.org/).
 
 The log in credentials are the same as the regular live demo.
+
+---
+
+## 🇧🇷 Modificações deste fork (Ismael Douglas)
+
+> Esta seção descreve o **trabalho próprio** acumulado neste fork a partir do
+> [opensourcepos/opensourcepos](https://github.com/opensourcepos/opensourcepos).
+> Todo o crédito do projeto base permanece com a equipe do Open Source Point of Sale.
+> O fork está **26 commits à frente** do upstream e atende à GPL/OSPOS — a assinatura
+> de rodapé obrigatória e o aviso de copyright do upstream foram preservados.
+
+Desde maio de 2026 o fork acumula **26 commits** tocando **357 arquivos**
+(18 novos, 339 modificados). Resumo das áreas trabalhadas:
+
+### 🖨️ Impressão térmica ESC/POS (nova)
+
+Integração nativa com impressoras de comprovante, eliminando a dependência de
+impressão via navegador:
+
+| Item | Detalhe |
+| --- | --- |
+| Biblioteca | `app/Libraries/ThermalPrinter.php` (novo) — encapsula [`mike42/escpos-php`](https://github.com/mike42/escpos-php) `^4.0` |
+| Controller | `app/Controllers/Printer.php` (novo) |
+| Endpoints | `GET printer/test` · `GET printer/printReceipt/(:num)` · `POST printer/quickPrint` |
+| Transporte | CUPS, arquivo e TCP/IP direto |
+| Comandos | Cabeçalho da loja, itens, subtotal, descontos, impostos, total, **código de barras**, **gaveta de dinheiro**, **corte automático**, logomarca e impressão de teste |
+| Automação | Impressão automática ao finalizar a venda (configurável), botão de **reimpressão** e **impressão rápida** |
+
+Documentação dedicada em [`docs/escpos-thermal-printer.md`](docs/escpos-thermal-printer.md).
+
+### 🎨 Interface e UX
+
+Reescrita das telas principais com foco em **densidade de informação** e
+**uso por pessoas idosas / baixa familiaridade digital**:
+
+- `public/css/modern.css` — folha de estilo principal (~2.400 linhas), com
+  `custom.css`, `register.css`, `ospos.css` e `accessible.css` como camadas de apoio.
+- `accessible.css` — tipografia ampliada e ajuste de contraste.
+- **Caixa (PDV)** — modal de checkout com **múltiplos pagamentos** na mesma venda
+  (Dinheiro, Débito, Crédito, PIX e Fiado), cálculo de troco em tempo real e
+  campo de item "Diversos".
+- **Gestão de vendas** — faixa de resumo com totalizadores e **resumo de pagamentos
+  atualizado por AJAX** (`Sales::getPaymentSummary()`, `app/Controllers/Sales.php`).
+- **Atalhos de teclado** no caixa: `ESC` cancela a venda e `Alt+1` … `Alt+9` para
+  busca de item, busca de cliente, suspender venda, vendas suspensas, valor entregue,
+  adicionar pagamento, finalizar venda, finalizar orçamento e ajuda de atalhos.
+
+### 🔐 Segurança e confiabilidade
+
+Correções aplicadas com verificação no código:
+
+- **Injeção de SQL** — `app/Models/Item.php`: a busca por atributos usava
+  interpolação direta em `HAVING`. Passou a usar `escapeLikeString()` com
+  parâmetros vinculados, e as colunas `attribute_dvalues` foram corrigidas para
+  `attribute_values` / `attribute_dtvalues`.
+- **XSS** — `esc()` aplicado em `app/Views/barcode_sheet.php` (URLs, `title`,
+  atributos) e em `app/Views/login.php` (nome da empresa, logomarca e títulos SVG);
+  medidas de tabela convertidas para `(int)`.
+- **CSRF** — proteção migrada de `session` para `cookie` em `app/Config/Security.php`.
+- **Cookies** — `httponly = false` e `samesite = 'Lax'` em `app/Config/Cookie.php`,
+  necessário para que o JavaScript da aplicação leia o cookie de CSRF.
+  *Trade-off consciente:* o cookie fica acessível a JavaScript, e a
+  randomização/regeneração do token está desativada.
+- **Configuração** — `@immutable` em `app/Config/Autoload.php`; senhas removidas
+  de `.env.example`.
+- **Dependências** — remoção da integração **MailChimp** do fluxo de importação CSV.
+
+### 🧭 Rotas
+
+`app/Config/Routes.php` passou a declarar explicitamente **299 rotas**
+(176 `GET` + 123 `POST`) distribuídas por **23 controllers**, incluindo as três
+novas do módulo de impressora. O *auto-routing* do CodeIgniter permanece
+habilitado em `app/Config/Routing.php` como camada de reserva.
+
+### 🧰 JavaScript
+
+`public/resources/js/js-fa93e8894e.cookie.js` — **js-cookie v2.2.1** com um patch
+que corrige o conflito do módulo em ambientes AMD/Define, que impedia a leitura do
+cookie de CSRF e portanto o envio dos formulários.
+
+### 🌍 Idiomas
+
+Ajustes em `app/Language/pt-BR/` (`Config.php`, `Sales.php`) para os novos campos
+de desconto, formas de pagamento e resumo de vendas.
+
+### 📚 Documentação e ambientes
+
+Documentação própria em [`docs/`](docs/), incluindo:
+
+- `ambientes-ospos.md` — separação entre **produção** e **teste**, com cookies de
+  sessão, sessão do banco e flags de CSRF distintas para os dois ambientes.
+- `escpos-thermal-printer.md` — instalação, configuração e diagnóstico da
+  impressora térmica.
+- `tutorial-ospos.md` — instalação, uso e arquitetura de rotas.
+- `ospos-status.md` e `setup-pendente.md` — estado do projeto e pendências.
+- `AGENTS.md` na raiz — convenções de trabalho e contexto do ambiente.
+
+---
 
 ## 💾 Installation
 
