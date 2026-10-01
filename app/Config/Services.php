@@ -4,6 +4,7 @@ namespace Config;
 
 use CodeIgniter\Config\BaseService;
 use CodeIgniter\HTTP\IncomingRequest;
+use Locale;
 use Config\Services as AppServices;
 use HTMLPurifier;
 use HTMLPurifier_Config;
