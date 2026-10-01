@@ -1467,7 +1467,15 @@ class Sale_lib
     }
 
     /**
-     * Applies a percentage discount to every item in the cart (sale-wide discount).
+     * Applies a sale-wide discount to every item in the cart, recorded as a
+     * FIXED money amount instead of a percentage.
+     *
+     * The operator still picks a percentage; the sale stores money. Storing the
+     * percentage itself cannot work for FIXED because `get_item_discount` reads
+     * the field as per unit (qty x discount) — the same value on N lines would
+     * discount N times over. So each line gets its own per-unit discount
+     * (price x percent) and a single correction pass absorbs the rounding.
+     *
      * @param string $percent discount percentage (0-100)
      * @return void
      */
@@ -1478,16 +1486,84 @@ class Sale_lib
         }
 
         $items = $this->get_cart();
-
-        foreach ($items as &$item) {
-            $quantity = $item['quantity'];
-            $price = $item['price'];
-
-            $item['discount'] = $percent;
-            $item['discount_type'] = PERCENT;
-            $item['total'] = $this->get_item_total($quantity, $price, $percent, PERCENT);
-            $item['discounted_total'] = $this->get_item_total($quantity, $price, $percent, PERCENT, true);
+        if (empty($items)) {
+            return;
         }
+
+        $dec = totals_decimals();
+
+        // Gross cart total — the base the percentage is resolved against.
+        $sum = 0.0;
+        foreach ($items as $item) {
+            $sum += (float) $this->get_item_total($item['quantity'], $item['price'], '0', PERCENT);
+        }
+
+        if ($sum <= 0) {
+            return;
+        }
+
+        $amount = round($sum * ((float) $percent / 100), $dec, PHP_ROUND_HALF_UP);
+        if ($amount > $sum) {
+            $amount = $sum;
+        }
+
+        $perUnits = [];
+        $allocated = 0.0;
+        $target = null;
+        foreach ($items as $key => $item) {
+            $qty = (float) $item['quantity'];
+            if ($qty <= 0) {
+                continue;
+            }
+            $perUnit = round((float) $item['price'] * ((float) $percent / 100), $dec, PHP_ROUND_HALF_UP);
+            $perUnits[$key] = $perUnit;
+            $allocated += round($qty * $perUnit, $dec, PHP_ROUND_HALF_UP);
+            // Smallest quantity = finest granularity, since the representable
+            // totals on a line are multiples of qty x 0.01.
+            if ($target === null || $qty < (float) $items[$target]['quantity']) {
+                $target = $key;
+            }
+        }
+
+        // `discount` holds 2 decimals and get_item_discount multiplies it by the
+        // quantity, so per-line rounding can leave the cart off the intended
+        // total. One correction pass on the finest-grained line takes it back out.
+        if ($target !== null) {
+            $qty = (float) $items[$target]['quantity'];
+            $residual = round($amount - $allocated, $dec, PHP_ROUND_HALF_UP);
+            $corrected = round($perUnits[$target] + ($residual / $qty), $dec, PHP_ROUND_HALF_UP);
+            if ($corrected >= 0) {
+                $allocated += round($qty * $corrected, $dec, PHP_ROUND_HALF_UP)
+                    - round($qty * $perUnits[$target], $dec, PHP_ROUND_HALF_UP);
+                $perUnits[$target] = $corrected;
+            }
+        }
+
+        $drift = round($allocated - $amount, $dec, PHP_ROUND_HALF_UP);
+
+        // A line's total is quantised to qty x 0.01, so on a bulk line (qty 100 =
+        // R$ 1.00 steps) the requested discount may simply not be expressible. Fall
+        // back to the percentage in that case: a sale recorded in % is exact,
+        // whereas a FIXED guess would be silently off from what the customer was
+        // quoted at the till.
+        $useFixed = abs($drift) < 0.005;
+        if (! $useFixed) {
+            log_message('error', 'Cart discount of ' . $percent . '% is not representable '
+                . 'as a fixed amount (drift ' . $drift . '); storing it as a percentage.');
+        }
+
+        foreach ($items as $key => &$item) {
+            if ((float) $item['quantity'] <= 0) {
+                continue;
+            }
+            $item['discount_type'] = $useFixed ? FIXED : PERCENT;
+            $item['discount'] = $useFixed
+                ? number_format($perUnits[$key], $dec, '.', '')
+                : $percent;
+            $item['total'] = $this->get_item_total($item['quantity'], $item['price'], $item['discount'], $item['discount_type']);
+            $item['discounted_total'] = $this->get_item_total($item['quantity'], $item['price'], $item['discount'], $item['discount_type'], true);
+        }
+        unset($item);
 
         $this->set_cart($items);
     }

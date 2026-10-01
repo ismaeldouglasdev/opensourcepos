@@ -625,10 +625,8 @@ if (isset($success)) {
                 <span id="discount_value_display" style="color:#e65100; font-weight:bold; font-size:14px;"></span>
             </div>
             <div class="discount-row">
+                <button type="button" class="btn btn-sm btn-default disc-preset" data-disc="3" onclick="applyDiscountPreset(3); renderCartDiscountedTotal()">3%</button>
                 <button type="button" class="btn btn-sm btn-default disc-preset" data-disc="5" onclick="applyDiscountPreset(5); renderCartDiscountedTotal()">5%</button>
-                <button type="button" class="btn btn-sm btn-default disc-preset" data-disc="10" onclick="applyDiscountPreset(10); renderCartDiscountedTotal()">10%</button>
-                <button type="button" class="btn btn-sm btn-default disc-preset" data-disc="15" onclick="applyDiscountPreset(15); renderCartDiscountedTotal()">15%</button>
-                <button type="button" class="btn btn-sm btn-default disc-preset" data-disc="20" onclick="applyDiscountPreset(20); renderCartDiscountedTotal()">20%</button>
                 <button type="button" class="btn btn-sm btn-default" onclick="removeDiscount(); renderCartDiscountedTotal()" title="Remover desconto"><span class="glyphicon glyphicon-remove"></span></button>
                 <div class="input-group">
                     <span class="input-group-addon" id="discount_toggle_btn" onclick="toggleDiscountMode()" style="cursor:pointer; user-select:none;" title="Clique para alternar % / R$">%</span>
