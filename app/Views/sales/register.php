@@ -629,7 +629,7 @@ if (isset($success)) {
                 <button type="button" class="btn btn-sm btn-default disc-preset" data-disc="5" onclick="applyDiscountPreset(5); renderCartDiscountedTotal()">5%</button>
                 <button type="button" class="btn btn-sm btn-default" onclick="removeDiscount(); renderCartDiscountedTotal()" title="Remover desconto"><span class="glyphicon glyphicon-remove"></span></button>
                 <div class="input-group">
-                    <span class="input-group-addon" id="discount_toggle_btn" onclick="toggleDiscountMode()" style="cursor:pointer; user-select:none;" title="Clique para alternar % / R$">%</span>
+                    <span class="input-group-addon" id="discount_toggle_btn" onclick="toggleDiscountMode()" style="cursor:pointer; user-select:none;" title="Clique para alternar R$ / %">R$</span>
                     <input type="text" class="form-control" id="checkout_discount" inputmode="decimal" placeholder="Desconto" style="text-align:center;">
                     <span class="input-group-btn">
                         <button type="button" class="btn btn-warning" onclick="applyDiscountInput(); renderCartDiscountedTotal()">OK</button>
@@ -1735,7 +1735,7 @@ var payments_list = [];
 var total_venda = 0;
 var total_venda_original = 0;
 var sale_discount_pct = 0;
-var discount_is_percent = true;
+var discount_is_percent = false;
 // Tarefa 8: total do carrinho como o SERVIDOR entregou, sem desconto. O
 // fragmento AJAX re-renderiza #sale_total a cada item escaneado, entao este
 // valor precisa ser recapturado a cada reload — sem ele, aplicar o desconto
@@ -1923,8 +1923,13 @@ function applyDiscountInput() {
     if (discount_is_percent) {
         sale_discount_pct = Math.min(100, val);
     } else {
-        if (total_venda_original <= 0) return;
-        sale_discount_pct = Math.min(100, val / total_venda_original * 100);
+        // The discount control lives in the cart, and total_venda_original is
+        // still 0 there — it is only set when the checkout modal opens. Reading
+        // it alone made an R$ discount silently do nothing before the modal, so
+        // prefer the server-delivered gross total and fall back to the modal base.
+        var base = cart_total_original > 0 ? cart_total_original : total_venda_original;
+        if (base <= 0) return;
+        sale_discount_pct = Math.min(100, val / base * 100);
     }
     highlightPreset(sale_discount_pct);
     refreshDiscountedTotal();
