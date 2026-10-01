@@ -1374,7 +1374,9 @@ class Sale_lib
      */
     public function get_sale_id(): int
     {
-        return $this->session->get('sale_id');
+        $sale_id = (int) ($this->session->get('sale_id') ?? NEW_ENTRY);
+
+        return $sale_id > 0 ? $sale_id : NEW_ENTRY;
     }
 
     /**
