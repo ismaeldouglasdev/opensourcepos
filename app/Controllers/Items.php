@@ -510,6 +510,11 @@ class Items extends Secure_Controller
      * GET items/barcodeLookup/{code}
      * Tries Open Food Facts (food), Open Products Facts (general goods) and
      * Open Beauty Facts (cosmetics/cleaning) — all share the same v2 API.
+     *
+     * The three run in parallel and the first one that answers with a product
+     * wins; querying them in sequence let a dead host hold the request for
+     * seconds. Results are cached on disk because a product catalogue lookup
+     * for the same barcode does not change from scan to scan.
      */
     public function getBarcodeLookup(string $barcode): void
     {
@@ -517,7 +522,14 @@ class Items extends Secure_Controller
 
         $barcode = trim($barcode);
         if (!preg_match('/^\d{6,14}$/', $barcode)) {
-            echo json_encode(['found' => false]);
+            echo json_encode($this->_barcode_not_found());
+            return;
+        }
+
+        $cache_file = $this->_barcode_cache_file($barcode);
+        $cached = $this->_barcode_cache_read($cache_file);
+        if ($cached !== null) {
+            echo json_encode($cached);
             return;
         }
 
@@ -527,37 +539,121 @@ class Items extends Secure_Controller
             ['url' => 'https://world.openbeautyfacts.org', 'label' => 'Open Beauty Facts'],
         ];
 
-        foreach ($sources as $source) {
-            $result = $this->_lookup_off_family($source['url'] . '/api/v2/product/' . $barcode . '.json', $source['label']);
-            if ($result['found']) {
-                echo json_encode($result);
-                return;
-            }
-        }
+        $result = $this->_lookup_off_family_parallel($barcode, $sources);
 
-        echo json_encode(['found' => false]);
+        $this->_barcode_cache_write($cache_file, $result);
+
+        echo json_encode($result);
     }
 
     /**
-     * Query one OFF-family product API and normalize the response.
+     * Empty "not found" payload, keeping the original response contract.
      */
-    private function _lookup_off_family(string $url, string $source_label): array
+    private function _barcode_not_found(): array
+    {
+        return ['found' => false, 'name' => '', 'brand' => '', 'quantity' => '', 'image_url' => '', 'source' => ''];
+    }
+
+    /**
+     * Cache file for a barcode.
+     *
+     * Kept out of writable/cache/ on purpose: deploy scripts wipe that
+     * directory, and this cache is worth keeping across a deploy.
+     */
+    private function _barcode_cache_file(string $barcode): string
+    {
+        return WRITEPATH . 'barcode_cache/' . $barcode . '.json';
+    }
+
+    /**
+     * A hit (product exists) is cached for a month; a miss for a day, so a
+     * product added to the catalogue later is not locked out for weeks.
+     */
+    private function _barcode_cache_read(string $file): ?array
+    {
+        if (!is_file($file)) {
+            return null;
+        }
+
+        $data = json_decode((string) @file_get_contents($file), true);
+        if (!is_array($data) || !array_key_exists('found', $data)) {
+            return null;
+        }
+
+        $ttl = $data['found'] ? 2592000 : 86400;
+        if ((time() - (int) @filemtime($file)) > $ttl) {
+            return null;
+        }
+
+        return $data;
+    }
+
+    private function _barcode_cache_write(string $file, array $result): void
+    {
+        if (!is_dir(dirname($file))) {
+            @mkdir(dirname($file), 0775, true);
+        }
+        @file_put_contents($file, json_encode($result), LOCK_EX);
+    }
+
+    /**
+     * Query the three OFF-family APIs at once and normalize the first hit.
+     *
+     * Sources are inspected in declaration order so the result does not depend
+     * on which host happened to answer first.
+     */
+    private function _lookup_off_family_parallel(string $barcode, array $sources): array
+    {
+        $multi = curl_multi_init();
+        $handles = [];
+
+        foreach ($sources as $index => $source) {
+            $ch = curl_init($source['url'] . '/api/v2/product/' . $barcode . '.json');
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 3,
+                CURLOPT_CONNECTTIMEOUT => 2,
+                CURLOPT_USERAGENT => 'OSPOS-Elshaday/1.0',
+                CURLOPT_FOLLOWLOCATION => true,
+            ]);
+            curl_multi_add_handle($multi, $ch);
+            $handles[$index] = ['ch' => $ch, 'label' => $source['label']];
+        }
+
+        $running = null;
+        do {
+            curl_multi_exec($multi, $running);
+            if ($running > 0) {
+                curl_multi_select($multi, 0.2);
+            }
+        } while ($running > 0);
+
+        $hit = null;
+        foreach ($handles as $handle) {
+            $body = curl_multi_getcontent($handle['ch']);
+            curl_multi_remove_handle($multi, $handle['ch']);
+            curl_close($handle['ch']);
+
+            $parsed = $this->_parse_off_product(is_string($body) ? $body : '', $handle['label']);
+            if ($parsed['found']) {
+                $hit = $parsed;
+                break;
+            }
+        }
+
+        curl_multi_close($multi);
+
+        return $hit ?? $this->_barcode_not_found();
+    }
+
+    /**
+     * Normalize one OFF-family API response body.
+     */
+    private function _parse_off_product(string $body, string $source_label): array
     {
         $result = ['found' => false, 'name' => '', 'brand' => '', 'quantity' => '', 'image_url' => '', 'source' => $source_label];
 
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 6,
-            CURLOPT_CONNECTTIMEOUT => 3,
-            CURLOPT_USERAGENT => 'OSPOS-Elshaday/1.0',
-            CURLOPT_FOLLOWLOCATION => true,
-        ]);
-        $body = curl_exec($ch);
-        $error = curl_error($ch);
-        curl_close($ch);
-
-        if ($error !== '' || !is_string($body) || $body === '') {
+        if ($body === '') {
             return $result;
         }
 
