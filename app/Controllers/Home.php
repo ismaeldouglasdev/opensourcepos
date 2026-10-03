@@ -144,6 +144,24 @@ class Home extends Secure_Controller
         $data['hourly_sales'] = $hourly;
         $data['hourly_max'] = max(array_values($hourly)) ?: 0;
 
+        // 8. Vendas que chegaram de canal externo (Mercado Livre / Shopee).
+        // Entram sozinhas, sem o operador tocar no caixa — por isso precisam
+        // ficar visíveis aqui. O canal é identificado pelo reference_code que o
+        // inventory-service grava em sales_payments ao escrever a venda
+        // (client_sale_id "ml-<pedido>" / "shopee-<pedido>").
+        $builder = $this->db->table('sales');
+        $builder->select("{$p}sales.sale_id, {$p}sales.sale_time, {$p}sales_payments.reference_code, {$p}sales_payments.payment_amount");
+        $builder->join('sales_payments', 'sales_payments.sale_id = sales.sale_id');
+        $builder->where('sales.sale_status', COMPLETED);
+        $builder->groupStart();
+        $builder->like('sales_payments.reference_code', 'ml-', false);
+        $builder->orLike('sales_payments.reference_code', 'shopee-', false);
+        $builder->groupEnd();
+        $builder->orderBy('sales.sale_id', 'DESC');
+        $builder->limit(8);
+        $data['channel_sales'] = $builder->get()->getResult();
+        $data['channel_sales_total'] = count($data['channel_sales']);
+
         echo view('home/home', $data);
     }
 

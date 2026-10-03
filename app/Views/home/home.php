@@ -238,6 +238,67 @@ $date_str = $day_name . ', ' . date('d/m/Y');
     overflow: hidden;
 }
 
+.dash-channel-panel {
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--os-border, rgba(0, 0, 0, 0.1));
+    background: var(--os-surface, #fff);
+}
+
+.dash-channel-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.dash-channel-hint {
+    color: var(--os-text-muted, #6b7280);
+    font-size: 11px;
+}
+
+.dash-channel-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 0;
+    border-top: 1px solid var(--os-border, rgba(0, 0, 0, 0.06));
+    font-size: 13px;
+}
+
+.dash-channel-badge {
+    min-width: 54px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    color: #fff;
+}
+
+.dash-channel-badge.ml { background: #ffe600; color: #333; }
+.dash-channel-badge.shopee { background: #ee4d2d; }
+
+.dash-channel-time {
+    color: var(--os-text-muted, #6b7280);
+    font-size: 12px;
+}
+
+.dash-channel-amt {
+    margin-left: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-weight: 600;
+}
+
+.dash-channel-link {
+    font-size: 12px;
+    color: var(--os-primary);
+    text-decoration: none;
+}
+
 .dash-progress-bar {
     height: 100%;
     border-radius: 5px;
@@ -408,6 +469,26 @@ $date_str = $day_name . ', ' . date('d/m/Y');
             <span class="glyphicon glyphicon-alert"></span>
             <?= $stock_alert_count ?> <?= $stock_alert_count === 1 ? 'item com alerta de estoque' : 'itens com alerta de estoque' ?>
         </a>
+    </div>
+    <?php endif; ?>
+
+    <?php if ($channel_sales_total > 0): ?>
+    <div class="dash-channel-panel">
+        <div class="dash-channel-head">
+            <span class="glyphicon glyphicon-bell"></span>
+            <strong><?= $channel_sales_total ?> <?= $channel_sales_total === 1 ? 'venda entrou por canal' : 'vendas entraram por canal' ?></strong>
+            <span class="dash-channel-hint">Mercado Livre / Shopee — entram sozinhas, sem passar pelo caixa</span>
+        </div>
+        <?php foreach ($channel_sales as $cs): ?>
+        <div class="dash-channel-row">
+            <span class="dash-channel-badge <?= str_starts_with((string)$cs->reference_code, 'shopee-') ? 'shopee' : 'ml' ?>">
+                <?= str_starts_with((string)$cs->reference_code, 'shopee-') ? 'Shopee' : 'ML' ?>
+            </span>
+            <span class="dash-channel-time"><?= date('d/m H:i', strtotime((string)$cs->sale_time)) ?></span>
+            <span class="dash-channel-amt"><?= to_currency((float)$cs->payment_amount) ?></span>
+            <a class="dash-channel-link" href="<?= base_url('sales/view/' . (int)$cs->sale_id) ?>">ver</a>
+        </div>
+        <?php endforeach; ?>
     </div>
     <?php endif; ?>
 
