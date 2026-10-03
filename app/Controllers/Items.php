@@ -125,8 +125,11 @@ class Items extends Secure_Controller
         $total_rows = $this->item->get_found_rows($search ?? "", $filters);
         $data_rows = [];
 
-        foreach ($items->getResult() as $item) {
-            $data_rows[] = get_item_data_row($item);
+        $item_result = $items->getResult();
+        $row_ctx = build_item_row_context($item_result);
+
+        foreach ($item_result as $item) {
+            $data_rows[] = get_item_data_row($item, $row_ctx);
 
             if ($item->pic_filename !== null) {
                 $this->update_pic_filename($item);

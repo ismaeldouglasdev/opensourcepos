@@ -31,6 +31,29 @@ class Item_taxes extends Model
     }
 
     /**
+     * Gets tax rows for many items at once, grouped by item_id.
+     *
+     * Batching exists for the item grid: get_info() per row turned a 50-row
+     * page into 50 queries.
+     */
+    public function get_multiple_info(array $item_ids): array
+    {
+        if (! $item_ids) {
+            return [];
+        }
+
+        $builder = $this->db->table('items_taxes');
+        $builder->whereIn('item_id', $item_ids);
+
+        $grouped = [];
+        foreach ($builder->get()->getResultArray() as $row) {
+            $grouped[(int)$row['item_id']][] = $row;
+        }
+
+        return $grouped;
+    }
+
+    /**
      * Inserts or updates an item's taxes
      */
     public function save_value(array &$items_taxes_data, int $item_id): bool

@@ -464,24 +464,79 @@ function get_items_manage_table_headers(): string
 }
 
 /**
+ * Pre-loads the per-page data `get_item_data_row()` would otherwise fetch once
+ * per row: tax category, item taxes and attribute definitions.
+ *
+ * The grid renders up to 50 rows, and each of those three lookups was a query
+ * inside the row function. This collapses them to a fixed number of queries per
+ * page. The per-row glob() was left alone on purpose: swapping it for is_file()
+ * is cheaper, but the item grid renders no photos in the test environment, so
+ * that change could not be verified and is not worth the risk.
+ */
+function build_item_row_context(array $items): array
+{
+    $config = config(OSPOS::class)->settings;
+    $ctx = [
+        'config' => $config,
+        'tax_categories' => [],
+        'item_taxes' => [],
+        'definition_names' => null,
+    ];
+
+    $item_ids = [];
+    $category_ids = [];
+    foreach ($items as $item) {
+        if (isset($item->item_id)) {
+            $item_ids[] = (int)$item->item_id;
+        }
+        if ($config['use_destination_based_tax'] && !empty($item->tax_category_id)) {
+            $category_ids[] = (int)$item->tax_category_id;
+        }
+    }
+
+    $item_ids = array_values(array_unique($item_ids));
+
+    if ($config['use_destination_based_tax']) {
+        $category_ids = array_values(array_unique($category_ids));
+        if ($category_ids) {
+            foreach (model(Tax_category::class)->get_multiple_info($category_ids)->getResult() as $row) {
+                $ctx['tax_categories'][(int)$row->tax_category_id] = $row;
+            }
+        }
+    } elseif ($item_ids) {
+        foreach (model(Item_taxes::class)->get_multiple_info($item_ids) as $item_id => $rows) {
+            $ctx['item_taxes'][(int)$item_id] = $rows;
+        }
+    }
+
+    $attribute = model(Attribute::class);
+    $ctx['definition_names'] = $attribute->get_definitions_by_flags($attribute::SHOW_IN_ITEMS);
+
+    return $ctx;
+}
+
+/**
  * Get the html data row for the item
  */
-function get_item_data_row(object $item): array
+function get_item_data_row(object $item, ?array $ctx = null): array
 {
     $attribute = model(Attribute::class);
-    $item_taxes = model(Item_taxes::class);
-    $tax_category = model(Tax_category::class);
-    $config = config(OSPOS::class)->settings;
+    $config = $ctx['config'] ?? config(OSPOS::class)->settings;
 
     if ($config['use_destination_based_tax']) {
         if ($item->tax_category_id == null) {    // TODO: === ?
             $tax_percents = '-';
         } else {
-            $tax_category_info = $tax_category->get_info($item->tax_category_id);
+            $tax_category_info = $ctx['tax_categories'][(int)$item->tax_category_id]
+                ?? model(Tax_category::class)->get_info($item->tax_category_id);
             $tax_percents = $tax_category_info->tax_category;
         }
     } else {
-        $item_tax_info = $item_taxes->get_info($item->item_id);
+        if ($ctx !== null && array_key_exists((int)$item->item_id, $ctx['item_taxes'])) {
+            $item_tax_info = $ctx['item_taxes'][(int)$item->item_id];
+        } else {
+            $item_tax_info = model(Item_taxes::class)->get_info($item->item_id);
+        }
         $tax_percents = '';
         foreach ($item_tax_info as $tax_info) {
             $tax_percents .= to_tax_decimals($tax_info['percent']) . '%, ';
@@ -511,7 +566,7 @@ function get_item_data_row(object $item): array
         $item->name .= NAME_SEPARATOR . $item->pack_name;
     }
 
-    $definition_names = $attribute->get_definitions_by_flags($attribute::SHOW_IN_ITEMS);
+    $definition_names = $ctx['definition_names'] ?? $attribute->get_definitions_by_flags($attribute::SHOW_IN_ITEMS);
 
     $last_modified = !empty($item->last_modified)
         ? date($config['dateformat'] . ' ' . str_replace(':s', '', $config['timeformat']), strtotime($item->last_modified))
