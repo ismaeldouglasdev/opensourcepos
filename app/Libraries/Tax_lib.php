@@ -94,6 +94,25 @@ class Tax_lib
 
         // Charge sales tax if customer is not selected (walk-in) or customer is flagged as taxable
         if ($customer_id == -1 || $customer_info->taxable) {    // TODO: Replace -1 with constant.
+            // Preload the tax rows for the whole cart ONCE. get_taxes() runs on
+            // every scanned item (addAjax) and on checkout, and asking for one
+            // item at a time made the query count grow with the cart — the same
+            // N+1 the item grid had. Items with no tax simply do not appear in
+            // the grouped result, which matches get_info() returning [].
+            $preloaded_taxes = [];
+
+            if ($sale_id == -1 && !$this->config['use_destination_based_tax']) {
+                $item_ids = [];
+
+                foreach ($cart as $item) {
+                    $item_ids[] = (int) $item['item_id'];
+                }
+
+                if ($item_ids) {
+                    $preloaded_taxes = $this->item_taxes->get_multiple_info(array_values(array_unique($item_ids)));
+                }
+            }
+
             foreach ($cart as $line => $item) {
                 $taxed = false;
 
@@ -101,7 +120,7 @@ class Tax_lib
                     // Start of current Base System tax calculations
 
                     if ($sale_id == -1) {    // TODO: Replace -1 with constant. Also, replace with ternary notation.
-                        $tax_info = $this->item_taxes->get_info($item['item_id']);
+                        $tax_info = $preloaded_taxes[(int) $item['item_id']] ?? [];
                     } else {
                         $tax_info = $this->sale->get_sales_item_taxes($sale_id, $item['item_id']);
                     }

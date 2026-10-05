@@ -81,6 +81,11 @@ class OSPOSRules
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($check));
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            // Sem timeout, o curl usa o default do libcurl: ~300s de espera
+            // para conectar e nenhum limite total. Se o Google estiver
+            // inacessivel, o login trava 5 minutos ANTES do caixa abrir.
+            curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
 
             $result = curl_exec($ch);
 

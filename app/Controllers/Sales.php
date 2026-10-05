@@ -1652,6 +1652,13 @@ class Sales extends Secure_Controller
 
     public function postQuickFinish(): void
     {
+        // Este endpoint responde JSON em TODOS os caminhos (sucesso e os tres
+        //Early returns de erro). Sem isto, o debugbar do CI4 anexa HTML na
+        // resposta quando ENVIRONMENT=development e o jQuery.parseJSON falha
+        // em silencio — a venda volta a ser salva, mas a tela nao mostra
+        // confirmacao. Mesma classe do fix #6.
+        $this->response->setContentType('application/json');
+
         $payments_json = $this->request->getPost('payments_json');
         $payment_type = $this->request->getPost('payment_type');
         $amount_tendered_raw = $this->request->getPost('amount_tendered');
