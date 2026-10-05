@@ -1903,16 +1903,22 @@ class Sales extends Secure_Controller
         $full_html = ob_get_clean();
 
         // Extract stable-ID sections via DOM (regex extraction broke whenever
-        // the markup shifted and captured the wrong panel)
-        $data['cart_html'] = $this->_extract_fragment($full_html, 'cart_contents');
-        $data['totals_html'] = $this->_extract_fragment($full_html, 'sale_totals');
-        $data['payments_html'] = $this->_extract_fragment($full_html, 'payment_totals');
-        $data['buttons_html'] = $this->_extract_fragment($full_html, 'sale_buttons');
+        // the markup shifted and captured the wrong panel).
+        //
         // Suspender/Cancelar vivem em #buttons_sale, dentro de #payment_details,
         // e nao dentro de #sale_buttons. Sem este fragmento eles vanish a cada
         // atualizacao AJAX do carrinho e o operador fica sem como suspender ou
         // cancelar a venda.
-        $data['sale_actions_html'] = $this->_extract_fragment($full_html, 'buttons_sale');
+        $fragments = $this->_extract_fragments($full_html, [
+            'cart_contents', 'sale_totals', 'payment_totals',
+            'sale_buttons', 'buttons_sale',
+        ]);
+
+        $data['cart_html'] = $fragments['cart_contents'];
+        $data['totals_html'] = $fragments['sale_totals'];
+        $data['payments_html'] = $fragments['payment_totals'];
+        $data['buttons_html'] = $fragments['sale_buttons'];
+        $data['sale_actions_html'] = $fragments['buttons_sale'];
 
         $data['success'] = $added;
 
@@ -1920,13 +1926,18 @@ class Sales extends Secure_Controller
     }
 
     /**
-     * Return the innerHTML of the element with the given ID, parsed from
-     * the full rendered page (used by addAjax to refresh cart fragments).
+     * Return the innerHTML of each requested element id, parsed from the full
+     * rendered page (used by addAjax to refresh cart fragments).
+     *
+     * The page is parsed ONCE for all ids: loadHTML() on the whole cart page
+     * is the expensive part, and asking one id at a time did that work five
+     * times per scanned item.
      */
-    private function _extract_fragment(string $html, string $id): string
+    private function _extract_fragments(string $html, array $ids): array
     {
+        $inner_by_id = array_fill_keys($ids, '');
         if (!class_exists(\DOMDocument::class)) {
-            return '';
+            return $inner_by_id;
         }
 
         $doc = new \DOMDocument();
@@ -1934,17 +1945,20 @@ class Sales extends Secure_Controller
         $doc->loadHTML('<?xml encoding="utf-8" ?>' . $html);
         libxml_clear_errors();
 
-        $node = $doc->getElementById($id);
-        if ($node === null) {
-            return '';
+        foreach ($ids as $id) {
+            $node = $doc->getElementById($id);
+            if ($node === null) {
+                continue;
+            }
+
+            $inner = '';
+            foreach ($node->childNodes as $child) {
+                $inner .= $doc->saveHTML($child);
+            }
+            $inner_by_id[$id] = trim($inner);
         }
 
-        $inner = '';
-        foreach ($node->childNodes as $child) {
-            $inner .= $doc->saveHTML($child);
-        }
-
-        return trim($inner);
+        return $inner_by_id;
     }
 
     /**
