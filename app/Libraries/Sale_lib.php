@@ -368,7 +368,11 @@ class Sale_lib
      */
     public function get_suspended_id(): int
     {
-        return $this->session->get('suspended_id');
+        // Mesma classe do get_sale_id(): a chave so existe depois de salvar uma
+        // venda suspensa (Sales.php set_suspended_id), entao numa sessao nova
+        // — ou apos um reboot, que limpa o /dev/shm onde as sessoes moram —
+        // o get devolve null e o `: int` estourava em TypeError.
+        return (int) ($this->session->get('suspended_id') ?? NEW_ENTRY);
     }
 
     /**

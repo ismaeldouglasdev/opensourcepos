@@ -313,6 +313,15 @@ class Sales extends Secure_Controller
         }
 
         $item_id_or_number_or_item_kit_or_receipt = $this->request->getPost('item', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        // Campo `item` ausente: o getPost devolve null e a cadeia de checagens
+        // abaixo o levaria ate add_item(string) -> 500. Ver guard equivalente em
+        // addAjax().
+        if ($item_id_or_number_or_item_kit_or_receipt === null || trim((string) $item_id_or_number_or_item_kit_or_receipt) === '') {
+            $data['error'] = lang('Sales.unable_to_add_item');
+            $this->_reload($data);
+
+            return;
+        }
         $this->token_lib->parse_barcode($quantity, $price, $item_id_or_number_or_item_kit_or_receipt);
         $mode = $this->sale_lib->get_mode();
         $quantity = ($mode == 'return') ? -$quantity : $quantity;
@@ -1400,7 +1409,12 @@ class Sales extends Secure_Controller
     {
         $suspended_id = $this->sale_lib->get_suspended_id();
         $this->sale_lib->clear_all();
-        $this->sale->delete_suspended_sale($suspended_id);
+        // NEW_ENTRY = nao ha venda suspensa nesta sessao. Sem esta guarda o
+        // sentinela ia para delete_suspended_sale(), que faz UPDATE por
+        // sale_id e transacao de mesa.
+        if ($suspended_id != NEW_ENTRY) {
+            $this->sale->delete_suspended_sale($suspended_id);
+        }
         $this->_reload();    // TODO: Hungarian notation
     }
 
@@ -1839,6 +1853,16 @@ class Sales extends Secure_Controller
 
         $raw_item = (string) $this->request->getPost('item', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $item_id = $this->request->getPost('item', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        // Sem o campo `item` nao ha o que escanear. Sem esta guarda o null
+        // segue para is_valid_receipt()/is_valid_item_kit() e, so depois, para
+        // add_item(string) — 500 TypeError em vez de um erro limpo.
+        if ($item_id === null || trim((string) $item_id) === '') {
+            $data['error'] = lang('Sales.unable_to_add_item');
+
+            echo json_encode($data);
+
+            return;
+        }
         $this->token_lib->parse_barcode($quantity, $price, $item_id);
         $mode = $this->sale_lib->get_mode();
         $quantity = ($mode == 'return') ? -$quantity : $quantity;

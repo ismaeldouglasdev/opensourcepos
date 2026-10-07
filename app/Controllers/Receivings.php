@@ -169,6 +169,14 @@ class Receivings extends Secure_Controller
 
         $mode = $this->receiving_lib->get_mode();
         $item_id_or_number_or_item_kit_or_receipt = $this->request->getPost('item', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        // Campo `item` ausente: o getPost devolve null e a cadeia de checagens
+        // abaixo o levaria ate add_item(string) -> 500.
+        if ($item_id_or_number_or_item_kit_or_receipt === null || trim((string) $item_id_or_number_or_item_kit_or_receipt) === '') {
+            $data['error'] = lang('Receivings.unable_to_add_item');
+            $this->_reload($data);
+
+            return;
+        }
         $this->token_lib->parse_barcode($quantity, $price, $item_id_or_number_or_item_kit_or_receipt);
         $quantity = ($mode == 'receive' || $mode == 'requisition') ? $quantity : -$quantity;
         $item_location = $this->receiving_lib->get_stock_source();

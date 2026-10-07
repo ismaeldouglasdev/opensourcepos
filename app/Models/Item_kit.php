@@ -29,7 +29,7 @@ class Item_kit extends Model
     /**
      * Determines if a given item_id is an item kit
      */
-    public function exists(int $item_kit_id): bool
+    public function exists(int|string $item_kit_id): bool
     {
         $builder = $this->db->table('item_kits');
         $builder->where('item_kit_id', $item_kit_id);
@@ -39,8 +39,13 @@ class Item_kit extends Model
 
     /**
      * Check if a given item_id is an item kit
+     *
+     * Nullable de proposito: o corpo ja trata vazio como "nao e kit" (o
+     * !empty abaixo), e os tres call sites passam direto um
+     * $this->request->getPost('item'), que e null quando o campo nao veio no
+     * POST. Declarar `string` transformava essa resposta legitima em 500.
      */
-    public function is_valid_item_kit(string $item_kit_id): bool
+    public function is_valid_item_kit(?string $item_kit_id): bool
     {
         if (!empty($item_kit_id)) {
             // KIT #

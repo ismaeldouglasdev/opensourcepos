@@ -400,7 +400,7 @@ class Sale extends Model
     /**
      * Checks if valid receipt
      */
-    public function is_valid_receipt(string &$receipt_sale_id): bool    // TODO: like the others, maybe this should be an array rather than a delimited string... either that or the parameter name needs to be changed. $receipt_sale_id implies that it's an int.
+    public function is_valid_receipt(?string &$receipt_sale_id): bool    // TODO: like the others, maybe this should be an array rather than a delimited string... either that or the parameter name needs to be changed. $receipt_sale_id implies that it's an int.
     {
         $config = config(OSPOS::class)->settings;
 

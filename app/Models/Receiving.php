@@ -56,7 +56,7 @@ class Receiving extends Model
      * @param string $receipt_receiving_id
      * @return bool
      */
-    public function is_valid_receipt(string $receipt_receiving_id): bool    // TODO: maybe receipt_receiving_id should be an array rather than a space delimited string
+    public function is_valid_receipt(?string $receipt_receiving_id): bool    // TODO: maybe receipt_receiving_id should be an array rather than a space delimited string
     {
         if (!empty($receipt_receiving_id)) {
             // RECV #
