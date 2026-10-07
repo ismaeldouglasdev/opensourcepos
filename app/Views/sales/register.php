@@ -967,6 +967,27 @@ if (isset($success)) {
             return '<img class="pos-thumb" src="' + base + encodeURIComponent(pic) + '" alt="" onerror="this.parentNode.innerHTML=\'<span class=\\\'glyphicon glyphicon-shopping-cart\\\'></span>\'" loading="lazy">';
         }
 
+        // Suspender/Cancelar vivem em #buttons_sale, DENTRO do <form
+        // id="buttons_form"> — e esse form e o que os botoes submeterem.
+        // A pagina carrega com o carrinho vazio, e nesse estado o servidor nao
+        // renderiza nenhum dos dois; eles so aparecem depois que o addAjax
+        // injeta o fragmento. Injetar so o innerHTML de #buttons_sale punha os
+// botoes na tela sem o form e sem handler nenhum: visiveis e mortos.
+        // Aqui troca-se o <form> inteiro, e os handlers sao delegados em
+        // $(document) (ver mais abaixo), portanto sobrevivem a toda
+        // substituicao de markup.
+        function posMountSaleActions($form) {
+            if (!$form || !$form.length) return;
+            var $old = $('#buttons_form');
+            if ($old.length) {
+                $old.replaceWith($form);
+                return;
+            }
+            var $anchor = $('#sale_buttons');
+            if ($anchor.length) $anchor.after($form);
+            else $('#payment_totals').after($form);
+        }
+
         // AJAX submit — avoids full page reload
         var posAjaxPending = false;
 
@@ -1011,14 +1032,7 @@ if (isset($success)) {
                     $('#payment_totals').after($btns);
                 }
                 if ($h.find('#sale_buttons').length) $btns.html($h.find('#sale_buttons').html());
-                // mesma correcao no fluxo de edicao de linha: sem isto,
-                // Suspender/Cancelar somem ao editar quantidade ou preco.
-                var $actHtml = $h.find('#buttons_sale').html();
-                if ($actHtml) {
-                    var $act2 = $('#buttons_sale');
-                    if (!$act2.length) { $act2 = $('<div class="form-group" id="buttons_sale"></div>'); $btns.after($act2); }
-                    $act2.html($actHtml);
-                }
+                posMountSaleActions($h.find('#buttons_form'));
             }, 'html').fail(function() {
                 posAjaxPending = false;
                 window.location.reload();
@@ -1132,13 +1146,11 @@ if (isset($success)) {
                         // Suspender/Cancelar (#buttons_sale) sao renderizados
                         // fora de #sale_buttons; sem este fragmento o operador
                         // perde as duas acoes apos o primeiro item escaneado.
-                        var $act = $('#buttons_sale');
-                        if (res.sale_actions_html) {
-                            if (!$act.length) {
-                                $act = $('<div class="form-group" id="buttons_sale"></div>');
-                                $btns.after($act);
-                            }
-                            $act.html(res.sale_actions_html);
+                        // Vai o <form id="buttons_form"> inteiro, e nao so o
+                        // innerHTML dos botoes — ver posMountSaleActions().
+                        if (res.sale_actions_form_html) {
+                            var $tmp = $('<div>').html(res.sale_actions_form_html);
+                            posMountSaleActions($tmp.find('#buttons_form'));
                         }
                     }
                     // Suppress any late autocomplete response from reopening
@@ -1423,20 +1435,32 @@ if (isset($success)) {
             $('#buttons_form').submit();
         });
 
-        $('#finish_invoice_quote_button').click(function() {
-            $('#buttons_form').attr('action', "<?= "$controller_name/complete" ?>");
-            $('#buttons_form').submit();
+        // Delegados, nao ligados direto: Suspender/Cancelar so existem no DOM
+        // depois que o carrinho ganha o primeiro item (o painel inteiro so e
+        // renderizado com count($cart) > 0), e o addAjax troca o <form> que os
+        // contem. Um $('#x').click() no load nao encontraria elemento nenhum, e
+        // o botao apareceria visivel sem nenhuma acao ligada.
+        function posSubmitSaleForm(action) {
+            var $form = $('#buttons_form');
+            if (!$form.length) {
+                $.notify({ message: 'Não foi possível abrir a ação. Recarregue a página (F5) e tente de novo.' }, { type: 'danger' });
+                return;
+            }
+            $form.attr('action', action);
+            $form[0].submit();
+        }
+
+        $(document).on('click', '#finish_invoice_quote_button', function() {
+            posSubmitSaleForm("<?= "$controller_name/complete" ?>");
         });
 
-        $('#suspend_sale_button').click(function() {
-            $('#buttons_form').attr('action', "<?= site_url("$controller_name/suspend") ?>");
-            document.getElementById('buttons_form').submit();
+        $(document).on('click', '#suspend_sale_button', function() {
+            posSubmitSaleForm("<?= site_url("$controller_name/suspend") ?>");
         });
 
-        $('#cancel_sale_button').click(function() {
+        $(document).on('click', '#cancel_sale_button', function() {
             if (confirm("<?= lang(ucfirst($controller_name) . '.confirm_cancel_sale') ?>")) {
-                $('#buttons_form').attr('action', "<?= site_url("$controller_name/cancel") ?>");
-                document.getElementById('buttons_form').submit();
+                posSubmitSaleForm("<?= site_url("$controller_name/cancel") ?>");
             }
         });
 

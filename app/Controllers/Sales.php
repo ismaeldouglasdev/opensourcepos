@@ -1916,16 +1916,21 @@ class Sales extends Secure_Controller
         // e nao dentro de #sale_buttons. Sem este fragmento eles vanish a cada
         // atualizacao AJAX do carrinho e o operador fica sem como suspender ou
         // cancelar a venda.
-        $fragments = $this->_extract_fragments($full_html, [
-            'cart_contents', 'sale_totals', 'payment_totals',
-            'sale_buttons', 'buttons_sale',
-        ]);
+        $fragments = $this->_extract_fragments(
+            $full_html,
+            ['cart_contents', 'sale_totals', 'payment_totals', 'sale_buttons', 'buttons_sale'],
+            // Suspender/Cancelar precisam do <form id="buttons_form"> que as
+            // envolve — e o form que o clique submete. Mandar so o innerHTML de
+            // #buttons_sale entrega os botoes sem o form, e o submit quebraria.
+            ['buttons_form']
+        );
 
         $data['cart_html'] = $fragments['cart_contents'];
         $data['totals_html'] = $fragments['sale_totals'];
         $data['payments_html'] = $fragments['payment_totals'];
         $data['buttons_html'] = $fragments['sale_buttons'];
         $data['sale_actions_html'] = $fragments['buttons_sale'];
+        $data['sale_actions_form_html'] = $fragments['buttons_form'];
 
         $data['success'] = $added;
 
@@ -1939,10 +1944,16 @@ class Sales extends Secure_Controller
      * The page is parsed ONCE for all ids: loadHTML() on the whole cart page
      * is the expensive part, and asking one id at a time did that work five
      * times per scanned item.
+     *
+     * Ids in $outer_ids come back as the element's own markup (tag + atributos
+     * + filhos) instead of just its children, for the ones that must be
+     * re-created on the client as a whole node — e.g. a <form>, whose csrf
+     * hidden input lives outside the element we would otherwise extract.
      */
-    private function _extract_fragments(string $html, array $ids): array
+    private function _extract_fragments(string $html, array $ids, array $outer_ids = []): array
     {
-        $inner_by_id = array_fill_keys($ids, '');
+        $all_ids = array_merge($ids, $outer_ids);
+        $inner_by_id = array_fill_keys($all_ids, '');
         if (!class_exists(\DOMDocument::class)) {
             return $inner_by_id;
         }
@@ -1952,9 +1963,15 @@ class Sales extends Secure_Controller
         $doc->loadHTML('<?xml encoding="utf-8" ?>' . $html);
         libxml_clear_errors();
 
-        foreach ($ids as $id) {
+        foreach ($all_ids as $id) {
             $node = $doc->getElementById($id);
             if ($node === null) {
+                continue;
+            }
+
+            if (in_array($id, $outer_ids, true)) {
+                $inner_by_id[$id] = trim($doc->saveHTML($node));
+
                 continue;
             }
 
