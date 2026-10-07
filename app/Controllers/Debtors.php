@@ -28,7 +28,7 @@ class Debtors extends Secure_Controller
         $builder->join('sales', 'sales.sale_id = sales_payments.sale_id');
         $builder->join('customers', 'customers.person_id = sales.customer_id');
         $builder->join('people', 'people.person_id = customers.person_id');
-        $builder->where('sales_payments.payment_type', lang('Sales.account_receivable'));
+        $builder->where('sales_payments.payment_type', credit_payment_type_name());
         $builder->where('sales.sale_status', COMPLETED);
         $builder->groupBy('people.person_id', 'people.first_name', 'people.last_name');
         $builder->orderBy('total_devido', 'DESC');

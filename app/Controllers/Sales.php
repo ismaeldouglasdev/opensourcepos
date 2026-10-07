@@ -251,7 +251,7 @@ class Sales extends Secure_Controller
                     $this->session->set('cash_mode', CASH_MODE_TRUE);
                     $this->sale_lib->add_payment(lang('Sales.cash_adjustment'), $cash_adjustment_amount, CASH_ADJUSTMENT_TRUE);
                 }
-            } elseif ($payment_type === lang('Sales.account_receivable')) {
+            } elseif ($payment_type === credit_payment_type_name()) {
                 $customer_id = $this->sale_lib->get_customer();
                 if ($customer_id > 0) {
                     $amount_tendered = parse_decimals($this->request->getPost('amount_tendered'));

@@ -236,9 +236,150 @@ function get_timeformats(): array
 
 
 /**
+ * Resolves the payment type name under which credit ("Fiado") sales are recorded.
+ *
+ * Single source of truth for every place that has to recognise a credit payment:
+ * the balance of a customer, the credit filter, the debtors list and the credit
+ * limit check performed while a sale is being paid.
+ *
+ * By default the name comes from the language files, so a stock install behaves
+ * exactly as before. An explicit `credit_payment_type_name` setting pins it,
+ * which is what keeps credit detection working when the application language
+ * changes: the database keeps whatever label was in use when the sales were
+ * saved, and lang() would start returning a different one. A pinned name is
+ * accepted when it is one of the payment options or the credit label of some
+ * installed language; anything else is refused, because adopting it would
+ * silently stop matching the credit rows already in the database, and with them
+ * the credit limit check.
+ *
+ * @return string Label to compare against sales_payments.payment_type.
+ */
+function credit_payment_type_name(): string
+{
+    static $resolved = null;
+
+    if ($resolved !== null) {
+        return $resolved;
+    }
+
+    $config = config(OSPOS::class)->settings;
+    $lang_name = lang('Sales.account_receivable');
+    $override = trim((string) ($config['credit_payment_type_name'] ?? ''));
+
+    // Nothing configured, or configured with the same label the language already
+    // returns: nothing to validate and nothing to report beyond which name won.
+    if ($override === '' || $override === $lang_name) {
+        _log_credit_payment_type_name($lang_name, 'lang');
+        return $resolved = $lang_name;
+    }
+
+    // Resolving the override needs the list of valid options, and that list is
+    // built from the language label on purpose: validating a name must not depend
+    // on the very name being validated, or an override could never be refused.
+    $valid_options = _payment_options_map($lang_name);
+
+    if (! array_key_exists($override, $valid_options) && ! isset(_credit_payment_type_labels()[$override])) {
+        log_message(
+            'warning',
+            'credit_payment_type_name: "credit_payment_type_name" = "' . $override . '" is not one of the valid payment options ('
+                . implode(', ', array_keys($valid_options)) . '), nor a credit label used by any installed language ('
+                . implode(', ', array_keys(_credit_payment_type_labels())) . '). Refused, using the language default "' . $lang_name
+                . '" instead. Credit sales already stored under a different name would stop being matched, and their credit limit would stop being enforced.'
+        );
+        _log_credit_payment_type_name($lang_name, 'lang (override refused)');
+        return $resolved = $lang_name;
+    }
+
+    _log_credit_payment_type_name($override, 'setting credit_payment_type_name');
+    return $resolved = $override;
+}
+
+/**
+ * Every credit label an installed language can produce, which is to say every
+ * name a credit payment may already carry in the database.
+ *
+ * A language that does not translate the key falls back to English, so it adds
+ * nothing here. The set is what makes an explicit pin usable: switching the
+ * interface to another language changes what lang() returns, and a name pinned
+ * to what the database already holds has to survive that.
+ *
+ * Scans the language files once and keeps the result in the file cache, the
+ * same way Config\OSPOS caches its settings. It only runs when a
+ * credit_payment_type_name is configured, because reading the language files on
+ * every register page would be the expensive part.
+ *
+ * @return array<string, true> Labels keyed by themselves.
+ */
+function _credit_payment_type_labels(): array
+{
+    static $labels = null;
+
+    if ($labels !== null) {
+        return $labels;
+    }
+
+    $cached = cache()->get('credit_payment_type_labels');
+    if (is_array($cached)) {
+        return $labels = $cached;
+    }
+
+    $active_locale = service('language')->getLocale();
+    $labels = [];
+
+    foreach (glob(APPPATH . 'Language/*/Sales.php') as $file) {
+        // Only a language that actually translates the key is worth loading.
+        if (strpos((string) file_get_contents($file), '"account_receivable"') === false) {
+            continue;
+        }
+        $labels[lang('Sales.account_receivable', [], basename(dirname($file)))] = true;
+    }
+
+    // lang() puts the active language back itself, but say it out loud: a locale
+    // directory whose name does not round-trip would otherwise change the rest
+    // of the page that happens to render after this call.
+    service('language')->setLocale($active_locale);
+
+    cache()->save('credit_payment_type_labels', $labels, 86400);
+
+    return $labels;
+}
+
+/**
+ * Logs which payment type name was resolved as the credit type, and where the
+ * name came from, once per request. `log_message()` does no interpolation of
+ * its own, so the values are inlined here.
+ */
+function _log_credit_payment_type_name(string $name, string $source): void
+{
+    static $logged = false;
+
+    if ($logged) {
+        return;
+    }
+
+    $logged = true;
+    log_message('info', 'Credit payment type resolved to "' . $name . '" (source: ' . $source . ')');
+}
+
+/**
  * Gets the payment options
  */
 function get_payment_options(): array
+{
+    return _payment_options_map(credit_payment_type_name());
+}
+
+/**
+ * Builds the payment option list for the configured payment_options_order.
+ *
+ * @param string|null $credit_name Label for the credit option. Defaults to the
+ *                                language label. It is passed explicitly when
+ *                                validating an override, so that resolving the
+ *                                credit name cannot recurse into itself.
+ *
+ * @return array<string, string> Label keyed by itself, as before.
+ */
+function _payment_options_map(?string $credit_name = null): array
 {
     $config = config(OSPOS::class)->settings;
     $payments = [];
@@ -247,7 +388,7 @@ function get_payment_options(): array
         'debit'  => lang('Sales.debit'),
         'credit' => lang('Sales.credit'),
         'pix'    => lang('Sales.pix'),
-        'fiado'  => lang('Sales.account_receivable'),
+        'fiado'  => $credit_name ?? lang('Sales.account_receivable'),
         'upi'    => lang('Sales.upi')
     ];
     $payment_order = $config['payment_options_order'] ?? 'cash';

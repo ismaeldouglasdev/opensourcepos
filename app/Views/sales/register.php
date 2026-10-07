@@ -1688,7 +1688,7 @@ if (isset($success)) {
                     <div class="payment-list simple-secondary">
                         <button type="button" class="btn payment-btn debit" id="payment_btn_debit" onclick="selectPayment('debit', '<?= lang("Sales.debit") ?>')"><span class="glyphicon glyphicon-credit-card"></span> Débito</button>
                         <button type="button" class="btn payment-btn credit" id="payment_btn_credit" onclick="selectPayment('credit', '<?= lang("Sales.credit") ?>')"><span class="glyphicon glyphicon-credit-card"></span> Crédito</button>
-                        <button type="button" class="btn payment-btn fiado" id="payment_btn_fiado" onclick="selectPayment('fiado', '<?= lang("Sales.account_receivable") ?>')"><span class="glyphicon glyphicon-book"></span> Fiado</button>
+                        <button type="button" class="btn payment-btn fiado" id="payment_btn_fiado" onclick="selectPayment('fiado', '<?= credit_payment_type_name() ?>')"><span class="glyphicon glyphicon-book"></span> Fiado</button>
                     </div>
                     <button type="button" class="btn btn-block btn-default simple-troco-btn" onclick="simpleTroco()">
                         <span class="glyphicon glyphicon-random"></span> O cliente entregou mais? Dar troco
@@ -1699,7 +1699,7 @@ if (isset($success)) {
                         <button type="button" class="btn payment-btn debit" id="payment_btn_debit" onclick="selectPayment('debit', '<?= lang("Sales.debit") ?>')">💳 Débito</button>
                         <button type="button" class="btn payment-btn credit" id="payment_btn_credit" onclick="selectPayment('credit', '<?= lang("Sales.credit") ?>')">💳 Crédito</button>
                         <button type="button" class="btn payment-btn pix" id="payment_btn_pix" onclick="selectPayment('pix', '<?= lang("Sales.pix") ?>')">📱 PIX</button>
-                        <button type="button" class="btn payment-btn fiado" id="payment_btn_fiado" onclick="selectPayment('fiado', '<?= lang("Sales.account_receivable") ?>')">📝 Fiado</button>
+                        <button type="button" class="btn payment-btn fiado" id="payment_btn_fiado" onclick="selectPayment('fiado', '<?= credit_payment_type_name() ?>')">📝 Fiado</button>
                     </div>
                 <?php } ?>
                 <div class="form-group" id="amount_group" style="margin: 6px 0; display: none;">

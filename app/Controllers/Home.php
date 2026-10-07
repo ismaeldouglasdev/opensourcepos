@@ -111,7 +111,7 @@ class Home extends Secure_Controller
         // 8. Pending receivables (fiado / conta a receber)
         $builder = $this->db->table('sales_payments');
         $builder->select("IFNULL(SUM({$p}sales_payments.payment_amount), 0) AS total");
-        $builder->where('payment_type', lang('Sales.account_receivable'));
+        $builder->where('payment_type', credit_payment_type_name());
         $row = $builder->get()->getRow();
         $data['pending_receivables'] = (float)($row->total ?? 0);
 

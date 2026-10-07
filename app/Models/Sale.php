@@ -274,7 +274,7 @@ class Sale extends Model
         }
 
         if ($filters['only_account_receivable']) {
-            $builder->like('payment_type', lang('Sales.account_receivable'));
+            $builder->where('payment_type', credit_payment_type_name());
         }
 
         $builder->groupBy('payment_type');
@@ -1015,7 +1015,7 @@ class Sale extends Model
     {
         $builder = $this->db->table('sales_payments');
         $builder->select('SUM(payment_amount) as total_payments');
-        $builder->where('payment_type', lang('Sales.account_receivable'));
+        $builder->where('payment_type', credit_payment_type_name());
         $builder->whereIn('sale_id', function ($builder) use ($customer_id) {
             $builder->select('sale_id')
                 ->from('sales')
@@ -1630,7 +1630,7 @@ class Sale extends Model
         }
 
         if ($filters['only_account_receivable']) {
-            $builder->like('payments.payment_type', lang('Sales.account_receivable'));
+            $builder->where('payments.payment_type', credit_payment_type_name());
         }
     }
 }
