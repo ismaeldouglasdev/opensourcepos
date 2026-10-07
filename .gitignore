@@ -60,6 +60,7 @@ generate_languages.php
 dist
 docs
 /patches
+.omo/
 translations
 /.buildpath
 /.project
@@ -72,6 +73,7 @@ system/
 *.swp
 *.rej
 *.orig
+*.bak-*
 *~
 *.~
 .env
