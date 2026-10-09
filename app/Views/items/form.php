@@ -186,6 +186,28 @@ $quick_mode = $quick_mode ?? false;
             </div>
         </div>
 
+        <?php $item_pics = $item_pics ?? []; $gallery_item_id = (int)($item_info->item_id ?? NEW_ENTRY); ?>
+        <div class="form-group form-group-sm" id="item_gallery_group">
+            <label class="control-label">Galeria de fotos</label>
+            <div id="item_gallery" class="item-gallery" data-item-id="<?= $gallery_item_id ?>">
+                <?php foreach ($item_pics as $pic): ?>
+                    <div class="item-gallery-item" data-pic-id="<?= (int)$pic['item_pic_id'] ?>">
+                        <a href="#" class="form-item-img" data-img-view="<?= esc($pic['url'], 'attr') ?>" data-img-title="<?= esc($item_info->name ?? 'Produto', 'attr') ?>" title="<?= lang('Items.view_image') ?>">
+                            <img src="<?= esc($pic['url'], 'attr') ?>" alt="">
+                        </a>
+                        <button type="button" class="btn btn-xs btn-default js-set-main" title="Definir como principal">&#9733;</button>
+                        <button type="button" class="btn btn-xs btn-danger js-del-pic" title="Remover">&times;</button>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <div id="item_gallery_removed"></div>
+            <span class="btn btn-default btn-sm btn-file" style="margin-top: 6px;">
+                <span class="glyphicon glyphicon-plus"></span>&nbsp;Adicionar fotos
+                <input type="file" name="items_images[]" accept="image/*" multiple>
+            </span>
+            <small class="text-muted" style="display:block; margin-top: 4px;">Envie várias fotos do produto (até 10). A foto principal fica no topo do cadastro.</small>
+        </div>
+
         <div class="form-group form-group-sm" style="margin-top: 6px;">
             <a href="#item_extra_fields" role="button" data-toggle="collapse" aria-expanded="false" aria-controls="item_extra_fields" class="btn btn-default btn-sm btn-block" id="item_extra_toggle">
                 <span class="glyphicon glyphicon-chevron-down" id="item_extra_caret" style="font-size: 10px;"></span>&nbsp;<?= lang('Items.extra_options') ?>
@@ -538,6 +560,118 @@ $quick_mode = $quick_mode ?? false;
                 url: '<?= "$controller_name/removeLogo/$item_info->item_id" ?>',
                 dataType: 'json'
             })
+        });
+
+        // ── Galeria multi-foto ───────────────────────────────────────────
+        var GALLERY_MAX = 10;
+        var gallery_item_id = parseInt($('#item_gallery').data('item-id'), 10) || 0;
+
+        var gallery_count = function() {
+            return $('#item_gallery .item-gallery-item').length;
+        };
+
+        var render_gallery = function(resp) {
+            if (resp && resp.main_url) {
+                var $main = $('a.form-item-img').first();
+                $main.attr('data-img-view', resp.main_url);
+                $main.find('img').attr('src', resp.main_url);
+            }
+            var $g = $('#item_gallery').empty();
+            (resp && resp.photos ? resp.photos : []).forEach(function(p) {
+                $g.append(
+                    '<div class="item-gallery-item" data-pic-id="' + p.item_pic_id + '">' +
+                        '<a href="#" class="form-item-img" data-img-view="' + p.url + '" data-img-title=""><img src="' + p.url + '" alt=""></a>' +
+                        '<button type="button" class="btn btn-xs btn-default js-set-main" title="Definir como principal">&#9733;</button>' +
+                        '<button type="button" class="btn btn-xs btn-danger js-del-pic" title="Remover">&times;</button>' +
+                    '</div>'
+                );
+            });
+        };
+
+        // Reduz as fotos no próprio navegador (máx. 1600px, JPEG 85%) para que
+        // várias fotos caibam no post_max_size do PHP — o app Android faz o
+        // mesmo no cliente. Sem suporte a canvas/DataTransfer, envia o original.
+        var downscale_images = function(fileList, done) {
+            var files = Array.prototype.slice.call(fileList);
+            var canvas_ok = false;
+            try { canvas_ok = !!document.createElement('canvas').toBlob; } catch (e) {}
+            if (!window.File || !window.DataTransfer || !canvas_ok) { done(files); return; }
+
+            var out = new DataTransfer();
+            var i = 0;
+            var next = function() {
+                if (i >= files.length) { done(out.files); return; }
+                var f = files[i++];
+                var img = new Image();
+                var url = URL.createObjectURL(f);
+                img.onload = function() {
+                    var w = img.width, h = img.height, MAX = 1600;
+                    if (w > MAX || h > MAX) {
+                        if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
+                        else { w = Math.round(w * MAX / h); h = MAX; }
+                    }
+                    var canvas = document.createElement('canvas');
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    URL.revokeObjectURL(url);
+                    canvas.toBlob(function(blob) {
+                        var name = f.name.replace(/\.[^.]+$/, '') + '.jpg';
+                        try { out.items.add(new File([blob], name, { type: 'image/jpeg' })); }
+                        catch (e) { out.items.add(f); }
+                        next();
+                    }, 'image/jpeg', 0.85);
+                };
+                img.onerror = function() { URL.revokeObjectURL(url); out.items.add(f); next(); };
+                img.src = url;
+            };
+            next();
+        };
+
+        // Pré-visualização das fotos escolhidas (sobem junto com o formulário)
+        $('input[name="items_images[]"]').on('change', function() {
+            var input = this;
+            var files = input.files || [];
+            $('#item_gallery_pending').remove();
+            if (files.length === 0) { return; }
+
+            var room = GALLERY_MAX - gallery_count();
+            if (files.length > room) {
+                $.notify({ message: 'Limite de ' + GALLERY_MAX + ' fotos. As excedentes foram ignoradas.' }, { type: 'danger', timer: 3500 });
+            }
+            var chosen = Array.prototype.slice.call(files, 0, Math.max(0, room));
+
+            downscale_images(chosen, function(processed) {
+                try { input.files = processed; } catch (e) {}
+                var $pending = $('<div id="item_gallery_pending" class="item-gallery"></div>');
+                for (var i = 0; i < processed.length; i++) {
+                    $pending.append('<div class="item-gallery-item pending"><img src="' + URL.createObjectURL(processed[i]) + '" alt=""></div>');
+                }
+                $('#item_gallery_group').append($pending);
+            });
+        });
+
+        // Remover foto extra: marca para exclusão no submit (o arquivo só é
+        // apagado quando o formulário é salvo, evitando perda por cancelamento).
+        $('#item_gallery').on('click', '.js-del-pic', function() {
+            var $item = $(this).closest('.item-gallery-item');
+            var picId = $item.data('pic-id');
+            if (!picId || gallery_item_id <= 0) { return; }
+            $('#item_gallery_removed').append('<input type="hidden" name="remove_item_pic[]" value="' + picId + '">');
+            $item.remove();
+        });
+
+        // Definir como principal: aplica no servidor imediatamente.
+        $('#item_gallery').on('click', '.js-set-main', function() {
+            var picId = $(this).closest('.item-gallery-item').data('pic-id');
+            if (!picId || gallery_item_id <= 0) { return; }
+            $.post('<?= "$controller_name/setMainImage" ?>/' + picId, { item_id: gallery_item_id }, function(resp) {
+                if (resp && resp.success) {
+                    render_gallery(resp);
+                    $.notify({ message: 'Foto principal atualizada.' }, { type: 'success', timer: 2000 });
+                } else {
+                    $.notify({ message: 'Não foi possível definir a foto principal.' }, { type: 'danger', timer: 2500 });
+                }
+            }, 'json');
         });
 
         $.validator.addMethod('valid_chars', function(value, element) {

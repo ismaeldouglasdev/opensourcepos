@@ -9,6 +9,7 @@ use App\Models\Attribute;
 use App\Models\Inventory;
 use App\Models\Item;
 use App\Models\Item_kit;
+use App\Models\Item_pic;
 use App\Models\Item_quantity;
 use App\Models\Item_taxes;
 use App\Models\Stock_location;
@@ -32,6 +33,7 @@ class Items extends Secure_Controller
     private Inventory $inventory;
     private Item $item;
     private Item_kit $item_kit;
+    private Item_pic $item_pic;
     private Item_quantity $item_quantity;
     private Item_taxes $item_taxes;
     private Stock_location $stock_location;
@@ -55,6 +57,7 @@ class Items extends Secure_Controller
         $this->inventory = model(Inventory::class);
         $this->item = model(Item::class);
         $this->item_kit = model(Item_kit::class);
+        $this->item_pic = model(Item_pic::class);
         $this->item_quantity = model(Item_quantity::class);
         $this->item_taxes = model(Item_taxes::class);
         $this->stock_location = model(Stock_location::class);
@@ -400,6 +403,19 @@ class Items extends Secure_Controller
             $data['image_path']    = sizeof($images) > 0 ? base_url($images[0]) : '';
         } else {
             $data['image_path']    = '';
+        }
+
+        $data['item_pics'] = [];
+        if ($item_id !== NEW_ENTRY) {
+            foreach ($this->item_pic->get_for_item($item_id) as $extra_pic) {
+                if (file_exists(FCPATH . 'uploads/item_pics/' . $extra_pic->filename)) {
+                    $data['item_pics'][] = [
+                        'item_pic_id' => intval($extra_pic->item_pic_id),
+                        'filename'    => $extra_pic->filename,
+                        'url'         => base_url('uploads/item_pics/' . $extra_pic->filename)
+                    ];
+                }
+            }
         }
 
         $stock_locations = $this->stock_location->get_undeleted_all()->getResultArray();
@@ -923,6 +939,9 @@ class Items extends Secure_Controller
                 $success &= $this->item_taxes->save_value($items_taxes_data, $item_id);
             }
 
+            // Extra gallery photos (multi-photo feature): removals + new uploads.
+            $success &= $this->save_extra_images($item_id);
+
             // Save item quantity
             $stock_locations = $this->stock_location->get_undeleted_all()->getResultArray();
             foreach ($stock_locations as $location) {
@@ -1019,6 +1038,176 @@ class Items extends Secure_Controller
 
         $file->move(FCPATH . 'uploads/item_pics/', $file_info['raw_name'] . '.' . $file_info['file_ext'], true);
         return ($file_info);
+    }
+
+    /**
+     * Persists the extra gallery photos of an item: removes the ones requested
+     * for deletion and stores the newly uploaded files in ospos_item_pics.
+     *
+     * @param int $item_id
+     * @return bool
+     */
+    private function save_extra_images(int $item_id): bool
+    {
+        $success = true;
+        $max_photos = 10;
+
+        // Photos the user asked to remove from the gallery.
+        foreach ((array)($this->request->getPost('remove_item_pic') ?? []) as $item_pic_id) {
+            $pic = $this->item_pic->get_info(intval($item_pic_id), $item_id);
+            if ($pic !== null && $this->item_pic->remove(intval($item_pic_id), $item_id)) {
+                $this->delete_item_image_file($pic->filename);
+            }
+        }
+
+        // New gallery uploads. File names are randomized so two photos never
+        // overwrite each other (the main photo keeps its legacy naming).
+        $files = $this->request->getFileMultiple('items_images') ?? [];
+        $allowed_ext = array_map('trim', explode(',', strtolower((string)$this->config['image_allowed_types'])));
+        // The legacy `image_max_size` (128 KB) is far too small for gallery photos;
+        // the browser already downscales to ~1600px/JPEG, so 5 MB is a safe ceiling.
+        $max_bytes = 5 * 1024 * 1024;
+
+        // How many more photos fit under the per-item ceiling.
+        $slots = max(0, $max_photos - count($this->item_pic->get_for_item($item_id)));
+
+        foreach ($files as $file) {
+            if ($slots <= 0) {
+                $success = false;
+                break;
+            }
+            if ($file === null || !$file->isValid() || $file->hasMoved()) {
+                continue;
+            }
+
+            $ext = strtolower($file->guessExtension());
+            if (!in_array($ext, $allowed_ext, true) || strpos((string)$file->getMimeType(), 'image/') !== 0 || $file->getSize() > $max_bytes) {
+                $success = false;
+                continue;
+            }
+
+            $new_name = $file->getRandomName();
+            if ($file->move(FCPATH . 'uploads/item_pics/', $new_name)) {
+                $saved_path = FCPATH . 'uploads/item_pics/' . $new_name;
+                @chmod($saved_path, 0664);
+                @chgrp($saved_path, 'www-data');
+                $this->item_pic->add($item_id, $new_name);
+                $slots--;
+            } else {
+                $success = false;
+            }
+        }
+
+        return $success;
+    }
+
+    /**
+     * Deletes a gallery photo file (and its cached thumbnail) from disk.
+     *
+     * @param string $filename
+     * @return void
+     */
+    private function delete_item_image_file(string $filename): void
+    {
+        if ($filename === '') {
+            return;
+        }
+
+        $path = FCPATH . 'uploads/item_pics/' . $filename;
+        if (is_file($path)) {
+            @unlink($path);
+        }
+
+        $base = pathinfo($filename, PATHINFO_FILENAME);
+        $ext = pathinfo($filename, PATHINFO_EXTENSION);
+        $thumb = FCPATH . 'uploads/item_pics/' . $base . '_thumb.' . $ext;
+        if (is_file($thumb)) {
+            @unlink($thumb);
+        }
+    }
+
+    /**
+     * Builds the JSON payload describing an item's gallery: extra photos plus
+     * the current main photo (kept in ospos_items.pic_filename).
+     *
+     * @return array
+     */
+    private function item_gallery_payload(int $item_id): array
+    {
+        $photos = [];
+        foreach ($this->item_pic->get_for_item($item_id) as $pic) {
+            $photos[] = [
+                'item_pic_id' => intval($pic->item_pic_id),
+                'filename'    => $pic->filename,
+                'url'         => base_url('uploads/item_pics/' . $pic->filename)
+            ];
+        }
+
+        $item_info = $this->item->get_info($item_id);
+        $pic_filename = $item_info->pic_filename ?? null;
+
+        return [
+            'photos'       => $photos,
+            'pic_filename' => $pic_filename,
+            'main_url'     => !empty($pic_filename) ? base_url('uploads/item_pics/' . $pic_filename) : ''
+        ];
+    }
+
+    /**
+     * AJAX: returns the extra gallery photos of an item as JSON.
+     */
+    public function getItemImages(int $item_id = NEW_ENTRY): void
+    {
+        $this->response->setContentType('application/json');
+        echo json_encode(['success' => true] + $this->item_gallery_payload($item_id));
+    }
+
+    /**
+     * AJAX: removes one gallery photo of an item.
+     */
+    public function postDeleteItemImage(int $item_pic_id = NEW_ENTRY): void
+    {
+        $item_id = intval($this->request->getPost('item_id'));
+        $this->response->setContentType('application/json');
+
+        $pic = $this->item_pic->get_info($item_pic_id, $item_id);
+        if ($pic === null) {
+            echo json_encode(['success' => false]);
+            return;
+        }
+
+        $this->item_pic->remove($item_pic_id, $item_id);
+        $this->delete_item_image_file($pic->filename);
+
+        echo json_encode(['success' => true] + $this->item_gallery_payload($item_id));
+    }
+
+    /**
+     * AJAX: promotes a gallery photo to be the item's main photo. The previous
+     * main photo is demoted into the gallery so no image is lost.
+     */
+    public function postSetMainImage(int $item_pic_id = NEW_ENTRY): void
+    {
+        $item_id = intval($this->request->getPost('item_id'));
+        $this->response->setContentType('application/json');
+
+        $pic = $this->item_pic->get_info($item_pic_id, $item_id);
+        if ($pic === null) {
+            echo json_encode(['success' => false]);
+            return;
+        }
+
+        $item_info = $this->item->get_info($item_id);
+        $old_main = $item_info->pic_filename ?? null;
+
+        $this->item_pic->remove($item_pic_id, $item_id);
+        if (!empty($old_main) && $old_main !== $pic->filename) {
+            $this->item_pic->add($item_id, $old_main);
+        }
+        $main_data = ['pic_filename' => $pic->filename];
+        $this->item->save_value($main_data, $item_id);
+
+        echo json_encode(['success' => true] + $this->item_gallery_payload($item_id));
     }
 
 

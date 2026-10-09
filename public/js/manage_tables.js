@@ -86,7 +86,11 @@
                     message: (function() {
                         var node = $('<div></div>');
                         $.get($link.attr('href') || $link.data('href'), function(data) {
-                            node.html(data);
+                            // innerHTML (em vez de jQuery .html()) deixa os <script>
+                            // inline inertes, para rodarem uma única vez no globalEval.
+                            // O .html() do jQuery já executa scripts; o globalEval
+                            // reexecutava, dobrando os bindings de cada handler.
+                            node[0].innerHTML = data;
                             node.find('script').each(function() {
                                 $.globalEval(this.textContent || this.text);
                             });

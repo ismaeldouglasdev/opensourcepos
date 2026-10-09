@@ -121,4 +121,5 @@ return [
     "last_modified"                      => "Última Modificação",
     "update"                             => "Atualizar Item",
     "use_inventory_menu"                 => "Usar Menu Inventário",
+    "view_image"                         => "Ver imagem",
 ];

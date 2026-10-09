@@ -147,6 +147,9 @@ $routes->post('items/inlineUpdate', 'Items::postInlineUpdate');
 $routes->post('items/check_kit_exists', 'Items::check_kit_exists');
 $routes->post('items/saveInventory/(:num)', 'Items::postSaveInventory/$1');
 $routes->post('items/importCsvFile', 'Items::postImportCsvFile');
+$routes->get('items/itemImages/([0-9-]+)', 'Items::getItemImages/$1');
+$routes->post('items/deleteItemImage/([0-9-]+)', 'Items::postDeleteItemImage/$1');
+$routes->post('items/setMainImage/([0-9-]+)', 'Items::postSetMainImage/$1');
 
 // ═══════════════════════════════════════════════════════════
 //  CUSTOMERS
