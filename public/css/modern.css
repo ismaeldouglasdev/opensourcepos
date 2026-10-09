@@ -3657,3 +3657,60 @@ body {
       left: 50% !important;
       right: 0 !important;
   }
+
+  /* Visualizador de foto do produto: card compacto (o padrao do BS3 sao 600px
+     e a imagem cobria ate 80vh da tela). O max-height do <img> vive inline em
+     footer.php — aqui fica so a largura do dialogo e o aperto do cabecalho/rodape. */
+  .item-img-modal .modal-dialog {
+      max-width: 400px;
+      margin: 10px auto;
+  }
+
+  /* accessible.css marca padding/fonte dos modais com !important (header 20px,
+     .modal-body 25px, .modal-footer 20px, h4 26px, .btn min-height 50px). Sem
+     !important aqui estes overrides perdem e o visualizador incha (medido:
+     header 136px + body 440px + footer 119px = 704px de altura). */
+  .item-img-modal .modal-header {
+      padding: 8px 12px !important;
+      border-bottom-color: #e3e6ea;
+  }
+
+  .item-img-modal .modal-header .modal-title {
+      font-size: 15px !important;
+      line-height: 1.3;
+  }
+
+  .item-img-modal .modal-header .close {
+      margin-top: -2px;
+      font-size: 22px;
+      font-weight: 600;
+      text-shadow: none;
+      opacity: 0.45;
+  }
+
+  .item-img-modal .modal-body {
+      padding: 0 !important;
+  }
+
+  /* Cap da foto: vence o max-height inline (52vh) de footer.php. O card fica
+     mais largo (400px) e mais baixo; a foto quadrada para de crescer junto. */
+  .item-img-modal #itemImageViewerImg {
+      max-height: min(44vh, 320px) !important;
+  }
+
+  .item-img-modal .modal-footer {
+      padding: 8px 12px !important;
+  }
+
+  .item-img-modal .modal-footer .btn {
+      padding: 4px 14px !important;
+      min-height: 0 !important;
+      font-size: 13px !important;
+      line-height: 1.5;
+  }
+
+  @media (max-width: 480px) {
+      .item-img-modal .modal-dialog {
+          max-width: 92vw;
+      }
+  }

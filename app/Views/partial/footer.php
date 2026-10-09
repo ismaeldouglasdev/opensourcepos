@@ -81,7 +81,7 @@ use Config\OSPOS;
                     <h4 class="modal-title">Produto</h4>
                 </div>
                 <div class="modal-body text-center" style="padding:0;">
-                    <img id="itemImageViewerImg" src="" alt="Imagem do produto" style="max-width:100%; max-height:80vh; width:auto; height:auto; margin:0 auto; display:block;">
+                    <img id="itemImageViewerImg" src="" alt="Imagem do produto" style="max-width:100%; max-height:min(44vh, 320px); width:auto; height:auto; margin:0 auto; display:block;">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal">Fechar</button>
@@ -101,9 +101,29 @@ use Config\OSPOS;
             img.src = src;
             var titleEl = modal.querySelector('.modal-title');
             if (titleEl && title) titleEl.textContent = title;
-            if (window.jQuery) {
-                jQuery(modal).modal('show');
+            if (!window.jQuery) return;
+            var $modal = jQuery(modal);
+            // Se já há outro modal aberto (ex.: edição de item, que usa bootstrap-dialog),
+            // ambos ficam no mesmo z-index (1050) e o visualizador — que está dentro de
+            // .wrapper, antes do dialog no DOM — acaba pintado POR TRÁS. Move o visualizador
+            // para o fim do <body> e eleva ele + o backdrop acima do modal mais alto.
+            var $open = jQuery('.modal.in').filter(':visible').not(modal);
+            if ($open.length) {
+                var topZ = 1050;
+                $open.each(function() {
+                    var z = parseInt(jQuery(this).css('z-index'), 10);
+                    if (!isNaN(z) && z > topZ) topZ = z;
+                });
+                $modal.appendTo(document.body).css('z-index', topZ + 20);
+                $modal.off('shown.bs.modal.posstack').on('shown.bs.modal.posstack', function() {
+                    // só o backdrop recém-criado (o último) deve ficar acima do modal de baixo
+                    jQuery('.modal-backdrop').last().css('z-index', topZ + 15);
+                });
+                $modal.off('hidden.bs.modal.posstack').on('hidden.bs.modal.posstack', function() {
+                    $modal.css('z-index', '');
+                });
             }
+            $modal.modal('show');
         }
         // Clique em a.rollover (thumbnail nas tabelas de items/receivings)
         document.addEventListener('click', function(e) {
