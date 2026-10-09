@@ -118,7 +118,7 @@ window._tutorialSteps = [
         if (edit_item && /^\d+$/.test(edit_item)) {
             $('<a/>', {
                 id: 'edit-from-home',
-                class: 'modal-dlg',
+                class: 'modal-dlg modal-dlg-1000',
                 href: <?= json_encode(esc("$controller_name/view/")) ?> + edit_item,
                 title: <?= json_encode(lang(ucfirst($controller_name) . '.update')) ?>,
                 'data-btn-submit': <?= json_encode(lang('Common.submit')) ?>,

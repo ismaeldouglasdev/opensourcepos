@@ -3223,6 +3223,7 @@ body {
    ============================================ */
 .modal-dlg-1000 .modal-dialog .modal-content {
     border-radius: 6px !important;
+    border: 1px solid #cfd6de !important;
 }
 
 .modal-dlg-1000 .modal-header {
@@ -3295,12 +3296,51 @@ body {
     padding: 8px 20px !important;
 }
 
-.modal-dlg-1000 .modal-footer .btn,
-.modal-dlg-1000 .modal-body .fileinput-btn .btn {
-    font-size: 14px !important;
-    padding: 6px 14px !important;
-    min-height: 0 !important;
+/* Botões do corpo E do rodapé: o accessible.css infla .btn para 18px /
+   raio 10px / borda 1.6px (altura 50-66px). O seletor anterior cobria só
+   o rodapé e um .fileinput-btn inexistente no markup. */
+.modal-dlg-1000 .modal-body .btn,
+.modal-dlg-1000 .modal-footer .btn {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    padding: 5px 12px !important;
+    min-height: 32px !important;
+    height: auto !important;
     line-height: 1.3 !important;
+    border-radius: 4px !important;
+    border-width: 1px !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+}
+
+.modal-dlg-1000 .modal-body .btn-block {
+    display: block !important;
+    width: 100% !important;
+}
+
+.modal-dlg-1000 .input-group-btn:last-child > .btn {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+}
+
+.modal-dlg-1000 .input-group-btn:first-child > .btn {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+.modal-dlg-1000 .modal-body .fileinput .btn {
+    padding: 5px 12px !important;
+    font-size: 13px !important;
+}
+
+/* Ícones dentro de botões: accessible.css deixa .glyphicon em 22px, o que
+   infla a altura dos botões com ícone ("Gerar código", "Mais opções").
+   Normaliza para casar com a fonte dos botões (13px). */
+.modal-dlg-1000 .modal-body .btn .glyphicon,
+.modal-dlg-1000 .modal-footer .btn .glyphicon {
+    font-size: 14px !important;
+    top: 0 !important;
+    margin-right: 5px !important;
 }
 
 .modal-dlg-1000 .modal-body input[name='quantity'] {
