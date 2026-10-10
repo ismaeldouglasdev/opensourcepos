@@ -1098,6 +1098,12 @@ if (isset($success)) {
                 data: { item: itemId },
                 success: function(res) {
                     posAjaxPending = false;
+                    if (res.needs_variation) {
+                        // Variation parent: it owns the barcode but holds no stock,
+                        // so ask which size before touching the cart.
+                        posShowVariationModal(res);
+                        return;
+                    }
                     if (res.error && res.unknown_code) {
                         // Scanned a code that is not registered: open the new-item
                         // dialog pre-filled and try to fetch product info online.
@@ -1166,6 +1172,52 @@ if (isset($success)) {
                     document.getElementById('add_item_form').submit();
                 }
             });
+        }
+
+        // Size picker shown when a variation parent is scanned or clicked. The
+        // parent is never sold: each option re-posts the child item_id, which is
+        // the row that actually owns the stock.
+        function posShowVariationModal(res) {
+            $('#item').autocomplete('close');
+            $('#item').val('');
+            if (typeof posResetScanState === 'function') posResetScanState();
+
+            var variants = res.variants || [];
+            var rows = variants.map(function(v) {
+                var stock = parseFloat(v.stock_qty) || 0;
+                var out = stock <= 0;
+                return '<button type="button" class="pos-var-item' + (out ? ' pos-var-out' : '') + '"'
+                    + ' data-item-id="' + parseInt(v.item_id, 10) + '"' + (out ? ' disabled' : '') + '>'
+                    + '<span class="pos-var-size">' + posEscapeHtml(v.attribute_value) + '</span>'
+                    + '<span class="pos-var-stock">' + (out ? 'esgotado' : (Math.round(stock) + ' em estoque')) + '</span>'
+                    + '<span class="pos-var-price">' + posFmtMoney(v.unit_price) + '</span>'
+                    + '</button>';
+            }).join('');
+
+            var $old = $('#posVariationModal');
+            if ($old.length) $old.remove();
+
+            var html = ''
+                + '<div class="modal fade" id="posVariationModal" tabindex="-1" role="dialog" aria-hidden="true">'
+                + '  <div class="modal-dialog pos-var-dialog"><div class="modal-content">'
+                + '    <div class="modal-header">'
+                + '      <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">&times;</button>'
+                + '      <h4 class="modal-title">Escolha o tamanho <small>' + posEscapeHtml(res.parent_name || '') + '</small></h4>'
+                + '    </div>'
+                + '    <div class="modal-body"><div class="pos-var-grid">' + rows + '</div></div>'
+                + '  </div></div>'
+                + '</div>';
+
+            var $m = $(html).appendTo('body');
+            $m.on('click', '.pos-var-item', function() {
+                if ($(this).prop('disabled')) return;
+                var id = $(this).data('item-id');
+                $m.modal('hide');
+                beep.ok();
+                posAjaxAdd(id);
+            });
+            $m.on('hidden.bs.modal', function() { $m.remove(); });
+            $m.modal('show');
         }
 
         $('#item').autocomplete({
@@ -1625,6 +1677,25 @@ if (isset($success)) {
     border-color: #e65100;
 }
 .checkout-modal .discount-row .input-group { flex: 1 1 auto; margin: 0; }
+/* Seletor de tamanho (itens com variacao). O pai carrega o codigo de barras
+   mas nao tem estoque: cada botao reenvia o item_id do filho. */
+#posVariationModal .modal-header { background: #2c3e50; color: #fff; border-radius: 6px 6px 0 0; }
+#posVariationModal .modal-header .close { color: #fff; opacity: .85; text-shadow: none; }
+#posVariationModal .modal-title small { color: #bdc3c7; font-weight: 400; }
+#posVariationModal .modal-content { border-radius: 8px; }
+.pos-var-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.pos-var-item {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 12px 8px; border: 2px solid #cfd8dc; border-radius: 8px;
+    background: #fff; cursor: pointer; transition: .12s;
+}
+.pos-var-item:hover:not([disabled]) { border-color: #2e7d32; background: #e8f5e9; }
+.pos-var-item:active:not([disabled]) { transform: scale(.98); }
+.pos-var-item[disabled] { opacity: .45; cursor: not-allowed; }
+.pos-var-size { font-size: 22px; font-weight: 700; color: #263238; }
+.pos-var-stock { font-size: 12px; color: #607d8b; }
+.pos-var-out .pos-var-stock { color: #c62828; font-weight: 600; }
+.pos-var-price { font-size: 15px; font-weight: 600; color: #1565c0; }
 /* Tarefa 8: as regras .checkout-modal .discount-section / .discount-row sairam
    daqui de proposito — a secao de desconto migrou para a area do carrinho e
    ganhou CSS propria em modern.css (.cart-discount-section), que e global

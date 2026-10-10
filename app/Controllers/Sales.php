@@ -15,6 +15,7 @@ use App\Models\Giftcard;
 use App\Models\Inventory;
 use App\Models\Item;
 use App\Models\Item_kit;
+use App\Models\Item_variation;
 use App\Models\Sale;
 use App\Models\Stock_location;
 use App\Models\Tokens\Token_invoice_count;
@@ -39,6 +40,7 @@ class Sales extends Secure_Controller
     protected Employee $employee;
     private Item $item;
     private Item_kit $item_kit;
+    private Item_variation $item_variation;
     private Sale $sale;
     private Stock_location $stock_location;
     private array $config;
@@ -59,6 +61,7 @@ class Sales extends Secure_Controller
         $this->sale = model(Sale::class);
         $this->item = model(Item::class);
         $this->item_kit = model(Item_kit::class);
+        $this->item_variation = model(Item_variation::class);
         $this->stock_location = model(Stock_location::class);
         $this->customer_rewards = model(Customer_rewards::class);
         $this->dinner_table = model(Dinner_table::class);
@@ -1867,6 +1870,24 @@ class Sales extends Secure_Controller
         $mode = $this->sale_lib->get_mode();
         $quantity = ($mode == 'return') ? -$quantity : $quantity;
         $item_location = $this->sale_lib->get_sale_location();
+
+        // A size-variation parent keeps the barcode and is what gets scanned, but
+        // is never sold on its own: hand the client the size list so the operator
+        // picks one, and let the follow-up addAjax carry the child's item_id.
+        if ($mode != 'return' && is_numeric($item_id)) {
+            $variants = $this->item_variation->get_variations_for_parent((int) $item_id, (int) $item_location);
+            if (! empty($variants)) {
+                $parent_info = $this->item->get_info((int) $item_id);
+                $data['needs_variation'] = true;
+                $data['parent_id'] = (int) $item_id;
+                $data['parent_name'] = $parent_info->name ?? '';
+                $data['variants'] = $variants;
+
+                echo json_encode($data);
+
+                return;
+            }
+        }
 
         $added = false;
 
