@@ -1875,11 +1875,24 @@ class Sales extends Secure_Controller
         // is never sold on its own: hand the client the size list so the operator
         // picks one, and let the follow-up addAjax carry the child's item_id.
         if ($mode != 'return' && is_numeric($item_id)) {
-            $variants = $this->item_variation->get_variations_for_parent((int) $item_id, (int) $item_location);
+            // A scanned barcode is numeric but is not an item_id, so the parent's
+            // id must be resolved before looking up its variations. Without this
+            // the parent (stock 0) is silently added instead of opening the size
+            // picker. A real numeric item_id resolves to itself and is left as-is,
+            // so scanning a plain item keeps behaving exactly as before.
+            $parent_id = (int) $item_id;
+            if ((int) $this->item->get_info($parent_id)->item_id !== $parent_id) {
+                $resolved = $this->item->get_info_by_id_or_number($item_id);
+                if ($resolved !== '') {
+                    $parent_id = (int) $resolved->item_id;
+                }
+            }
+
+            $variants = $this->item_variation->get_variations_for_parent($parent_id, (int) $item_location);
             if (! empty($variants)) {
-                $parent_info = $this->item->get_info((int) $item_id);
+                $parent_info = $this->item->get_info($parent_id);
                 $data['needs_variation'] = true;
-                $data['parent_id'] = (int) $item_id;
+                $data['parent_id'] = $parent_id;
                 $data['parent_name'] = $parent_info->name ?? '';
                 $data['variants'] = $variants;
 
