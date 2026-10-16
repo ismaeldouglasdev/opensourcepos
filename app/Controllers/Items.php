@@ -892,12 +892,14 @@ class Items extends Secure_Controller
                 $ch = curl_init($internet_image_url);
                 curl_setopt_array($ch, [
                     CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_TIMEOUT => 10,
-                    CURLOPT_CONNECTTIMEOUT => 4,
+                    CURLOPT_TIMEOUT => 2,
+                    CURLOPT_CONNECTTIMEOUT => 1,
                     CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_MAXREDIRS => 3,
                     CURLOPT_USERAGENT => 'OSPOS-Elshaday/1.0',
                 ]);
                 $image = curl_exec($ch);
+                $curl_error = curl_error($ch);
                 curl_close($ch);
 
                 if (is_string($image) && $image !== '') {
@@ -914,6 +916,11 @@ class Items extends Secure_Controller
                             $this->item->save_value($pic_data, $item_id);
                         }
                     }
+                } else {
+                    // Fallback deliberado: uma imagem remota indisponivel nao pode
+                    // bloquear o salvamento do item. O timeout curto (2s) evita que
+                    // um host de imagem lento/morto trave o operador no caixa.
+                    log_message('warning', 'internet_image_url: download failed for item ' . $item_id . ' (err=' . $curl_error . ') url=' . $internet_image_url);
                 }
             }
 

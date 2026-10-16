@@ -11,6 +11,18 @@ use Config\OSPOS;
  */
 function current_language_code(bool $load_system_language = false): string
 {
+    // Memoizado por requisicao. get_logged_in_employee_info() -> get_info() roda
+    // uma query a cada chamada, e este helper e chamado varias vezes por pagina
+    // (Load_config, bootstrap tables, datepicker, formularios). O core OSPOS
+    // nunca troca o idioma no meio de uma requisicao.
+    static $cache = [];
+
+    $key = $load_system_language ? '1' : '0';
+
+    if (array_key_exists($key, $cache)) {
+        return $cache[$key];
+    }
+
     $employee = model(Employee::class);
     $config = config(OSPOS::class)->settings;
 
@@ -18,13 +30,13 @@ function current_language_code(bool $load_system_language = false): string
         $employee_info = $employee->get_logged_in_employee_info();
 
         if (property_exists($employee_info, 'language_code') && !empty($employee_info->language_code)) {
-            return $employee_info->language_code;
+            return $cache[$key] = $employee_info->language_code;
         }
     }
 
     $language_code = $config['language_code'];
 
-    return empty($language_code) ? DEFAULT_LANGUAGE_CODE : $language_code;
+    return $cache[$key] = empty($language_code) ? DEFAULT_LANGUAGE_CODE : $language_code;
 }
 
 /**
@@ -33,6 +45,16 @@ function current_language_code(bool $load_system_language = false): string
  */
 function current_language(bool $load_system_language = false): string
 {
+    // Memoizado por requisicao pela mesma razao de current_language_code():
+    // cada chamada fazia um get_info() (query) no model Employee.
+    static $cache = [];
+
+    $key = $load_system_language ? '1' : '0';
+
+    if (array_key_exists($key, $cache)) {
+        return $cache[$key];
+    }
+
     $employee = model(Employee::class);
     $config = config(OSPOS::class)->settings;
 
@@ -41,13 +63,13 @@ function current_language(bool $load_system_language = false): string
         $employee_info = $employee->get_logged_in_employee_info();
 
         if (property_exists($employee_info, 'language') && !empty($employee_info->language)) {
-            return $employee_info->language;
+            return $cache[$key] = $employee_info->language;
         }
     }
 
     $language = $config['language'];
 
-    return empty($language) ? DEFAULT_LANGUAGE : $language;
+    return $cache[$key] = empty($language) ? DEFAULT_LANGUAGE : $language;
 }
 
 /**
