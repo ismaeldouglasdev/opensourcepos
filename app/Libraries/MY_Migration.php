@@ -4,6 +4,7 @@ namespace App\Libraries;
 
 use CodeIgniter\Database\MigrationRunner;
 use Config\Database;
+use Config\Services;
 use stdClass;
 
 class MY_Migration extends MigrationRunner
@@ -20,12 +21,61 @@ class MY_Migration extends MigrationRunner
     }
 
     /**
+     * Gets the latest migration version available in the filesystem.
+     *
+     * findMigrations() walks every autoloader namespace and, for each migration
+     * file, reads and tokenizes its contents just to extract the class name.
+     * On this host that is ~5 ms of filesystem work on every request, and it is
+     * re-done for the same answer because the set of migrations only changes
+     * when a file is added, removed or renamed.
+     *
+     * The result is cached and invalidated by a fingerprint of the migrations
+     * directory mtime and the composer autoload map mtime (the latter changes
+     * when a namespace providing migrations is installed). The version comes
+     * from the filename, so file *contents* never change it.
+     *
+     * If the cache is unavailable or stale the value is recomputed, so a stale
+     * entry can only ever report an older latest version — which makes
+     * is_latest() return false and destroys the session (the safe direction).
+     *
      * @return int
      */
     public function get_latest_migration(): int
     {
+        $cache_key   = 'migration_latest_' . md5(ENVIRONMENT . '|' . $this->group);
+        $fingerprint = $this->get_migrations_fingerprint();
+
+        $cache  = Services::cache();
+        $cached = $cache->get($cache_key);
+
+        if (is_array($cached) && ($cached['fingerprint'] ?? null) === $fingerprint) {
+            return (int) $cached['version'];
+        }
+
         $migrations = $this->findMigrations();
-        return basename(end($migrations)->version);
+        $version    = (int) basename(end($migrations)->version);
+
+        $cache->save($cache_key, ['fingerprint' => $fingerprint, 'version' => $version], 3600);
+
+        return $version;
+    }
+
+    /**
+     * Fingerprint that changes when the available migrations change: the
+     * migrations directory mtime (file added/removed/renamed) and the composer
+     * autoload map mtime (new namespace installed).
+     *
+     * @return string
+     */
+    private function get_migrations_fingerprint(): string
+    {
+        $migrations_dir = APPPATH . 'Database/Migrations';
+        $autoload_map   = ROOTPATH . 'vendor/composer/autoload_psr4.php';
+
+        return md5(
+            (@filemtime($migrations_dir) ?: 0) . '|' .
+            (@filemtime($autoload_map) ?: 0)
+        );
     }
 
     /**
