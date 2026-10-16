@@ -136,8 +136,6 @@ window._tutorialSteps = [
 #btn_finalizar_venda { height: 44px; font-size: 17px; font-weight: bold; margin-top: 8px; }
 #finish_checkout_btn { height: 40px; font-size: 17px; }
 
-/* Hidden payment details */
-#payment_details { display: none !important; }
 </style>
 
 <style>
@@ -668,94 +666,6 @@ if (isset($success)) {
         <span class="glyphicon glyphicon-print"></span> Reimprimir Última Venda
     </button>
 </div>
-            </div>
-
-<div id="payment_details">
-                <?php if ($payments_cover_total) { // Show Complete sale button instead of Add Payment if there is no amount due left ?>
-                    <?= form_open("$controller_name/addPayment", ['id' => 'add_payment_form', 'class' => 'form-horizontal']) ?>
-                        <table class="sales_table_100">
-                            <tr>
-                                <td><?= lang(ucfirst($controller_name) . '.payment') ?></td>
-                                <td>
-                                    <?= form_dropdown('payment_type', $payment_options, $selected_payment_type, ['id' => 'payment_types', 'class' => 'selectpicker show-menu-arrow', 'data-style' => 'btn-default btn-sm', 'data-width' => 'fit', 'disabled' => 'disabled']) ?>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><span id="amount_tendered_label"><?= lang(ucfirst($controller_name) . '.amount_tendered') ?></span></td>
-                                <td>
-                                    <?= form_input(['name' => 'amount_tendered', 'id' => 'amount_tendered', 'class' => 'form-control input-sm disabled', 'disabled' => 'disabled', 'value' => '0', 'size' => '5', 'tabindex' => ++$tabindex, 'onClick' => 'this.select();']) ?>
-                                </td>
-                            </tr>
-                        </table>
-                    <?= form_close() ?>
-
-                    <?php
-                    // Only show this part if in sale or return mode
-                    if ($pos_mode) {
-                        $due_payment = false;
-
-                        if (count($payments) > 0) {
-                            foreach ($payments as $payment_id => $payment) {
-                                if ($payment['payment_type'] == lang(ucfirst($controller_name) . '.due')) {
-                                    $due_payment = true;
-                                }
-                            }
-                        }
-
-                        if (!$due_payment || ($due_payment && isset($customer))) {    // TODO: $due_payment is not needed because the first clause insures that it will always be true if it gets to this point.  Can be shortened to if (!$due_payment || isset($customer))
-                    ?>
-                            <div class="btn btn-sm btn-success pull-right" id="finish_sale_button" tabindex="<?= ++$tabindex ?>">
-                                <span class="glyphicon glyphicon-ok">&nbsp;</span><?= lang(ucfirst($controller_name) . '.complete_sale') ?>
-                            </div>
-                    <?php
-                        }
-                    }
-                    ?>
-                <?php } else { ?>
-                    <?= form_open("$controller_name/addPayment", ['id' => 'add_payment_form', 'class' => 'form-horizontal']) ?>
-                        <table class="sales_table_100">
-                            <tr>
-                                <td><?= lang(ucfirst($controller_name) . '.payment') ?></td>
-                                <td>
-                                    <?= form_dropdown('payment_type', $payment_options,  $selected_payment_type, ['id' => 'payment_types', 'class' => 'selectpicker show-menu-arrow', 'data-style' => 'btn-default btn-sm', 'data-width' => 'fit']) ?>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><span id="amount_tendered_label"><?= lang(ucfirst($controller_name) . '.amount_tendered') ?></span></td>
-                                <td>
-                                    <?= form_input(['name' => 'amount_tendered', 'id' => 'amount_tendered', 'class' => 'form-control input-sm non-giftcard-input', 'value' => to_currency_no_money($amount_due), 'size' => '5', 'tabindex' => ++$tabindex, 'onClick' => 'this.select();']) ?>
-                                    <?= form_input(['name' => 'amount_tendered', 'id' => 'amount_tendered', 'class' => 'form-control input-sm giftcard-input', 'disabled' => true, 'value' => to_currency_no_money($amount_due), 'size' => '5', 'tabindex' => ++$tabindex]) ?>
-                                </td>
-                            </tr>
-                        </table>
-                    <?= form_close() ?>
-
-                    <div class="btn btn-sm btn-success pull-right" id="add_payment_button" tabindex="<?= ++$tabindex ?>">
-                        <span class="glyphicon glyphicon-credit-card">&nbsp;</span><?= lang(ucfirst($controller_name) . '.add_payment') ?>
-                    </div>
-                <?php } ?>
-
-                <?php if (count($payments) > 0) { // Only show this part if there is at least one payment entered. ?>
-                    <table class="sales_table_100" id="register">
-                        <thead>
-                            <tr>
-                                <th style="width: 10%;"><?= lang('Common.delete') ?></th>
-                                <th style="width: 60%;"><?= lang(ucfirst($controller_name) . '.payment_type') ?></th>
-                                <th style="width: 20%;"><?= lang(ucfirst($controller_name) . '.payment_amount') ?></th>
-                            </tr>
-                        </thead>
-
-                        <tbody id="payment_contents">
-                            <?php foreach ($payments as $payment_id => $payment) { ?>
-                                <tr>
-                                    <td><?= anchor("$controller_name/deletePayment/". base64_encode($payment_id), '<span class="glyphicon glyphicon-trash"></span>', ['class' => 'delete_payment_button', 'data-payment-id' => base64_encode($payment_id)]) ?></td>
-                                       <td><?= esc($payment['payment_type'], 'html') ?></td>
-                                    <td style="text-align: right;"><?= to_currency($payment['payment_amount']) ?></td>
-                                </tr>
-                            <?php } ?>
-                        </tbody>
-                    </table>
-                <?php } ?>
             </div>
 
             <?= form_open("$controller_name/cancel", ['id' => 'buttons_form']) ?>
@@ -1438,17 +1348,6 @@ if (isset($success)) {
             }
         });
 
-        $('.giftcard-input').autocomplete({
-            source: "<?= site_url('giftcards/suggest') ?>",
-            minChars: 0,
-            delay: 10,
-            select: function(a, ui) {
-                $(this).val(ui.item.value);
-                $('#add_payment_form').submit();
-                return false;
-            }
-        });
-
         $('#comment').keyup(function() {
             $.post("<?= esc(site_url("$controller_name/setComment")) ?>", {
                 comment: $('#comment').val()
@@ -1482,11 +1381,6 @@ if (isset($success)) {
             });
         });
 
-        $('#finish_sale_button').click(function() {
-            $('#buttons_form').attr('action', "<?= "$controller_name/complete" ?>");
-            $('#buttons_form').submit();
-        });
-
         // Delegados, nao ligados direto: Suspender/Cancelar so existem no DOM
         // depois que o carrinho ganha o primeiro item (o painel inteiro so e
         // renderizado com count($cart) > 0), e o addAjax troca o <form> que os
@@ -1513,24 +1407,6 @@ if (isset($success)) {
         $(document).on('click', '#cancel_sale_button', function() {
             if (confirm("<?= lang(ucfirst($controller_name) . '.confirm_cancel_sale') ?>")) {
                 posSubmitSaleForm("<?= site_url("$controller_name/cancel") ?>");
-            }
-        });
-
-        $('#add_payment_button').click(function() {
-            $('#add_payment_form').submit();
-        });
-
-        $('#payment_types').change(check_payment_type).ready(check_payment_type);
-
-        $('#amount_tendered').keypress(function(event) {
-            if (event.which == 13) {
-                $('#add_payment_form').submit();
-            }
-        });
-
-        $('#finish_sale_button').keypress(function(event) {
-            if (event.which == 13) {
-                $('#finish_sale_form').submit();
             }
         });
 
@@ -1573,35 +1449,6 @@ if (isset($success)) {
             posSubmitRow($group.closest('tr'), { discount_type: val });
         });
     });
-
-    function check_payment_type() {
-        var cash_mode = <?= json_encode($cash_mode) ?>;
-
-        if ($("#payment_types").val() == "<?= lang(ucfirst($controller_name) . '.giftcard') ?>") {
-            $("#sale_total").html("<?= to_currency($total) ?>");
-            $("#sale_amount_due").html("<?= to_currency($amount_due) ?>");
-            $("#amount_tendered_label").html("<?= lang(ucfirst($controller_name) . '.giftcard_number') ?>");
-            $("#amount_tendered:enabled").val('').focus();
-            $(".giftcard-input").attr('disabled', false);
-            $(".non-giftcard-input").attr('disabled', true);
-            $(".giftcard-input:enabled").val('').focus();
-        } else if (($("#payment_types").val() == "<?= lang(ucfirst($controller_name) . '.cash') ?>" && cash_mode == '1')) {
-            $("#sale_total").html("<?= to_currency($non_cash_total) ?>");
-            $("#sale_amount_due").html("<?= to_currency($cash_amount_due) ?>");
-            $("#amount_tendered_label").html("<?= lang(ucfirst($controller_name) . '.amount_tendered') ?>");
-            $("#amount_tendered:enabled").val("<?= to_currency_no_money($cash_amount_due) ?>");
-            $(".giftcard-input").attr('disabled', true);
-            $(".non-giftcard-input").attr('disabled', false);
-        } else {
-            $("#sale_total").html("<?= to_currency($non_cash_total) ?>");
-            $("#sale_amount_due").html("<?= to_currency($amount_due) ?>");
-            $("#amount_tendered_label").html("<?= lang(ucfirst($controller_name) . '.amount_tendered') ?>");
-            $("#amount_tendered:enabled").val("<?= to_currency_no_money($amount_due) ?>");
-            $(".giftcard-input").attr('disabled', true);
-            $(".non-giftcard-input").attr('disabled', false);
-        }
-    }
-
     // Add Keyboard Shortcuts/Hotkeys to Sale Register
     document.body.onkeyup = function(e) {
         switch (e.altKey && e.keyCode) {
@@ -1618,17 +1465,6 @@ if (isset($success)) {
                 break;
             case 52: // Alt + 4 Check Suspended
                 $("#show_suspended_sales_button").click();
-                break;
-            case 53: // Alt + 5 Edit Amount Tendered Value
-                $("#amount_tendered").focus();
-                $("#amount_tendered").select();
-                break;
-            case 54: // Alt + 6 Add Payment
-                $("#add_payment_button").click();
-                break;
-            case 55: // Alt + 7 Add Payment and Complete Sales/Invoice
-                $("#add_payment_button").click();
-                window.location.href = "<?= 'sales/complete' ?>";
                 break;
             case 56: // Alt + 8 Finish Quote/Invoice without payment
                 $("#finish_invoice_quote_button").click();
