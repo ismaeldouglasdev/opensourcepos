@@ -1819,17 +1819,6 @@ button,
     ============================================ */
 
 /* ============================================
-    50. TEST BANNER — Ultra-compact
-    ============================================ */
-.test-banner {
-    height: 20px !important;
-    line-height: 20px !important;
-    padding: 0 !important;
-    font-size: 10px !important;
-    letter-spacing: 0.12em !important;
-}
-
-/* ============================================
     51. COLOR PALETTE — Fixed action colors
     ============================================ */
 /* Primary = create/add (green) */
@@ -1979,11 +1968,6 @@ button,
 /* ============================================
     54. RIGHT-ALIGN MONEY COLUMNS
     ============================================ */
-/* Generic: any td/th that contains currency symbol or is in money column */
-td.text-right, th.text-right,
-td:has(.glyphicon), /* fallback */
-.table td:nth-child(n+4) { /* not ideal but works for common 5+ col tables */ }
-
 /* Specific monetary alignment */
 #sale_totals th:last-child,
 #payment_totals th:last-child,
@@ -2000,10 +1984,6 @@ td:has(.glyphicon), /* fallback */
 .fixed-table-container thead th[data-field*="amount"],
 .fixed-table-container thead th[data-field*="spent"] {
     text-align: right !important;
-}
-
-.fixed-table-container tbody td:nth-child(n+4):not(:last-child) {
-    /* Don't force, but prefer right for money-like columns */
 }
 
 /* ============================================
@@ -2240,12 +2220,6 @@ td:has(.glyphicon), /* fallback */
     margin: 0 2px !important;
     border-color: var(--os-border) !important;
     color: var(--os-text) !important;
-}
-
-.fixed-table-pagination .pagination > .active > a {
-    background: var(--os-primary) !important;
-    border-color: var(--os-primary) !important;
-    color: #fff !important;
 }
 
 .fixed-table-pagination .pagination-detail {
@@ -2506,16 +2480,6 @@ td.text-right {
 .home-btn-text {
     font-size: 11px !important;
     letter-spacing: 0.1em !important;
-}
-
-/* ============================================
-    74. TEST BANNER — Ultra-thin 8px
-    ============================================ */
-.test-banner {
-    height: 8px !important;
-    line-height: 8px !important;
-    font-size: 0 !important;
-    padding: 0 !important;
 }
 
 .topbar {
