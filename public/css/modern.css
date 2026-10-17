@@ -29,6 +29,7 @@ html {
     /* Primary palette — Flatly-inspired, refined */
     --os-primary: #1a9c6a;
     --os-primary-dark: #14805a;
+    --os-primary-darker: #0f5f43;
     --os-primary-light: #e8f8f0;
     --os-primary-glow: rgba(26, 156, 106, 0.15);
 
@@ -668,19 +669,20 @@ code, .font-monospace, pre {
 #add_item_form .panel-body {
     padding: 8px 12px !important;
     background: var(--os-surface) !important;
-    border: 3px solid var(--os-primary) !important;
+    border: 3px solid var(--os-primary-dark) !important;
     border-radius: var(--os-radius-lg) !important;
+    box-shadow: 0 0 0 3px var(--os-primary-glow) !important;
     transition: border-color var(--os-transition), box-shadow var(--os-transition) !important;
 }
 
 #add_item_form .panel-body:hover {
-    border-color: var(--os-primary-dark) !important;
-    box-shadow: 0 0 0 2px var(--os-primary-glow) !important;
+    border-color: var(--os-primary-darker) !important;
+    box-shadow: 0 0 0 5px var(--os-primary-glow) !important;
 }
 
 #add_item_form .panel-body:focus-within {
-    border-color: var(--os-primary-dark) !important;
-    box-shadow: 0 0 0 4px var(--os-primary-glow) !important;
+    border-color: var(--os-primary-darker) !important;
+    box-shadow: 0 0 0 6px var(--os-primary-glow) !important;
 }
 
 #add_item_form .panel-body ul {
