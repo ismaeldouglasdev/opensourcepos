@@ -130,6 +130,76 @@ window._tutorialSteps = [
         }
     });
 
+    // ── Scan de código de barras na busca da grid ──
+    // Escaneia na busca: produto existente → abre o modal de edição;
+    // inexistente → abre o cadastro novo com o código preenchido e a
+    // categoria UTILIDADES já selecionada.
+    // Assinatura de scanner (mesma do register): todos os gaps entre chars ≤ 120ms.
+    // Delegado em document: o .search input só existe depois do bootstrap-table init.
+    (function() {
+        var charTimes = [];
+        $(document).on('input', '.search input', function() {
+            var now = Date.now();
+            var val = $(this).val() || '';
+            if (val.length <= charTimes.length) {
+                // deleção/paste: marca como humano
+                charTimes = [];
+                for (var i = 0; i < val.length; i++) charTimes.push(now + i * 10000);
+            } else {
+                while (charTimes.length < val.length) charTimes.push(now);
+            }
+        });
+
+        $(document).on('keydown', '.search input', function(e) {
+            if (e.key !== 'Enter' && e.keyCode !== 13) return;
+
+            var code = ($(this).val() || '').trim();
+            var isScan = false;
+            if (code.length >= 4 && /^[0-9A-Za-z]+$/.test(code) && charTimes.length >= code.length) {
+                isScan = true;
+                for (var i = 1; i < code.length; i++) {
+                    if (charTimes[i] - charTimes[i - 1] > 120) { isScan = false; break; }
+                }
+            }
+            charTimes = [];
+            if (!isScan) return; // busca normal da tabela
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            var $el = $(this);
+            $el.val('');
+            $('#table').bootstrapTable('resetSearch', '');
+
+            $.getJSON('<?= site_url('items/scanLookup') ?>/' + encodeURIComponent(code))
+                .done(function(r) {
+                    var id = 'scan-open-item';
+                    $('#' + id).remove();
+                    var href, title;
+                    if (r.found && r.item_id) {
+                        href = <?= json_encode(esc("$controller_name/view/")) ?> + r.item_id;
+                        title = <?= json_encode(lang(ucfirst($controller_name) . '.update')) ?>;
+                    } else {
+                        href = <?= json_encode(esc("$controller_name/view")) ?> + '?item_number=' + encodeURIComponent(code) + '&category=UTILIDADES';
+                        title = <?= json_encode(lang(ucfirst($controller_name) . '.new')) ?>;
+                    }
+                    $('<a/>', {
+                        id: id,
+                        class: 'modal-dlg modal-dlg-1000',
+                        href: href,
+                        title: title,
+                        'data-btn-submit': <?= json_encode(lang('Common.submit')) ?>,
+                        style: 'display:none'
+                    }).appendTo('body');
+                    dialog_support.init('#' + id);
+                    $('#' + id).trigger('click');
+                })
+                .fail(function() {
+                    $el.val(code); // devolve o código se o lookup falhar
+                });
+        });
+    })();
+
     // ── Inline editing on double-click ──
     (function() {
         var INLINE_FIELDS = {

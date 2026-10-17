@@ -322,6 +322,19 @@ class Items extends Secure_Controller
             $data['selected_category'] = 'UTILIDADES';
         }
 
+        // Prefill category from ?category= — the /items scan flow for unknown
+        // codes opens the full form (not quick mode) with UTILIDADES selected.
+        if ($item_id === NEW_ENTRY && !$data['quick_mode']) {
+            $scan_category = trim((string)($this->request->getGet('category') ?? ''));
+            if ($scan_category !== '') {
+                if (!array_key_exists($scan_category, $categories)) {
+                    $categories[$scan_category] = $scan_category;
+                }
+                $data['categories'] = $categories;
+                $data['selected_category'] = $scan_category;
+            }
+        }
+
         if ($item_id === NEW_ENTRY) {
             $data['default_tax_1_rate'] = $this->config['default_tax_1_rate'];
             $data['default_tax_2_rate'] = $this->config['default_tax_2_rate'];
@@ -335,9 +348,10 @@ class Items extends Secure_Controller
             $item_info->qty_per_pack = 1;
             $item_info->pack_name = lang('Items.default_pack_name');
 
-            // Prefill the barcode when the dialog is opened from an unknown scan (sales register)
+            // Prefill the barcode when the dialog is opened from an unknown scan
+            // (sales register or /items grid). 4-32 alnum: EANs and internal 5-char SKUs.
             $barcode = trim((string) ($this->request->getGet('item_number') ?? ''));
-            if (preg_match('/^\d{6,32}$/', $barcode)) {
+            if (preg_match('/^[0-9A-Za-z]{4,32}$/', $barcode)) {
                 $item_info->item_number = $barcode;
             }
 
@@ -519,6 +533,27 @@ class Items extends Secure_Controller
         $data['items'] = $result;
 
         echo view('barcodes/barcode_sheet', $data);
+    }
+
+    /**
+     * Resolve a scanned code to an existing item id.
+     * GET items/scanLookup/{code}
+     *
+     * Returns {"found": bool, "item_id": int|null}. Used by the /items grid
+     * scan flow: found → open the edit modal; not found → open the new-item
+     * dialog with the code prefilled and category UTILIDADES preselected.
+     */
+    public function getScanLookup(string $code): void
+    {
+        $this->response->setContentType('application/json');
+
+        $code = trim($code);
+        $item_id = $code === '' ? false : $this->item->get_item_id_by_number($code);
+
+        echo json_encode([
+            'found'   => $item_id !== false,
+            'item_id' => $item_id === false ? null : $item_id,
+        ]);
     }
 
     /**

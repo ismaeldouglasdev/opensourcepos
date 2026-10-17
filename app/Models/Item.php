@@ -405,6 +405,29 @@ class Item extends Model
     }
 
     /**
+     * Get an item id by exact item_number match, excluding deleted items.
+     *
+     * Unlike get_item_id(), this does NOT fall back to item_id matching — a
+     * numeric barcode must never resolve to a different product by coincidence
+     * of ids. Used by the /items scan lookup endpoint (Items::getScanLookup).
+     */
+    public function get_item_id_by_number(string $item_number): bool|int
+    {
+        $builder = $this->db->table('items');
+        $builder->select('item_id');
+        $builder->where('item_number', $item_number);
+        $builder->where('deleted', '0');
+        $builder->orderBy('item_id', 'ASC');    // keeper convention: lowest id wins
+        $query = $builder->get();
+
+        if ($query->getNumRows() >= 1) {
+            return (int)$query->getRow()->item_id;
+        }
+
+        return false;
+    }
+
+    /**
      * Gets information about multiple items
      */
     public function get_multiple_info(array $item_ids, int $location_id): ResultInterface
