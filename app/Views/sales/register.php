@@ -584,7 +584,7 @@ if (isset($success)) {
             <?php } ?>
             <tr>
                 <th style="width: 55%; font-size: 160%"><?= lang(ucfirst($controller_name) . '.total') ?></th>
-                <th style="width: 45%; font-size: 160%; text-align: right;"><span id="sale_total"><?= to_currency($total) ?></span></th>
+                <th style="width: 45%; font-size: 160%; text-align: right;"><span id="sale_total_original" class="sale-total-strike"></span><span id="sale_total"><?= to_currency($total) ?></span></th>
             </tr>
         </table>
 
@@ -1804,6 +1804,16 @@ function renderCartDiscountedTotal() {
     var desconto = cart_total_original * (sale_discount_pct / 100);
     var final = Math.max(0, Math.round((cart_total_original - desconto) * 100) / 100);
     el.textContent = 'R$ ' + fmtMoney(final);
+
+    // Tarefa 13: mostra o total ANTES do desconto riscado ao lado do final,
+    // para o operador enxergar a base sobre a qual o desconto incidiu. Fica num
+    // span SEPARADO de #sale_total de proposito: syncCartTotalBase() e
+    // openCheckoutModal() leem #sale_total com parseCurrency(), e dois numeros
+    // dentro do mesmo textContent quebrariam o parse.
+    var orig = document.getElementById('sale_total_original');
+    if (orig) {
+        orig.textContent = sale_discount_pct > 0 ? ('R$ ' + fmtMoney(cart_total_original)) : '';
+    }
 
     var dd = document.getElementById('discount_value_display');
     if (dd) dd.textContent = sale_discount_pct > 0 ? ('-R$ ' + fmtMoney(cart_total_original - final)) : '';

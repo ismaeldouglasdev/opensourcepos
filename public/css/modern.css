@@ -826,6 +826,16 @@ code, .font-monospace, pre {
     font-weight: 800 !important;
 }
 
+/* Tarefa 13: total do carrinho ANTES do desconto, riscado, ao lado do final */
+.sale-total-strike {
+    text-decoration: line-through !important;
+    color: var(--os-text-light, #9ca3af) !important;
+    font-family: var(--os-font-mono) !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    margin-right: 8px !important;
+}
+
 /* --- Finalizar Venda Button --- */
 #btn_finalizar_venda {
     height: 52px !important;
