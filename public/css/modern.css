@@ -668,14 +668,19 @@ code, .font-monospace, pre {
 #add_item_form .panel-body {
     padding: 8px 12px !important;
     background: var(--os-surface) !important;
-    border: 2px solid var(--os-primary) !important;
+    border: 3px solid var(--os-primary) !important;
     border-radius: var(--os-radius-lg) !important;
     transition: border-color var(--os-transition), box-shadow var(--os-transition) !important;
 }
 
+#add_item_form .panel-body:hover {
+    border-color: var(--os-primary-dark) !important;
+    box-shadow: 0 0 0 2px var(--os-primary-glow) !important;
+}
+
 #add_item_form .panel-body:focus-within {
     border-color: var(--os-primary-dark) !important;
-    box-shadow: 0 0 0 3px var(--os-primary-glow) !important;
+    box-shadow: 0 0 0 4px var(--os-primary-glow) !important;
 }
 
 #add_item_form .panel-body ul {
