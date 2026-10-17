@@ -296,7 +296,7 @@ if (isset($success)) {
                 <li class="pull-left first_li">
                     <label for="item" class="control-label"><?= lang(ucfirst($controller_name) . '.find_or_scan_item_or_receipt') ?></label>
                 </li>
-                <li class="pull-left">
+                <li class="pull-left search_field_li">
                     <?= form_input(['name' => 'item', 'id' => 'item', 'class' => 'form-control input-sm', 'size' => '50', 'tabindex' => ++$tabindex]) ?>
                     <span class="ui-helper-hidden-accessible" role="status"></span>
                     <?php /* Tarefa 7: no Modo Simples o campo precisa explicar o que

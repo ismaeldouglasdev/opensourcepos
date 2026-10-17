@@ -694,6 +694,11 @@ code, .font-monospace, pre {
     align-items: center !important;
 }
 
+#add_item_form .panel-body ul li.search_field_li {
+    flex: 1 0 auto !important;
+    min-width: 0;
+}
+
 #add_item_form .control-label {
     font-size: 12px !important;
     margin-bottom: 0 !important;
@@ -703,8 +708,8 @@ code, .font-monospace, pre {
 
 #item {
     font-size: 18px !important;
-    padding: 12px 16px !important;
-    min-height: 50px !important;
+    padding: 14px 20px !important;
+    min-height: 60px !important;
     border: none !important;
     background: transparent !important;
     width: 100% !important;
