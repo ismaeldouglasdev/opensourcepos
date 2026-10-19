@@ -298,7 +298,7 @@ if (isset($success)) {
                 </li>
                 <li class="pull-left search_field_li">
                     <?= form_input(['name' => 'item', 'id' => 'item', 'class' => 'form-control input-sm', 'size' => '50', 'tabindex' => ++$tabindex]) ?>
-                    <span class="ui-helper-hidden-accessible" role="status"></span>
+                    <span id="item_search_status" class="item-search-status" role="status" aria-live="polite"></span>
                     <?php /* Tarefa 7: no Modo Simples o campo precisa explicar o que
                              fazer, porque quem opera esta aqui nao conhece o
                              sistema. Fora do Modo Simples o texto nao existe. */ ?>
@@ -1177,6 +1177,37 @@ if (isset($success)) {
                 posAjaxAdd(ui.item.value);
                 return false;
             }
+        });
+
+        // Status visivel da busca de produto. Antes era um span
+        // ui-helper-hidden-accessible vazio; agora mostra a contagem de
+        // resultados (produtos + sugestoes de categoria/fornecedor).
+        function posUpdateSearchStatus(count) {
+            var $status = $('#item_search_status');
+            if (!$status.length) { return; }
+            if (count === null) {
+                $status.text('').removeClass('has-results no-results');
+                return;
+            }
+            if (count === 0) {
+                $status.text('Nenhum resultado encontrado')
+                    .removeClass('has-results').addClass('no-results');
+            } else {
+                $status.text(count + (count === 1 ? ' resultado encontrado' : ' resultados encontrados'))
+                    .removeClass('no-results').addClass('has-results');
+            }
+        }
+        $('#item').on('autocompleteresponse', function(e, ui) {
+            // Campo vazio dispara a busca de mais vendidos (minLength 0).
+            // Nesse caso nao ha termo pesquisado: nao mostra contagem.
+            if ($(this).val().trim() === '') { posUpdateSearchStatus(null); return; }
+            posUpdateSearchStatus((ui.content || []).length);
+        });
+        $('#item').on('input', function() {
+            if ($(this).val().trim() === '') { posUpdateSearchStatus(null); }
+        });
+        $('#item').on('autocompleteclose', function() {
+            if ($(this).val().trim() === '') { posUpdateSearchStatus(null); }
         });
 
         // Custom dropdown rendering — must be attached to the widget INSTANCE

@@ -2963,11 +2963,32 @@ body {
 .pos-autocomplete .ui-state-active,
 .pos-autocomplete .ui-state-hover,
 .pos-autocomplete .ui-state-focus {
-    background: #C0FFF0 !important; /* menta cristal — pedido do usuário */
+    background: #9DF2D9 !important; /* menta mais saturada — pedido do usuário */
     color: var(--os-text) !important;
     border: none !important;
     border-radius: var(--os-radius) !important;
     margin: 1px 2px !important;
+    box-shadow: inset 4px 0 0 var(--os-primary) !important;
+}
+
+/* Status visivel da busca de produto (substitui o span invisivel) */
+.item-search-status {
+    display: block !important;
+    flex: 0 0 auto;
+    align-self: center;
+    margin: 0 0 0 10px;
+    font-size: 13px;
+    line-height: 18px;
+    white-space: nowrap;
+    color: var(--os-text-muted);
+}
+
+.item-search-status.has-results {
+    color: var(--os-primary-dark);
+}
+
+.item-search-status.no-results {
+    color: var(--os-danger);
 }
 
 /* --- Item row layout --- */
