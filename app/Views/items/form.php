@@ -124,6 +124,15 @@ $quick_mode = $quick_mode ?? false;
                         <span class="input-group-addon input-sm"><b><?= esc($config['currency_symbol']) ?></b></span>
                     <?php endif; ?>
                 </div>
+                <?php if (!$quick_mode): ?>
+                <div class="input-group input-group-sm" style="margin-top: 4px;" title="<?= lang('Items.markup_hint') ?>">
+                    <span class="input-group-addon input-sm"><b><?= lang('Items.markup') ?></b></span>
+                    <input type="text" id="markup_percent" class="form-control input-sm" inputmode="decimal"
+                           autocomplete="off" placeholder="<?= lang('Items.markup_placeholder') ?>"
+                           aria-label="<?= lang('Items.markup') ?>">
+                    <span class="input-group-addon input-sm"><b>%</b></span>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -785,6 +794,61 @@ $quick_mode = $quick_mode ?? false;
                 }
             }, form_support.error))
         };
+
+        // Calculadora de markup: custo + % => preço de venda arredondado.
+        (function() {
+            var $cost_price = $('#cost_price');
+            var $unit_price = $('#unit_price');
+            var $markup_percent = $('#markup_percent');
+
+            if ($cost_price.length === 0 || $unit_price.length === 0 || $markup_percent.length === 0) {
+                return;
+            }
+
+            var parse_amount = function(value) {
+                var text = String(value === undefined || value === null ? '' : value).replace(/[^\d.,-]/g, '');
+                if (text === '' || text === '-' || text === '.' || text === ',') {
+                    return null;
+                }
+                // Aceita "1.234,56" e "1234.56" (o sistema aceita os dois separadores).
+                if (text.indexOf(',') !== -1 && text.indexOf('.') !== -1) {
+                    text = text.replace(/\./g, '').replace(',', '.');
+                } else {
+                    text = text.replace(',', '.');
+                }
+                var number = parseFloat(text);
+                return isNaN(number) ? null : number;
+            };
+
+            var apply_markup = function() {
+                var cost = parse_amount($cost_price.val());
+                var percent = parse_amount($markup_percent.val());
+
+                // Sem custo informado não há o que calcular.
+                if (cost === null || percent === null || cost <= 0) {
+                    return;
+                }
+
+                var price = Math.round(cost * (1 + percent / 100));
+                if (price < 0) {
+                    price = 0;
+                }
+
+                $unit_price.val(price);
+            };
+
+            $markup_percent.on('input', apply_markup).on('change', function() {
+                apply_markup();
+                $unit_price.valid();
+            });
+
+            // Se o custo mudar depois do markup, mantém o preço coerente.
+            $cost_price.on('change', function() {
+                if ($.trim($markup_percent.val()) !== '') {
+                    apply_markup();
+                }
+            });
+        })();
 
         init_validation();
     });
