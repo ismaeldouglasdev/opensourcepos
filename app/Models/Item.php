@@ -182,10 +182,14 @@ class Item extends Model
             $builder->select('MAX(inventory.trans_location) AS trans_location');
             $builder->select('MAX(inventory.trans_inventory) AS trans_inventory');
 
+            // Qtd = soma do estoque em TODAS as localizações (stock + Estoque/Fundo), não só a selecionada
+            $qty_total = '(SELECT COALESCE(SUM(iq.quantity), 0) FROM ' . $this->db->prefixTable('item_quantities')
+                . ' AS iq WHERE iq.item_id = items.item_id) AS quantity';
+            $builder->select($qty_total, false);
+
             if ($filters['stock_location_id'] > -1) {
                 $builder->select('MAX(item_quantities.item_id) AS qty_item_id');
                 $builder->select('MAX(item_quantities.location_id) AS location_id');
-                $builder->select('MAX(item_quantities.quantity) AS quantity');
             }
         }
 
