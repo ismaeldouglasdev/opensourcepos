@@ -1081,7 +1081,7 @@ $quick_mode = $quick_mode ?? false;
                 clear_panel();
             });
 
-            $('#supplier_quick_add_save').on('click', function() {
+            var save_supplier_panel = function() {
                 var company_name = $.trim($name.val());
 
                 if (company_name === '') {
@@ -1090,7 +1090,7 @@ $quick_mode = $quick_mode ?? false;
                     return;
                 }
 
-                var $button = $(this).prop('disabled', true);
+                var $button = $('#supplier_quick_add_save').prop('disabled', true);
                 show_message("<?= esc(lang('Items.supplier_new_saving'), 'js') ?>", '#8a6d3b');
 
                 // ospos_people/ospos_suppliers têm colunas NOT NULL sem default:
@@ -1163,7 +1163,25 @@ $quick_mode = $quick_mode ?? false;
                     .always(function() {
                         $button.prop('disabled', false);
                     });
-            });
+            };
+
+            $('#supplier_quick_add_save').on('click', save_supplier_panel);
+
+            // Enter dentro do painel de fornecedor salva o FORNECEDOR, não o produto.
+            // O hotkey do Bootstrap-Dialog escuta 'keyup' no modal e submeteria o item;
+            // por isso paramos a propagação e chamamos o salvamento do painel.
+            $('#supplier_new_name, #supplier_new_tax_id, #supplier_new_phone')
+                .on('keydown.supplierQuickAdd', function(e) {
+                    if (e.which === 13) {
+                        e.preventDefault();
+                        save_supplier_panel();
+                    }
+                })
+                .on('keyup.supplierQuickAdd', function(e) {
+                    if (e.which === 13) {
+                        e.stopPropagation();
+                    }
+                });
         })();
 
         init_validation();
