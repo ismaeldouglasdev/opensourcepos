@@ -137,3 +137,54 @@ Auditoria completa do sistema (174+ issues) já realizada. Relatório completo e
 - Prova funnel-level via `_proof_funnel.php` bloqueada por bootstrap CLI (CI4 4.5+).
   `Config\Paths not found`; resolver com `Boot::bootConsole`/comando `spark`.
 - Validar com usuário antes de subir para produção em /var/www/html/pos
+---
+
+## Session Context (2026-10-21)
+
+### `php-cs-fixer` roda, mas NÃO é seguro aplicar em views com PHP misturado a HTML
+
+O bloqueador histórico ("`vendor/bin/` vazio, dev-dep nunca instalada") foi resolvido: os 8
+pacotes `symfony/*` do `composer.lock` exigiam **php >= 8.4** e o ambiente roda **PHP 8.3.6**,
+então `composer install` falhava. Downgrade para a linha **v7.4 (LTS)** (`composer update
+--no-scripts --no-install`) materializou `vendor/bin/php-cs-fixer 3.95.1`, que roda em 8.3.6.
+Nenhuma outra dependência mudou; `codeigniter4/framework` permanece **v4.7.2** (conferido
+antes/depois). Commit `45f38b99c`.
+
+**O problema:** a ruleset carregada é `CodeIgniter\CodingStandard\CodeIgniter4` (via
+`nexusphp/cs-config`, config `.php-cs-fixer.no-header.php`). Em **views** — arquivos com PHP
+entremeado a HTML — ela produz reescrita **destrutiva**:
+
+```php
+// antes (válido)
+<?php
+// Category is always a dropdown...
+echo form_dropdown('category', $categories, $selected_category, [...]);
+?>
+// o fixer quer:
+<?=// Category is always a dropdown...
+ form_dropdown('category', $categories, $selected_category, [...]);
+?>
+```
+
+O comentário engole o resto da linha e os blocos de controle dentro de `<?php ?>`
+(`if ($standard_item_locked)`, `match()`, etc.) são re-indentados como se fossem markup,
+embaralhando o fluxo. **Nenhuma flag do fixer evita isso de forma confiável.**
+
+**Regra:** em views (`app/Views/**`), **não** rodar o fixer de forma cega. Rodar `--dry-run` e
+inspecionar; se o diff mexer em blocos PHP inline, **não aplicar** — manter o estilo das linhas
+ao redor e validar com `php -l`. O fixer continua útil para `app/Controllers`, `app/Models`,
+`app/Libraries`, `app/Helpers` (PHP puro).
+
+### Enter no painel de fornecedor do modal de item (hotkey-13, mesma família do `#extra_code_input`)
+
+Mesma raiz: o Bootstrap-Dialog escuta key 13 no nível do modal e clica no botão `hotkey:13`
+(o "Enviar" do item). Ao apertar Enter dentro do painel "Novo fornecedor", o **form do item**
+era submetido em vez de salvar o fornecedor. Fix espelha o `#extra_code_input`: extrai o handler
+de clique para `save_supplier_panel()` e o associa aos três campos do painel com
+`keydown` (`preventDefault`) + `keyup` (`stopPropagation`).
+
+### Múltiplos códigos por produto — ordem de deploy em PROD
+
+Ver §Seção 2026-10-20 item 1: a migration `ospos_item_codes` **primeiro**, o código depois. O
+funil de resolução (`get_info_by_id_or_number`) compila subquery contra essa tabela; subir o
+código antes faz toda venda/scan quebrar no caixa.
