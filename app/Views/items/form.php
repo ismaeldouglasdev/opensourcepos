@@ -182,6 +182,39 @@ $quick_mode = $quick_mode ?? false;
         </div>
 
         <div class="form-group form-group-sm">
+            <?= form_label(lang('Items.supplier'), 'supplier', ['class' => 'control-label']) ?>
+            <?= form_dropdown('supplier_id', $suppliers, $selected_supplier, ['id' => 'supplier_id', 'class' => 'form-control']) ?>
+            <a href="#" id="supplier_quick_add_toggle" style="font-size: 12px;">
+                <span class="glyphicon glyphicon-plus"></span> <?= lang('Items.supplier_new') ?>
+            </a>
+        </div>
+
+        <div class="form-group form-group-sm clearfix" id="supplier_quick_add" style="display: none;">
+            <div style="border-left: 3px solid var(--os-primary, #1a9c6a); padding-left: 10px;">
+                <p class="text-muted" style="font-size: 12px; margin-bottom: 6px;"><?= lang('Items.supplier_new_hint') ?></p>
+                <input type="text" id="supplier_new_name" class="form-control input-sm" style="margin-bottom: 4px;" placeholder="<?= esc(lang('Suppliers.company_name'), 'attr') ?>">
+                <input type="text" id="supplier_new_tax_id" class="form-control input-sm" style="margin-bottom: 4px;" placeholder="<?= esc(lang('Suppliers.tax_id'), 'attr') ?>">
+                <input type="text" id="supplier_new_phone" class="form-control input-sm" style="margin-bottom: 6px;" placeholder="<?= esc(lang('Common.phone_number'), 'attr') ?>">
+                <button type="button" id="supplier_quick_add_save" class="btn btn-primary btn-xs"><?= lang('Items.supplier_new_save') ?></button>
+                <button type="button" id="supplier_quick_add_cancel" class="btn btn-default btn-xs"><?= lang('Items.supplier_new_cancel') ?></button>
+                <span id="supplier_quick_add_msg" style="font-size: 12px; margin-left: 6px;"></span>
+            </div>
+        </div>
+
+        <div class="form-group form-group-sm clearfix" id="item_extra_codes_fg">
+            <?= form_label(lang('Items.extra_codes'), 'extra_code_input', ['class' => 'control-label']) ?>
+            <p class="text-muted" style="font-size: 12px; margin-bottom: 4px;"><?= lang('Items.extra_codes_hint') ?></p>
+            <div class="input-group input-group-sm" style="margin-bottom: 4px;">
+                <input type="text" id="extra_code_input" class="form-control input-sm" placeholder="<?= esc(lang('Items.extra_code_placeholder'), 'attr') ?>">
+                <span class="input-group-btn">
+                    <button type="button" id="extra_code_add" class="btn btn-primary btn-sm"><?= lang('Items.extra_code_add') ?></button>
+                </span>
+            </div>
+            <div id="extra_codes_list"></div>
+            <span id="extra_code_msg" style="font-size: 12px;"></span>
+        </div>
+
+        <div class="form-group form-group-sm">
             <?= form_label(lang('Items.image'), 'items_image', ['class' => 'control-label']) ?>
             <div class="fileinput <?= $logo_exists ? 'fileinput-exists' : 'fileinput-new' ?>" data-provides="fileinput">
                 <div class="fileinput-new thumbnail" style="width: 100px; height: 100px;"></div>
@@ -230,48 +263,11 @@ $quick_mode = $quick_mode ?? false;
                 <span class="glyphicon glyphicon-chevron-down" id="item_extra_caret" style="font-size: 10px;"></span>&nbsp;<?= lang('Items.extra_options') ?>
             </a>
         </div>
-        <?php endif; // !$quick_mode — quantity/reorder, description, image e extra options são defaults no cadastro rápido ?>
+        <?php endif; // !$quick_mode — quantity/reorder, description, supplier, extra codes, image e extra options são defaults no cadastro rápido ?>
 
         <?php if (!$quick_mode): ?>
         <div id="item_extra_fields" class="collapse">
             <div style="padding: 8px 2px 2px;">
-
-                <div class="form-group form-group-sm">
-                    <?= form_label(lang('Items.supplier'), 'supplier', ['class' => 'control-label col-xs-3']) ?>
-                    <div class="col-xs-8">
-                        <?= form_dropdown('supplier_id', $suppliers, $selected_supplier, ['id' => 'supplier_id', 'class' => 'form-control']) ?>
-                        <a href="#" id="supplier_quick_add_toggle" style="font-size: 12px;">
-                            <span class="glyphicon glyphicon-plus"></span> <?= lang('Items.supplier_new') ?>
-                        </a>
-                    </div>
-                </div>
-
-                <div class="form-group form-group-sm clearfix" id="supplier_quick_add" style="display: none;">
-                    <div class="col-xs-offset-3 col-xs-8" style="border-left: 3px solid var(--os-primary, #1a9c6a); padding-left: 10px;">
-                        <p class="text-muted" style="font-size: 12px; margin-bottom: 6px;"><?= lang('Items.supplier_new_hint') ?></p>
-                        <input type="text" id="supplier_new_name" class="form-control input-sm" style="margin-bottom: 4px;" placeholder="<?= esc(lang('Suppliers.company_name'), 'attr') ?>">
-                        <input type="text" id="supplier_new_tax_id" class="form-control input-sm" style="margin-bottom: 4px;" placeholder="<?= esc(lang('Suppliers.tax_id'), 'attr') ?>">
-                        <input type="text" id="supplier_new_phone" class="form-control input-sm" style="margin-bottom: 6px;" placeholder="<?= esc(lang('Common.phone_number'), 'attr') ?>">
-                        <button type="button" id="supplier_quick_add_save" class="btn btn-primary btn-xs"><?= lang('Items.supplier_new_save') ?></button>
-                        <button type="button" id="supplier_quick_add_cancel" class="btn btn-default btn-xs"><?= lang('Items.supplier_new_cancel') ?></button>
-                        <span id="supplier_quick_add_msg" style="font-size: 12px; margin-left: 6px;"></span>
-                    </div>
-                </div>
-
-                <div class="form-group form-group-sm clearfix" id="item_extra_codes_fg">
-                    <?= form_label(lang('Items.extra_codes'), 'extra_code_input', ['class' => 'control-label col-xs-3']) ?>
-                    <div class="col-xs-8">
-                        <p class="text-muted" style="font-size: 12px; margin-bottom: 4px;"><?= lang('Items.extra_codes_hint') ?></p>
-                        <div class="input-group input-group-sm" style="margin-bottom: 4px;">
-                            <input type="text" id="extra_code_input" class="form-control input-sm" placeholder="<?= esc(lang('Items.extra_code_placeholder'), 'attr') ?>">
-                            <span class="input-group-btn">
-                                <button type="button" id="extra_code_add" class="btn btn-primary btn-sm"><?= lang('Items.extra_code_add') ?></button>
-                            </span>
-                        </div>
-                        <div id="extra_codes_list"></div>
-                        <span id="extra_code_msg" style="font-size: 12px;"></span>
-                    </div>
-                </div>
 
                 <div class="form-group form-group-sm">
                     <?= form_label(lang('Items.stock_type'), 'stock_type', ['class' => 'control-label col-xs-3']) ?>
@@ -535,7 +531,7 @@ $quick_mode = $quick_mode ?? false;
 
             </div>
         </div>
-        <?php endif; // !$quick_mode — supplier/stock_type/item_type/taxes/etc. são defaults no cadastro rápido ?>
+        <?php endif; // !$quick_mode — stock_type/item_type/taxes/etc. são defaults no cadastro rápido ?>
 
     </fieldset>
 
