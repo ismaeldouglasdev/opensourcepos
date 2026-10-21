@@ -195,6 +195,9 @@
 
         $('#employee_form').validate($.extend({
             submitHandler: function(form) {
+                if (!dialog_support.intent()) {
+                    return false;
+                }
                 $(form).ajaxSubmit({
                     success: function(response) {
                         dialog_support.hide();

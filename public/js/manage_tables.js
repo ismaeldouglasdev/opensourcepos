@@ -1,6 +1,6 @@
 (function(dialog_support, $) {
 
-    var btn_id, dialog_ref;
+    var btn_id, dialog_ref, submit_intent = false;
 
     var hide = function() {
         dialog_ref && dialog_ref.close();
@@ -8,6 +8,16 @@
 
     var clicked_id = function() {
         return btn_id;
+    };
+
+    // Marca que um submit partiu de um clique legitimo no botao do modal.
+    // Sem isso, a regra "remote" do jQuery Validate retrigger o submit sozinho
+    // quando a resposta AJAX chega (stopRequest -> trigger('submit')) e o
+    // submitHandler salva o formulario sem ninguem ter clicado em Enviar.
+    var intent = function() {
+        var pending = submit_intent;
+        submit_intent = false;
+        return pending;
     };
 
     var submit = function(button_id) {
@@ -22,6 +32,7 @@
                 if (validator) {
                     validator.formSubmitted = false;
                 }
+                submit_intent = true;
                 form.submit();
             }
             return false;
@@ -108,7 +119,8 @@
         init: init,
         submit: submit,
         hide: hide,
-        clicked_id: clicked_id
+        clicked_id: clicked_id,
+        intent: intent
     });
 
 })(window.dialog_support = window.dialog_support || {}, jQuery);

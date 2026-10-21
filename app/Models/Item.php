@@ -360,6 +360,20 @@ class Item extends Model
         $builder->groupStart();
         $builder->where('items.item_number', $item_id);
 
+        // An extra code registered in ospos_item_codes must resolve to its item
+        // too — this is the single funnel used by sales, receivings and the
+        // scan flows, so resolving here covers all of them at once.
+        // item_codes has no deleted flag: the items join below applies the same
+        // visibility rule to codes as it does to the primary item_number.
+        // The raw fragment cannot use the "items." qualifier: once the query is
+        // compiled the table is aliased to the prefixed name (ospos_items), so
+        // "items.item_id" would raise MySQL 1054. Only item_id is ambiguous-free
+        // here, as item_codes is only present in the subquery.
+        $code_builder = $this->db->table('item_codes');
+        $code_builder->select('item_id');
+        $code_builder->where('code', $item_id);
+        $builder->orWhere('item_id IN (' . $code_builder->getCompiledSelect() . ')', null, false);
+
         // Check if $item_id is a number and not a string starting with 0
         // because cases like 00012345 will be seen as a number where it is a barcode
         if (ctype_digit(strval($item_id)) && !str_starts_with($item_id, '0')) {
@@ -429,6 +443,194 @@ class Item extends Model
         }
 
         return false;
+    }
+
+    /**
+     * Get an item id by an extra code registered in ospos_item_codes.
+     *
+     * These are additional barcodes/SKUs pointing at an item that already has
+     * its primary item_number. Excludes deleted items (a deleted product must
+     * not swallow a code that could belong to a live one).
+     */
+    public function get_item_id_by_code(string $code): bool|int
+    {
+        if (preg_match('/[\x{10000}-\x{10FFFF}]/u', $code) === 1) {
+            return false;
+        }
+
+        $builder = $this->db->table('item_codes');
+        $builder->select('item_codes.item_id');
+        $builder->join('items', 'items.item_id = item_codes.item_id');
+        $builder->where('item_codes.code', $code);
+        $builder->where('items.deleted', '0');
+        $builder->orderBy('item_codes.item_id', 'ASC');    // keeper convention: lowest id wins
+        $query = $builder->get();
+
+        if ($query->getNumRows() >= 1) {
+            return (int)$query->getRow()->item_id;
+        }
+
+        return false;
+    }
+
+    /**
+     * Resolve a scanned/typed code to an item_id across both code sources.
+     *
+     * Order matters: the primary item_number wins, then an extra code, and only
+     * then the numeric item_id fallback (handled by get_info_by_id_or_number).
+     */
+    public function resolve_code_to_item_id(string $code): bool|int
+    {
+        $code = trim($code);
+
+        if ($code === '') {
+            return false;
+        }
+
+        $item_id = $this->get_item_id_by_number($code);
+
+        if ($item_id !== false) {
+            return $item_id;
+        }
+
+        return $this->get_item_id_by_code($code);
+    }
+
+    /**
+     * Get all extra codes for one item, ordered for stable rendering.
+     *
+     * @return array<int, array{item_code_id: int, code: string}>
+     */
+    public function get_codes(int $item_id): array
+    {
+        $builder = $this->db->table('item_codes');
+        $builder->select('item_code_id, code');
+        $builder->where('item_id', $item_id);
+        $builder->orderBy('item_code_id', 'ASC');
+        $query = $builder->get();
+
+        $codes = [];
+
+        foreach ($query->getResultArray() as $row) {
+            $codes[] = [
+                'item_code_id' => (int)$row['item_code_id'],
+                'code'         => $row['code'],
+            ];
+        }
+
+        return $codes;
+    }
+
+    /**
+     * Replace the extra codes of an item with the given list.
+     *
+     * Deletion + reinsertion inside one transaction keeps the form semantics
+     * simple (the view submits the full set on every save). Codes that collide
+     * with an item_number, or with another item's code, are skipped — silently
+     * dropping is deliberate: rejecting the whole save over a stale barcode
+     * would be worse than ignoring the duplicate.
+     *
+     * @param array<int, string> $codes
+     * @return array<int, string> the codes actually persisted
+     */
+    public function save_codes(int $item_id, array $codes): array
+    {
+        $codes = $this->normalize_codes($codes);
+        $saved = [];
+
+        $this->db->transStart();
+
+        $builder = $this->db->table('item_codes');
+        $builder->where('item_id', $item_id);
+        $builder->delete();
+
+        foreach ($codes as $code) {
+            if ($this->code_is_taken($code, $item_id)) {
+                continue;
+            }
+
+            $builder = $this->db->table('item_codes');
+
+            if ($builder->insert(['item_id' => $item_id, 'code' => $code])) {
+                $saved[] = $code;
+            }
+        }
+
+        $this->db->transComplete();
+
+        return $this->db->transStatus() ? $saved : [];
+    }
+
+    /**
+     * Delete every extra code belonging to an item.
+     */
+    public function delete_codes(int $item_id): bool
+    {
+        $builder = $this->db->table('item_codes');
+        $builder->where('item_id', $item_id);
+
+        return $builder->delete();
+    }
+
+    /**
+     * Trim, drop empties, and deduplicate a submitted code list.
+     *
+     * Case is preserved (barcodes can be case-sensitive); the duplicate check
+     * is case-insensitive so "abc" and "ABC" cannot both be registered.
+     *
+     * @param array<int, string> $codes
+     * @return array<int, string>
+     */
+    private function normalize_codes(array $codes): array
+    {
+        $normalized = [];
+        $seen = [];
+
+        foreach ($codes as $code) {
+            if (!is_string($code)) {
+                continue;
+            }
+
+            $code = trim($code);
+
+            if ($code === '' || isset($seen[strtolower($code)])) {
+                continue;
+            }
+
+            $seen[strtolower($code)] = true;
+            $normalized[] = $code;
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Is this code already used by another product?
+     *
+     * Checks both tables: an extra code must not shadow a primary item_number
+     * and vice versa (the cross-uniqueness rule the owner asked for).
+     */
+    public function code_is_taken(string $code, int $ignore_item_id = NEW_ENTRY): bool
+    {
+        // Same guard as item_number_exists(): 4-byte chars raise MySQL 1267.
+        if (preg_match('/[\x{10000}-\x{10FFFF}]/u', $code) === 1) {
+            return false;
+        }
+
+        $builder = $this->db->table('items');
+        $builder->where('item_number', $code);
+        $builder->where('deleted', '0');
+        $builder->where('item_id !=', $ignore_item_id);
+
+        if ($builder->get()->getNumRows() >= 1) {
+            return true;
+        }
+
+        $builder = $this->db->table('item_codes');
+        $builder->where('code', $code);
+        $builder->where('item_id !=', $ignore_item_id);
+
+        return $builder->get()->getNumRows() >= 1;
     }
 
     /**
@@ -1299,7 +1501,26 @@ class Item extends Model
 
         $data = ['cost_price' => $average_price];
 
+        $this->db->query("SET @ospos_price_change_source = 'recebimento'");
+
         return $this->save_value($data, $item_id);
+    }
+
+    /**
+     * Retorna o histórico de alterações de preço (custo e venda) de um item.
+     *
+     * @param int $item_id
+     * @param int $limit
+     * @return array
+     */
+    public function get_price_history(int $item_id, int $limit = 50): array
+    {
+        $builder = $this->db->table('items_price_history');
+        $builder->where('item_id', $item_id);
+        $builder->orderBy('history_id', 'DESC');
+        $builder->limit($limit);
+
+        return $builder->get()->getResultArray();
     }
 
     /**

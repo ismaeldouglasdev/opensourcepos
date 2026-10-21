@@ -293,6 +293,15 @@ class Items extends Secure_Controller
 
         $item_info = $this->item->get_info($item_id);
 
+        // Histórico de alterações de preço para a aba do modal:
+        $data['price_history'] = [];
+        $data['price_history_truncated'] = false;
+        if ($item_id !== NEW_ENTRY) {
+            $history = $this->item->get_price_history($item_id, 31);
+            $data['price_history_truncated'] = count($history) > 30;
+            $data['price_history'] = array_slice($history, 0, 30);
+        }
+
         $data['allow_temp_item'] = ($data['allow_temp_item'] === 1 && $item_id !== NEW_ENTRY && $item_info->item_type != ITEM_TEMP) ? 0 : 1;
 
         $use_destination_based_tax = (bool)$this->config['use_destination_based_tax'];
@@ -443,6 +452,11 @@ class Items extends Secure_Controller
 
         $data['selected_low_sell_item_id'] = $item_info->low_sell_item_id;
 
+        // Extra barcodes/SKUs already registered for this item (ospos_item_codes).
+        // Loaded here so the form can render the current chips without a second
+        // round-trip; the view posts the whole set back on save.
+        $data['item_codes'] = ($item_id === NEW_ENTRY) ? [] : $this->item->get_codes($item_id);
+
         if ($item_id !== NEW_ENTRY && $item_info->item_id !== $item_info->low_sell_item_id) {
             $low_sell_item_info = $this->item->get_info($item_info->low_sell_item_id);
             $data['selected_low_sell_item'] = implode(NAME_SEPARATOR, [$low_sell_item_info->name, $low_sell_item_info->pack_name]);
@@ -548,7 +562,10 @@ class Items extends Secure_Controller
         $this->response->setContentType('application/json');
 
         $code = trim($code);
-        $item_id = $code === '' ? false : $this->item->get_item_id_by_number($code);
+        // resolve_code_to_item_id covers the primary item_number AND the extra
+        // codes in ospos_item_codes — a product registered under several
+        // barcodes must be found by any of them.
+        $item_id = $code === '' ? false : $this->item->resolve_code_to_item_id($code);
 
         echo json_encode([
             'found'   => $item_id !== false,
@@ -907,6 +924,10 @@ class Items extends Secure_Controller
 
         $this->response->setContentType('application/json');
 
+        // Identifica o autor e a origem da alteração de preço para o trigger de auditoria:
+        $db = \Config\Database::connect();
+        $db->query("SET @ospos_price_change_source = 'cadastro', @ospos_price_change_by = ?", [$employee_id]);
+
         if ($this->item->save_value($item_data, $item_id)) {
             $success = true;
             $new_item = false;
@@ -983,6 +1004,12 @@ class Items extends Secure_Controller
 
             // Extra gallery photos (multi-photo feature): removals + new uploads.
             $success &= $this->save_extra_images($item_id);
+
+            // Extra barcodes/SKUs registered for this item. The form posts the
+            // full set on every save, so save_codes() replaces it atomically.
+            // The primary item_number stays the single mandatory code.
+            $extra_codes = (array)($this->request->getPost('extra_codes') ?? []);
+            $this->item->save_codes($item_id, $extra_codes);
 
             // Save item quantity
             $stock_locations = $this->stock_location->get_undeleted_all()->getResultArray();

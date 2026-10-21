@@ -37,7 +37,15 @@ $quick_mode = $quick_mode ?? false;
 </div>
 
 <?= form_open("items/save/$item_info->item_id", ['id' => 'item_form', 'enctype' => 'multipart/form-data']) ?>
-    <fieldset id="item_basic_info">
+    <?php $has_price_history_tab = ($item_info->item_id > 0); ?>
+    <?php if ($has_price_history_tab): ?>
+    <ul class="nav nav-tabs" id="item_form_tabs" style="margin-bottom: 12px;">
+        <li class="active"><a href="#item_basic_info" data-toggle="tab"><?= lang('Items.tab_product') ?></a></li>
+        <li><a href="#item_price_history" data-toggle="tab"><?= lang('Items.tab_price_history') ?></a></li>
+    </ul>
+    <?php endif; ?>
+    <div class="tab-content">
+        <fieldset id="item_basic_info" class="tab-pane active">
 
         <div class="row form-group form-group-sm">
             <div class="col-xs-<?= $quick_mode ? 12 : 6 ?>">
@@ -231,7 +239,37 @@ $quick_mode = $quick_mode ?? false;
                 <div class="form-group form-group-sm">
                     <?= form_label(lang('Items.supplier'), 'supplier', ['class' => 'control-label col-xs-3']) ?>
                     <div class="col-xs-8">
-                        <?= form_dropdown('supplier_id', $suppliers, $selected_supplier, ['class' => 'form-control']) ?>
+                        <?= form_dropdown('supplier_id', $suppliers, $selected_supplier, ['id' => 'supplier_id', 'class' => 'form-control']) ?>
+                        <a href="#" id="supplier_quick_add_toggle" style="font-size: 12px;">
+                            <span class="glyphicon glyphicon-plus"></span> <?= lang('Items.supplier_new') ?>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="form-group form-group-sm clearfix" id="supplier_quick_add" style="display: none;">
+                    <div class="col-xs-offset-3 col-xs-8" style="border-left: 3px solid var(--os-primary, #1a9c6a); padding-left: 10px;">
+                        <p class="text-muted" style="font-size: 12px; margin-bottom: 6px;"><?= lang('Items.supplier_new_hint') ?></p>
+                        <input type="text" id="supplier_new_name" class="form-control input-sm" style="margin-bottom: 4px;" placeholder="<?= esc(lang('Suppliers.company_name'), 'attr') ?>">
+                        <input type="text" id="supplier_new_tax_id" class="form-control input-sm" style="margin-bottom: 4px;" placeholder="<?= esc(lang('Suppliers.tax_id'), 'attr') ?>">
+                        <input type="text" id="supplier_new_phone" class="form-control input-sm" style="margin-bottom: 6px;" placeholder="<?= esc(lang('Common.phone_number'), 'attr') ?>">
+                        <button type="button" id="supplier_quick_add_save" class="btn btn-primary btn-xs"><?= lang('Items.supplier_new_save') ?></button>
+                        <button type="button" id="supplier_quick_add_cancel" class="btn btn-default btn-xs"><?= lang('Items.supplier_new_cancel') ?></button>
+                        <span id="supplier_quick_add_msg" style="font-size: 12px; margin-left: 6px;"></span>
+                    </div>
+                </div>
+
+                <div class="form-group form-group-sm clearfix" id="item_extra_codes_fg">
+                    <?= form_label(lang('Items.extra_codes'), 'extra_code_input', ['class' => 'control-label col-xs-3']) ?>
+                    <div class="col-xs-8">
+                        <p class="text-muted" style="font-size: 12px; margin-bottom: 4px;"><?= lang('Items.extra_codes_hint') ?></p>
+                        <div class="input-group input-group-sm" style="margin-bottom: 4px;">
+                            <input type="text" id="extra_code_input" class="form-control input-sm" placeholder="<?= esc(lang('Items.extra_code_placeholder'), 'attr') ?>">
+                            <span class="input-group-btn">
+                                <button type="button" id="extra_code_add" class="btn btn-primary btn-sm"><?= lang('Items.extra_code_add') ?></button>
+                            </span>
+                        </div>
+                        <div id="extra_codes_list"></div>
+                        <span id="extra_code_msg" style="font-size: 12px;"></span>
                     </div>
                 </div>
 
@@ -500,6 +538,82 @@ $quick_mode = $quick_mode ?? false;
         <?php endif; // !$quick_mode — supplier/stock_type/item_type/taxes/etc. são defaults no cadastro rápido ?>
 
     </fieldset>
+
+    <?php if ($has_price_history_tab): ?>
+    <div class="tab-pane" id="item_price_history" style="padding: 10px 5px;">
+        <div class="row">
+            <div class="col-xs-12">
+                <p class="text-muted" style="font-size: 12px; margin-bottom: 12px;">
+                    <?= lang('Items.price_history_hint') ?>
+                </p>
+                <?php if (empty($price_history)): ?>
+                    <div class="alert alert-info" style="font-size: 13px;">
+                        <?= lang('Items.price_history_empty') ?>
+                    </div>
+                <?php else: ?>
+                    <table class="table table-striped table-condensed table-hover" style="font-size: 12px;">
+                        <thead>
+                            <tr>
+                                <th><?= lang('Common.date') ?></th>
+                                <th><?= lang('Items.cost_price') ?></th>
+                                <th><?= lang('Items.unit_price') ?></th>
+                                <th><?= lang('Items.price_history_source') ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($price_history as $history_row): ?>
+                            <?php
+                                $prev_cost = $history_row['previous_cost_price'];
+                                $curr_cost = $history_row['cost_price'];
+                                $cost_changed = ($prev_cost !== null && (string)$prev_cost !== '' && (string)$prev_cost !== (string)$curr_cost);
+
+                                $prev_unit = $history_row['previous_unit_price'];
+                                $curr_unit = $history_row['unit_price'];
+                                $unit_changed = ($prev_unit !== null && (string)$prev_unit !== '' && (string)$prev_unit !== (string)$curr_unit);
+
+                                $source_label = match($history_row['source'] ?? '') {
+                                    'cadastro' => 'Cadastro / Edição',
+                                    'recebimento' => 'Recebimento',
+                                    'baseline' => 'Inicial',
+                                    default => !empty($history_row['source']) ? ucfirst($history_row['source']) : 'Sistema'
+                                };
+                            ?>
+                            <tr>
+                                <td style="white-space: nowrap;">
+                                    <?= date('d/m/Y H:i', strtotime($history_row['changed_at'])) ?>
+                                </td>
+                                <td>
+                                    <?php if ($cost_changed): ?>
+                                        <span class="text-muted" style="text-decoration: line-through;"><?= to_currency($prev_cost) ?></span>
+                                        <span class="glyphicon glyphicon-arrow-right" style="font-size: 10px; color: #888;"></span>
+                                    <?php endif; ?>
+                                    <strong><?= to_currency($curr_cost) ?></strong>
+                                </td>
+                                <td>
+                                    <?php if ($unit_changed): ?>
+                                        <span class="text-muted" style="text-decoration: line-through;"><?= to_currency($prev_unit) ?></span>
+                                        <span class="glyphicon glyphicon-arrow-right" style="font-size: 10px; color: #888;"></span>
+                                    <?php endif; ?>
+                                    <strong style="color: var(--os-primary, #1a9c6a);"><?= to_currency($curr_unit) ?></strong>
+                                </td>
+                                <td>
+                                    <span class="label label-default" style="font-weight: normal;"><?= esc($source_label) ?></span>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                    <?php if (!empty($price_history_truncated)): ?>
+                        <p class="text-muted" style="font-size: 11px; text-align: right;">
+                            <?= lang('Items.price_history_limited') ?>
+                        </p>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+    </div><!-- /.tab-content -->
 <?= form_close() ?>
 
 <script type="text/javascript">
@@ -690,6 +804,9 @@ $quick_mode = $quick_mode ?? false;
         var init_validation = function() {
             $('#item_form').validate($.extend({
                 submitHandler: function(form, event) { // Event is not used as a parameter here
+                    if (!dialog_support.intent()) {
+                        return false;
+                    }
                     $(form).ajaxSubmit({
                         success: function(response) {
                             let stay_open = dialog_support.clicked_id() != 'submit';
@@ -705,11 +822,19 @@ $quick_mode = $quick_mode ?? false;
                                     '#tax_percent_name_1, #category, #reference_number, #name, #cost_price, #unit_price, #taxed_cost_price, #taxed_unit_price, #definition_name, [name^="attribute_links"]').val('');
                                 // De-select any checkboxes, radios and drop-down menus
                                 $(':input', '#item_form').removeAttr('checked').removeAttr('selected');
+                                // The item was just saved as a new one: the chips
+                                // of the previous product must not carry over.
+                                $('#extra_codes_list').empty();
+                                $('#extra_code_input').val('');
+                                $('#extra_code_msg').text('');
                             } else {
                                 dialog_support.hide();
                             }
                             table_support.handle_submit('<?= 'items' ?>', response, stay_open);
                             init_validation();
+                            if (typeof window.initExtraCodes === 'function') {
+                                window.initExtraCodes();
+                            }
                         },
                         error: function() {
                             $('#submit').prop('disabled', false).css('opacity', '');
@@ -795,7 +920,12 @@ $quick_mode = $quick_mode ?? false;
             }, form_support.error))
         };
 
-        // Calculadora de markup: custo + % => preço de venda arredondado.
+        // Calculadora de markup: custo <-> % <-> preço de venda.
+        // Bidirecional e ao vivo: o campo que está sendo digitado NUNCA é
+        // sobrescrito — ele recalcula os outros dois.
+        //   digitar %      => recalcula o preço
+        //   digitar preço  => recalcula a %
+        //   digitar custo  => recalcula o preço (se há %), senão a %
         (function() {
             var $cost_price = $('#cost_price');
             var $unit_price = $('#unit_price');
@@ -804,6 +934,8 @@ $quick_mode = $quick_mode ?? false;
             if ($cost_price.length === 0 || $unit_price.length === 0 || $markup_percent.length === 0) {
                 return;
             }
+
+            var MONEY_DECIMALS = <?= (int) ($config['currency_decimals'] ?? 2) ?>;
 
             var parse_amount = function(value) {
                 var text = String(value === undefined || value === null ? '' : value).replace(/[^\d.,-]/g, '');
@@ -820,38 +952,312 @@ $quick_mode = $quick_mode ?? false;
                 return isNaN(number) ? null : number;
             };
 
-            var apply_markup = function() {
+            var round_money = function(number) {
+                var factor = Math.pow(10, MONEY_DECIMALS);
+                return Math.round(number * factor) / factor;
+            };
+
+            // Preço com os centavos de verdade: R$ 10,37 continua 10,37.
+            // O arredondamento para inteiro (Math.round antigo) engessava o preço.
+            var format_money = function(number) {
+                return round_money(number).toFixed(MONEY_DECIMALS);
+            };
+
+            // Porcentagem sem zeros à direita: 50 em vez de 50.00, 33.33 continua 33.33.
+            var format_percent = function(number) {
+                return (Math.round(number * 100) / 100).toFixed(2).replace(/\.?0+$/, '');
+            };
+
+            var price_for = function(cost, percent) {
+                var price = round_money(cost * (1 + percent / 100));
+                return price < 0 ? 0 : price;
+            };
+
+            var percent_for = function(cost, price) {
+                // Preço zero significa "sem preço de venda definido", não
+                // markup de -100%. Mostrar 0 evita que o campo abra com -100
+                // e que digitar nele zere o preço (cost * (1 + -100/100) = 0).
+                if (price === 0) {
+                    return 0;
+                }
+                return (price / cost - 1) * 100;
+            };
+
+            // source: 'cost' | 'price' | 'percent' = campo sendo editado;
+            // 'init' = só preenche o que falta (porcentagem atual do produto).
+            var recalculate = function(source) {
                 var cost = parse_amount($cost_price.val());
                 var percent = parse_amount($markup_percent.val());
+                var price = parse_amount($unit_price.val());
 
-                // Sem custo informado não há o que calcular.
-                if (cost === null || percent === null || cost <= 0) {
+                // Sem custo informado não há markup que faça sentido
+                // (produto com custo 0,00 fica sem porcentagem mesmo).
+                if (cost === null || cost <= 0) {
                     return;
                 }
 
-                var price = Math.round(cost * (1 + percent / 100));
-                if (price < 0) {
-                    price = 0;
+                if (source === 'percent') {
+                    if (percent === null) {
+                        return;
+                    }
+                    $unit_price.val(format_money(price_for(cost, percent)));
+                    return;
                 }
 
-                $unit_price.val(price);
+                if (source === 'price') {
+                    if (price === null) {
+                        return;
+                    }
+                    $markup_percent.val(format_percent(percent_for(cost, price)));
+                    return;
+                }
+
+                // Editar o CUSTO nunca reescreve o preço de venda.
+                // Recalcular o preço aqui aplicava uma % que foi calculada
+                // sobre o custo ANTIGO: mudar o custo de 6,03 para 10,00 num
+                // item com 40,96% inventava um preço de 14,10, apagando o
+                // preço de venda real (8,50). E num item com preço 0,00 a %
+                // inicial é 0, então digitar o custo fazia o preço virar o
+                // próprio custo — lucro zero sem nenhum aviso. O preço de
+                // venda é decisão do dono, não efeito colateral do custo.
+                // O que faz sentido ao editar o custo é o inverso: mostrar a
+                // porcentagem que o preço atual representa sobre o novo custo.
+                if (source === 'cost') {
+                    if (price !== null && price > 0) {
+                        $markup_percent.val(format_percent(percent_for(cost, price)));
+                    }
+                    return;
+                }
+
+                // init: mostra a porcentagem que o preço atual já representa,
+                // em todo produto aberto para edição (pedido do dono).
+                // percent_for() já trata price === 0 retornando 0 (nunca -100).
+                if (source === 'init') {
+                    if (percent === null && price !== null) {
+                        $markup_percent.val(format_percent(percent_for(cost, price)));
+                    }
+                }
             };
 
-            $markup_percent.on('input', apply_markup).on('change', function() {
-                apply_markup();
+            var recalculate_price = function(source) {
+                recalculate(source);
                 $unit_price.valid();
+            };
+
+            // 'input' (e não só 'change') para responder enquanto digita.
+            $markup_percent.on('input', function() { recalculate_price('percent'); })
+                .on('change', function() { recalculate_price('percent'); });
+            $cost_price.on('input', function() { recalculate_price('cost'); });
+            $unit_price.on('input', function() { recalculate('price'); });
+
+            recalculate('init');
+        })();
+
+        // Cadastro rápido de fornecedor dentro do modal do produto.
+        (function() {
+            var $panel = $('#supplier_quick_add');
+            if ($panel.length === 0) {
+                return;
+            }
+
+            var $msg = $('#supplier_quick_add_msg');
+            var $name = $('#supplier_new_name');
+
+            var clear_panel = function() {
+                $('#supplier_new_name, #supplier_new_tax_id, #supplier_new_phone').val('');
+                $msg.text('');
+            };
+
+            var show_message = function(text, color) {
+                $msg.css('color', color).text(text);
+            };
+
+            $('#supplier_quick_add_toggle').on('click', function(e) {
+                e.preventDefault();
+                $panel.toggle();
+                if ($panel.is(':visible')) {
+                    $name.trigger('focus');
+                }
             });
 
-            // Se o custo mudar depois do markup, mantém o preço coerente.
-            $cost_price.on('change', function() {
-                if ($.trim($markup_percent.val()) !== '') {
-                    apply_markup();
+            $('#supplier_quick_add_cancel').on('click', function() {
+                $panel.hide();
+                clear_panel();
+            });
+
+            $('#supplier_quick_add_save').on('click', function() {
+                var company_name = $.trim($name.val());
+
+                if (company_name === '') {
+                    show_message("<?= esc(lang('Items.supplier_new_name_required'), 'js') ?>", '#a94442');
+                    $name.trigger('focus');
+                    return;
                 }
+
+                var $button = $(this).prop('disabled', true);
+                show_message("<?= esc(lang('Items.supplier_new_saving'), 'js') ?>", '#8a6d3b');
+
+                // ospos_people/ospos_suppliers têm colunas NOT NULL sem default:
+                // o formulário normal do OSPOS manda strings vazias nos campos
+                // não preenchidos, então replicamos isso aqui (getPost() devolve
+                // null quando o campo não vai no POST).
+                var data = {
+                    first_name: company_name,
+                    last_name: '',
+                    gender: '',
+                    email: '',
+                    phone_number: $.trim($('#supplier_new_phone').val()),
+                    address_1: '',
+                    address_2: '',
+                    city: '',
+                    state: '',
+                    zip: '',
+                    country: '',
+                    comments: '',
+                    company_name: company_name,
+                    agency_name: '',
+                    category: 0,  // 0 = fornecedor de mercadorias (GOODS_SUPPLIER)
+                    account_number: '',
+                    tax_id: $.trim($('#supplier_new_tax_id').val())
+                };
+
+                $.post('suppliers/save', data, null, 'text')
+                    .done(function(response) {
+                        var parsed = null;
+                        if (typeof response === 'object') {
+                            parsed = response;
+                        } else {
+                            // Tolera HTML extra colado na resposta (debugbar em
+                            // ambiente de desenvolvimento) — recorta o JSON.
+                            var text = String(response || '');
+                            var start = text.indexOf('{');
+                            var end = text.lastIndexOf('}');
+                            if (start !== -1 && end > start) {
+                                try {
+                                    parsed = JSON.parse(text.substring(start, end + 1));
+                                } catch (e) {
+                                    parsed = null;
+                                }
+                            }
+                        }
+
+                        var new_id = parsed && parsed.success ? parsed.id : null;
+
+                        if (!new_id) {
+                            show_message("<?= esc(lang('Items.supplier_new_failed'), 'js') ?>", '#a94442');
+                            return;
+                        }
+
+                        var $select = $('#supplier_id');
+                        $select.append($('<option>').val(new_id).text(company_name));
+                        $select.val(new_id).trigger('change');
+                        $panel.hide();
+                        clear_panel();
+
+                        if ($.notify) {
+                            $.notify(
+                                { message: "<?= esc(lang('Items.supplier_new_success'), 'js') ?> " + company_name },
+                                { type: 'success', timer: 3000 }
+                            );
+                        }
+                    })
+                    .fail(function() {
+                        show_message("<?= esc(lang('Items.supplier_new_failed'), 'js') ?>", '#a94442');
+                    })
+                    .always(function() {
+                        $button.prop('disabled', false);
+                    });
             });
         })();
 
         init_validation();
+
+        if (typeof window.initExtraCodes === 'function') {
+            window.initExtraCodes();
+        }
     });
+
+    // --- Códigos extras (ospos_item_codes): qualquer um resolve o produto ---
+    window.initExtraCodes = function() {
+        var $list = $('#extra_codes_list');
+        var $input = $('#extra_code_input');
+        var $msg = $('#extra_code_msg');
+
+        function setMsg(text, color) {
+            $msg.text(text || '').css('color', color || '');
+        }
+
+        function codesInList() {
+            var codes = [];
+            $list.find('input[type=hidden][name="extra_codes[]"]').each(function() {
+                codes.push($(this).val());
+            });
+            return codes;
+        }
+
+        function addChip(code) {
+            var $chip = $('<span class="label label-default js-extra-code-chip"></span>')
+                .css({ display: 'inline-block', margin: '0 4px 4px 0', fontSize: '12px', padding: '4px 8px' })
+                .text(code);
+            $('<input type="hidden" name="extra_codes[]">').val(code).appendTo($chip);
+            $('<a href="#" class="js-extra-code-remove"></a>')
+                .css({ marginLeft: '6px', color: '#fff', cursor: 'pointer', fontWeight: 'bold' })
+                .attr('title', "<?= esc(lang('Items.extra_code_remove'), 'js') ?>")
+                .html('&times;')
+                .appendTo($chip);
+            $chip.appendTo($list);
+        }
+
+        function tryAdd() {
+            var raw = String($input.val() || '').trim();
+
+            if (raw === '') {
+                setMsg("<?= esc(lang('Items.extra_code_invalid'), 'js') ?>", '#a94442');
+                return;
+            }
+
+            var existing = codesInList();
+            var lower = raw.toLowerCase();
+            for (var i = 0; i < existing.length; i++) {
+                if (String(existing[i]).toLowerCase() === lower) {
+                    setMsg("<?= esc(lang('Items.extra_code_duplicate'), 'js') ?>", '#a94442');
+                    return;
+                }
+            }
+
+            addChip(raw);
+            $input.val('').focus();
+            setMsg('');
+        }
+
+        $('#extra_code_add').off('click.extraCodes').on('click.extraCodes', tryAdd);
+        $input.off('keydown.extraCodes').on('keydown.extraCodes', function(e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                tryAdd();
+            }
+        });
+        // O hotkey do Bootstrap-Dialog escuta 'keyup' no modal (nao 'keydown'), entao
+        // preventDefault no keydown nao basta: ele chama form.submit() por click programatico
+        // no botao 'Enviar'. Barrar o keyup aqui impede o submit sem afetar outros modais.
+        $input.off('keyup.extraCodes').on('keyup.extraCodes', function(e) {
+            if (e.which === 13) {
+                e.stopPropagation();
+            }
+        });
+
+        $list.off('click.extraCodes').on('click.extraCodes', '.js-extra-code-remove', function(e) {
+            e.preventDefault();
+            $(this).closest('.js-extra-code-chip').remove();
+        });
+
+        // Códigos já gravados vêm do controller (item_codes), renderizados como chips.
+        $list.empty();
+        var existingCodes = <?= json_encode(array_column($item_codes ?? [], 'code')) ?>;
+        for (var j = 0; j < existingCodes.length; j++) {
+            addChip(existingCodes[j]);
+        }
+    };
 
     // --- Gerar código interno aleatório (produtos sem código de barras) ---
     // Charset sem ambíguos (O/0, I/1, L/1); 5 chars → 32^5 ≈ 33 milhões de combinações.
@@ -989,10 +1395,19 @@ $quick_mode = $quick_mode ?? false;
                 try { localStorage.removeItem(KEY); } catch (e) { /* noop */ }
                 data = null;
                 $('#item_draft_notice').hide();
-                // Limpa TODOS os campos do formulário (usuário pediu). Suprime o
-                // re-salvamento durante a limpeza — senão o estado vazio viraria draft.
+                // Suprime o re-salvamento durante a limpeza — senão o estado limpo
+                // viraria um rascunho novo em cima do que acabou de ser descartado.
                 discardSuppressUntil = Date.now() + 1200;
-                clearFields();
+                if (ITEM_ID > 0 && $root[0]) {
+                    // EDIÇÃO (aberta pela grid, pela busca ou pelo scanner): descartar
+                    // devolve os valores que vieram do banco. Esvaziar o formulário
+                    // aqui apagaria o cadastro na tela — se o usuário enviasse em
+                    // seguida, salvaria um item sem nome nem preço.
+                    $root[0].reset();
+                } else {
+                    // Item novo: limpa TODOS os campos (usuário pediu).
+                    clearFields();
+                }
             },
             restore: restore
         };

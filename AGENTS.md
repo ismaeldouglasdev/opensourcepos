@@ -82,4 +82,58 @@ Auditoria completa do sistema (174+ issues) já realizada. Relatório completo e
 ### Pending
 - Deploy para teste: `sudo rsync -av --delete --exclude='.env' --exclude='.git' /home/ismael/opensourcepos-fork/ /var/www/html/pos-test/`
 - Testar em http://localhost:8080
+
+---
+
+## Session Context (2026-10-20)
+
+### Trabalho: códigos extras multi-barcode + markup honesto + Enter no modal
+
+#### 1. `ospos_item_codes` — múltiplos códigos por produto
+- Migration `20261020000000_CreateItemCodes` + `sqlscripts/3.5.1_item_codes.sql`
+  (`CREATE TABLE IF NOT EXISTS`, InnoDB/utf8mb4, UNIQUE em `code`).
+- `Item::get_info_by_id_or_number()` (l.351-380) — o **funil único** usado por vendas,
+  recebimentos e scan. Subquery `item_id IN (SELECT item_id FROM ospos_item_codes WHERE code = ?)`.
+- `Item::get_item_id_by_code()` (l.456-470), `resolve_code_to_item_id()`, `get_codes()`,
+  `save_codes()` (normaliza/deduplica, ignora colisão com `item_number` de outro item).
+- ⚠️ **ORDEM DE DEPLOY EM PROD**: a migration PRIMEIRO, o código DEPOIS. O funil compila a
+  subquery — se o código subir antes da tabela, toda venda/scan dá erro no caixa.
+
+#### 2. Markup — fim do recálculo destrutivo (bug relatado pelo dono)
+- **Regra:** editar o CUSTO nunca reescreve o preço de venda. O que muda é só a % exibida.
+- `app/Views/items/form.php` `recalculate()` — `source === 'cost'` não toca `$unit_price`.
+- `init`: `price === 0` → markup = `'0'` (nunca `-100`, que zerava o preço ao digitar nele).
+- `percent_for(cost, price)` retorna 0 quando `price === 0`.
+- Repro: `_repro_markup_cost.py` (item 9956 cost=8/price=0 e item 44 cost=6,03/price=8,50).
+
+#### 3. Enter no modal não salva mais sozinho
+- **Root cause:** Bootstrap-Dialog escuta `keydown`/`keyup` no nível do modal
+  (`bootstrap-dialog-*.js:1086-1097`) e, com key 13, faz `$button.focus().trigger('click')`
+  no botão `hotkey:13`. `preventDefault()` no keydown NÃO cancela o keyup.
+- **Fix:** handler `keyup.extraCodes` em `#extra_code_input` com `stopPropagation()` para key 13.
+- ⚠️ **Armadilha:** o PRIMEIRO `.bootstrap-dialog-footer .btn` é o "Enviar" (submit). Fechar o
+  modal pelo ✕ do header (`.bootstrap-dialog-close-button button.close`); clicar no footer SALVA.
+
+#### 4. Guard em modais (`dialog_support`)
+- 8 views ganharam o guard: `items`, `customers`, `suppliers`, `expenses`, `giftcards`,
+  `item_kits`, `employees`, `cash`.
+
+### Verificação
+- `validate_extra_codes.py` — PASS (A1–D1 + Z1, zero pageerror).
+- `validate_modal_features.py` — PASS (A/B/C/D/Z; inclui `test_discard.py` PASS).
+- `validate_markup_zero.py` — 3/3 PASS (9956→'0', 9850→'-99.65', 44→'40.96').
+- `validate_markup_typing.py` — 2/2 PASS (markup 0 → price 8.00; markup 50 → price 12.00).
+- `php -l` 15 arquivos + `node --check` 2 bundles — OK. Estilo: sem TAB, sem trailing WS, sem `trans()` novo.
+- Fixtures de teste limpos (`ospos_item_codes` = 0 rows); item 9956 e 44 restaurados ao baseline prod.
+
+### Pendências
+- `php-cs-fixer` **NÃO disponível** neste checkout (`vendor/bin/` vazio; é dev-dep nunca instalada).
+  Rodar exige `composer install`. Checado por inspeção: PSR-12 conforme (4 espaços, visibilidade,
+  docblocks). Instalar com aval do dono.
+- Deploy PROD: backup → migration `20261020000000` verificada por `information_schema` → código →
+  **restart do Apache** (opcache `validate_timestamps=0` exige restart, `reload` não pega view PHP).
+- Hotkey-13 é pré-existente em ~21 botões de 12 views — fix foi narrow (só `#extra_code_input`);
+  decisão de tratar os outros modais é do dono (`qa-evidence/hotkey13-pre-existing-20261020/FINDING.md`).
+- Prova funnel-level via `_proof_funnel.php` bloqueada por bootstrap CLI (CI4 4.5+).
+  `Config\Paths not found`; resolver com `Boot::bootConsole`/comando `spark`.
 - Validar com usuário antes de subir para produção em /var/www/html/pos

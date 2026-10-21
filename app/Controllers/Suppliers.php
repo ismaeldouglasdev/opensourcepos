@@ -144,6 +144,8 @@ class Suppliers extends Persons
             'tax_id'         => $this->request->getPost('tax_id', FILTER_SANITIZE_NUMBER_INT)
         ];
 
+        $this->response->setContentType('application/json');
+
         if ($this->supplier->save_supplier($person_data, $supplier_data, $supplier_id)) {
             // New supplier
             if ($supplier_id == NEW_ENTRY) {
