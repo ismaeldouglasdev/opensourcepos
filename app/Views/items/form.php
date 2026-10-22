@@ -214,6 +214,25 @@ $quick_mode = $quick_mode ?? false;
             <span id="extra_code_msg" style="font-size: 12px;"></span>
         </div>
 
+        <?php if ($item_info->item_id > 0 && !$quick_mode): ?>
+        <div class="form-group form-group-sm clearfix" id="item_variations_fg">
+            <label class="control-label" for="variation_code_input">Agrupamento (guarda-chuva)</label>
+            <p class="text-muted" style="font-size: 12px; margin-bottom: 4px;">
+                Agrupe produtos que têm códigos de barras diferentes mas são o mesmo item (ex.: garrafas).
+                Ao vender, o sistema pergunta qual deles está saindo. Cada produto mantém o próprio estoque.
+            </p>
+            <div class="input-group input-group-sm" style="margin-bottom: 4px;">
+                <input type="text" id="variation_code_input" class="form-control input-sm" placeholder="Código do produto a agrupar">
+                <span class="input-group-btn">
+                    <button type="button" id="variation_add" class="btn btn-primary btn-sm">Agrupar</button>
+                </span>
+            </div>
+            <div id="item_variations_list"></div>
+            <span id="item_variations_msg" style="font-size: 12px;"></span>
+            <span id="item_variations_total" class="text-muted" style="display:none; font-size: 12px; margin-left: 6px;"></span>
+        </div>
+        <?php endif; ?>
+
         <div class="form-group form-group-sm">
             <?= form_label(lang('Items.image'), 'items_image', ['class' => 'control-label']) ?>
             <div class="fileinput <?= $logo_exists ? 'fileinput-exists' : 'fileinput-new' ?>" data-provides="fileinput">
@@ -831,6 +850,9 @@ $quick_mode = $quick_mode ?? false;
                             if (typeof window.initExtraCodes === 'function') {
                                 window.initExtraCodes();
                             }
+                            if (typeof window.initItemVariations === 'function') {
+                                window.initItemVariations();
+                            }
                         },
                         error: function() {
                             $('#submit').prop('disabled', false).css('opacity', '');
@@ -1185,10 +1207,6 @@ $quick_mode = $quick_mode ?? false;
         })();
 
         init_validation();
-
-        if (typeof window.initExtraCodes === 'function') {
-            window.initExtraCodes();
-        }
     });
 
     // --- Códigos extras (ospos_item_codes): qualquer um resolve o produto ---
@@ -1272,6 +1290,152 @@ $quick_mode = $quick_mode ?? false;
             addChip(existingCodes[j]);
         }
     };
+
+    // --- Agrupamento / guarda-chuva (ospos_item_variations) ---
+    // Cada filho mostra nome, código e estoque próprios, então o painel é
+    // server-driven: o servidor devolve a lista pronta e o JS só a desenha.
+    window.initItemVariations = function() {
+        var $list = $('#item_variations_list');
+        var $input = $('#variation_code_input');
+        var $msg = $('#item_variations_msg');
+        var $total = $('#item_variations_total');
+        var parentId = <?= (int) $item_info->item_id ?>;
+        var csrfName = '<?= csrf_token() ?>';
+        var csrfHash = '<?= csrf_hash() ?>';
+
+        if (!$list.length || parentId <= 0) {
+            return;
+        }
+
+        function setMsg(text, color) {
+            $msg.text(text || '').css('color', color || '');
+        }
+
+        function fmtMoney(v) {
+            var n = parseFloat(v);
+            if (isNaN(n)) { return ''; }
+            return 'R$ ' + n.toFixed(2);
+        }
+
+        function render(children) {
+            $list.empty();
+            var total = 0;
+
+            for (var i = 0; i < children.length; i++) {
+                var c = children[i];
+                var qty = parseFloat(c.stock_qty) || 0;
+                total += qty;
+
+                var $row = $('<div class="js-variation-row"></div>').css({
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '4px 6px', marginBottom: '4px',
+                    background: '#f7f7f7', border: '1px solid #e3e3e3', borderRadius: '3px'
+                });
+
+                // Foto do filho quando existir: é o que o operador reconhece na
+                // venda, mais que o nome.
+                if (c.pic_filename && String(c.pic_filename).length) {
+                    $('<img alt="">').attr('src', '<?= base_url('items/PicThumb/') ?>' + encodeURIComponent(c.pic_filename))
+                        .css({ width: '32px', height: '32px', objectFit: 'cover', borderRadius: '3px', flex: '0 0 32px' })
+                        .appendTo($row);
+                }
+
+                var $info = $('<div></div>').css({ flex: '1 1 auto', minWidth: '0' });
+                $('<div></div>').css({ fontSize: '12px', fontWeight: 'bold' }).text(c.name || '').appendTo($info);
+                $('<div></div>').css({ fontSize: '11px', color: '#777' })
+                    .text((c.item_number || 'sem código') + ' · estoque: ' + qty + ' · ' + fmtMoney(c.unit_price))
+                    .appendTo($info);
+                $info.appendTo($row);
+
+                $('<button type="button" class="btn btn-danger btn-xs js-variation-remove"></button>')
+                    .attr('data-child-id', c.variation_item_id)
+                    .attr('title', 'Desagrupar')
+                    .html('&times;')
+                    .appendTo($row);
+
+                $list.append($row);
+            }
+
+            if (children.length === 0) {
+                $total.hide();
+            } else {
+                $total.show().text('Estoque somado: ' + total + ' (derivado, não editável)');
+            }
+        }
+
+        function post(action, data, onDone) {
+            data[csrfName] = csrfHash;
+            $.post('<?= site_url('items/') ?>' + action, data)
+                .done(function(res) {
+                    if (res && res.success) {
+                        render(res.children || []);
+                        onDone(res);
+                    } else {
+                        onDone(res || { success: false, message: 'Falha na operação.' });
+                    }
+                })
+                .fail(function() {
+                    onDone({ success: false, message: 'Falha de comunicação com o servidor.' });
+                });
+        }
+
+        function tryAdd() {
+            var code = String($input.val() || '').trim();
+            if (code === '') {
+                setMsg('Informe o código do produto a agrupar.', '#a94442');
+                return;
+            }
+
+            $('#variation_add').prop('disabled', true);
+            post('addVariation', { parent_id: parentId, code: code }, function(res) {
+                $('#variation_add').prop('disabled', false);
+                if (res.success) {
+                    setMsg(res.message, '#3c763d');
+                    $input.val('').focus();
+                } else {
+                    setMsg(res.message, '#a94442');
+                }
+            });
+        }
+
+        $('#variation_add').off('click.itemVariations').on('click.itemVariations', tryAdd);
+
+        // O hotkey do Bootstrap-Dialog escuta 'keyup' no modal e submeteria o
+        // produto; stopPropagation no keyup impede isso sem afetar o resto.
+        $input.off('keydown.itemVariations').on('keydown.itemVariations', function(e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                tryAdd();
+            }
+        });
+        $input.off('keyup.itemVariations').on('keyup.itemVariations', function(e) {
+            if (e.which === 13) {
+                e.stopPropagation();
+            }
+        });
+
+        $list.off('click.itemVariations').on('click.itemVariations', '.js-variation-remove', function(e) {
+            e.preventDefault();
+            var childId = $(this).attr('data-child-id');
+            post('removeVariation', { parent_id: parentId, child_item_id: childId }, function(res) {
+                setMsg(res.message, res.success ? '#3c763d' : '#a94442');
+            });
+        });
+
+        // Crianças já gravadas vêm do controller (item_variations).
+        render(<?= json_encode($item_variations ?? []) ?>);
+    };
+
+    // Wire os dois painéis DEPOIS de as funções existirem. Antes este trecho
+    // ficava dentro do $(document).ready acima, mas as funções só são atribuídas
+    // aqui embaixo — o guard `typeof === 'function'` falhava sempre e os painéis
+    // nunca eram ligados (botão "Adicionar" sem handler = código extra não entrava).
+    if (typeof window.initExtraCodes === 'function') {
+        window.initExtraCodes();
+    }
+    if (typeof window.initItemVariations === 'function') {
+        window.initItemVariations();
+    }
 
     // --- Gerar código interno aleatório (produtos sem código de barras) ---
     // Charset sem ambíguos (O/0, I/1, L/1); 5 chars → 32^5 ≈ 33 milhões de combinações.

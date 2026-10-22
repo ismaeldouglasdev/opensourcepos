@@ -136,6 +136,7 @@ $routes->get('items/csvImport', 'Items::getCsvImport');
 $routes->get('items/getItemKits', 'Items::getIndex');
 $routes->get('items/getInventory', 'Items::getInventory');
 $routes->get('items/checkNumeric', 'Items::getCheckNumeric');
+$routes->get('items/variations/(:num)', 'Items::getVariations/$1');
 
 $routes->post('items/save', 'Items::postSave');
 $routes->post('items/save/([0-9-]+)', 'Items::postSave/$1');
@@ -144,6 +145,8 @@ $routes->post('items/bulkUpdate', 'Items::postBulkUpdate');
 $routes->post('items/suggest_search', 'Items::suggest_search');
 $routes->post('items/attributes/([0-9-]+)', 'Items::postAttributes/$1');
 $routes->post('items/checkItemNumber', 'Items::postCheckItemNumber');
+$routes->post('items/addVariation', 'Items::postAddVariation');
+$routes->post('items/removeVariation', 'Items::postRemoveVariation');
 $routes->post('items/inlineUpdate', 'Items::postInlineUpdate');
 $routes->post('items/check_kit_exists', 'Items::check_kit_exists');
 $routes->post('items/saveInventory/(:num)', 'Items::postSaveInventory/$1');

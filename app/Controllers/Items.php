@@ -12,6 +12,7 @@ use App\Models\Item_kit;
 use App\Models\Item_pic;
 use App\Models\Item_quantity;
 use App\Models\Item_taxes;
+use App\Models\Item_variation;
 use App\Models\Stock_location;
 use App\Models\Supplier;
 use App\Models\Tax_category;
@@ -36,6 +37,7 @@ class Items extends Secure_Controller
     private Item_pic $item_pic;
     private Item_quantity $item_quantity;
     private Item_taxes $item_taxes;
+    private Item_variation $item_variation;
     private Stock_location $stock_location;
     private Supplier $supplier;
     private Tax_category $tax_category;
@@ -60,6 +62,7 @@ class Items extends Secure_Controller
         $this->item_pic = model(Item_pic::class);
         $this->item_quantity = model(Item_quantity::class);
         $this->item_taxes = model(Item_taxes::class);
+        $this->item_variation = model(Item_variation::class);
         $this->stock_location = model(Stock_location::class);
         $this->supplier = model(Supplier::class);
         $this->tax_category = model(Tax_category::class);
@@ -456,6 +459,12 @@ class Items extends Secure_Controller
         // Loaded here so the form can render the current chips without a second
         // round-trip; the view posts the whole set back on save.
         $data['item_codes'] = ($item_id === NEW_ENTRY) ? [] : $this->item->get_codes($item_id);
+
+        // Umbrella children already grouped under this item. Loaded server-side
+        // so the panel renders each child with its own name/barcode/stock, which
+        // a chip list cannot carry. Empty for a new item: an umbrella needs a
+        // saved parent_id before anything can be linked to it.
+        $data['item_variations'] = ($item_id === NEW_ENTRY) ? [] : $this->item_variation->get_children_for_parent($item_id);
 
         if ($item_id !== NEW_ENTRY && $item_info->item_id !== $item_info->low_sell_item_id) {
             $low_sell_item_info = $this->item->get_info($item_info->low_sell_item_id);
@@ -1931,6 +1940,143 @@ class Items extends Secure_Controller
             'success' => $ok,
             'message' => $ok ? 'Atualizado' : 'Erro ao atualizar',
             'value'   => $display,
+        ]);
+    }
+
+    /**
+     * Children (variations) currently linked to an umbrella item.
+     * GET items/variations/{parent_id}
+     *
+     * The form panel calls this after a save so the list reflects what the
+     * database actually holds instead of trusting the client's view of it.
+     */
+    public function getVariations(int $parent_id): void
+    {
+        $this->response->setContentType('application/json');
+
+        if ($parent_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Produto inválido.', 'children' => []]);
+            return;
+        }
+
+        echo json_encode([
+            'success'  => true,
+            'parent_id' => $parent_id,
+            'children' => $this->item_variation->get_children_for_parent($parent_id),
+        ]);
+    }
+
+    /**
+     * Link a scanned/typed code as a child of the item being edited.
+     * POST items/addVariation
+     *
+     * The child is resolved through the same funnel the sales screen uses
+     * (resolve_code_to_item_id: primary barcode + extra codes), so a bottle is
+     * selectable by any of the codes already registered on it — the operator
+     * does not have to know which one is the primary.
+     */
+    public function postAddVariation(): void
+    {
+        $this->response->setContentType('application/json');
+
+        $parent_id = (int) $this->request->getPost('parent_id');
+        $code = trim((string) $this->request->getPost('code'));
+        $attribute_value = trim((string) $this->request->getPost('label'));
+
+        if ($parent_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Salve o produto antes de agrupar outros itens.']);
+            return;
+        }
+
+        if ($code === '') {
+            echo json_encode(['success' => false, 'message' => 'Informe o código do produto a agrupar.']);
+            return;
+        }
+
+        $child_id = $this->item->resolve_code_to_item_id($code);
+        if ($child_id === false) {
+            echo json_encode(['success' => false, 'message' => 'Nenhum produto encontrado com esse código.']);
+            return;
+        }
+
+        $child_id = (int) $child_id;
+        if ($child_id === $parent_id) {
+            echo json_encode(['success' => false, 'message' => 'O produto não pode ser agrupado com ele mesmo.']);
+            return;
+        }
+
+        $child = $this->item->get_info($child_id);
+        // get_info() never returns null: a missing id comes back as an empty
+        // row whose item_id is NEW_ENTRY (-1). Checking for null here would be
+        // a guard that never fires.
+        if ((int) $child->item_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Nenhum produto encontrado com esse código.']);
+            return;
+        }
+
+        // One umbrella per child. Re-adding the same pair is treated as success
+        // so a double click is not reported to the operator as an error.
+        $owner = $this->item_variation->get_parent_for_child($child_id);
+        if ($owner !== null && $owner['item_id'] !== $parent_id) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Este produto já pertence a outro agrupamento (item ' . $owner['item_id'] . ').',
+            ]);
+            return;
+        }
+
+        // The label is what the sale modal shows; the product name is the
+        // default the operator expects to see when nothing was typed.
+        if ($attribute_value === '') {
+            $attribute_value = (string) $child->name;
+        }
+
+        $variation_id = $this->item_variation->add_variation($parent_id, $child_id, 'PRODUTO', $attribute_value);
+        if ($variation_id === false) {
+            echo json_encode(['success' => false, 'message' => 'Não foi possível agrupar esse produto.']);
+            return;
+        }
+
+        // The parent is an umbrella, not sellable stock: linking it to children
+        // is what makes it a parent. Its stock is forced to zero by the sale
+        // path (the read side), so nothing is written to item_quantities here.
+        echo json_encode([
+            'success'   => true,
+            'message'   => 'Produto agrupado.',
+            'variation_id' => $variation_id,
+            'children'  => $this->item_variation->get_children_for_parent($parent_id),
+        ]);
+    }
+
+    /**
+     * Remove the umbrella link for a child.
+     * POST items/removeVariation
+     *
+     * Unlink only: the child item, its stock and its sales history stay. The
+     * operator is ungrouping, not deleting, so nothing destructive runs here.
+     */
+    public function postRemoveVariation(): void
+    {
+        $this->response->setContentType('application/json');
+
+        $parent_id = (int) $this->request->getPost('parent_id');
+        $child_id = (int) $this->request->getPost('child_item_id');
+
+        if ($parent_id <= 0 || $child_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Dados inválidos.']);
+            return;
+        }
+
+        $ok = $this->item_variation->remove_variation($parent_id, $child_id);
+        if (!$ok) {
+            echo json_encode(['success' => false, 'message' => 'Vínculo não encontrado.']);
+            return;
+        }
+
+        echo json_encode([
+            'success'  => true,
+            'message'  => 'Produto desagrupado.',
+            'children' => $this->item_variation->get_children_for_parent($parent_id),
         ]);
     }
 }

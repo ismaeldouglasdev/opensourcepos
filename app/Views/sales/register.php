@@ -1096,8 +1096,14 @@ if (isset($success)) {
             var rows = variants.map(function(v) {
                 var stock = parseFloat(v.stock_qty) || 0;
                 var out = stock <= 0;
+                var imgTag = '';
+                if (v.pic_filename && String(v.pic_filename).length) {
+                    imgTag = '<img src="<?= base_url('items/PicThumb/') ?>' + encodeURIComponent(v.pic_filename) + '"'
+                        + ' alt="" style="width:36px;height:36px;object-fit:cover;border-radius:3px;margin-bottom:4px;display:block;margin-left:auto;margin-right:auto;">';
+                }
                 return '<button type="button" class="pos-var-item' + (out ? ' pos-var-out' : '') + '"'
                     + ' data-item-id="' + parseInt(v.item_id, 10) + '"' + (out ? ' disabled' : '') + '>'
+                    + imgTag
                     + '<span class="pos-var-size">' + posEscapeHtml(v.attribute_value) + '</span>'
                     + '<span class="pos-var-stock">' + (out ? 'esgotado' : (Math.round(stock) + ' em estoque')) + '</span>'
                     + '<span class="pos-var-price">' + posFmtMoney(v.unit_price) + '</span>'
@@ -1112,7 +1118,7 @@ if (isset($success)) {
                 + '  <div class="modal-dialog pos-var-dialog"><div class="modal-content">'
                 + '    <div class="modal-header">'
                 + '      <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">&times;</button>'
-                + '      <h4 class="modal-title">Escolha o tamanho <small>' + posEscapeHtml(res.parent_name || '') + '</small></h4>'
+                + '      <h4 class="modal-title">Escolha o produto <small>' + posEscapeHtml(res.parent_name || '') + '</small></h4>'
                 + '    </div>'
                 + '    <div class="modal-body"><div class="pos-var-grid">' + rows + '</div></div>'
                 + '  </div></div>'
@@ -2071,11 +2077,19 @@ function addPayment() {
     var novoRestante = getRestante();
     if (novoRestante <= 0.01 && payments_list.length > 0) {
         var lastType = payments_list[payments_list.length - 1].type;
-        if (lastType !== '<?= lang("Sales.cash") ?>' && lastType !== '<?= lang("Sales.pix") ?>') {
-            finishCheckout();       // Débito/Crédito/Fiado: finaliza direto
+        var totalPago = payments_list.reduce(function(sum, p) { return sum + p.amount; }, 0);
+        // Pedido do dono: digitar o valor COMPLETO da venda finaliza na hora,
+        // em qualquer forma de pagamento — elimina o toque extra no FINALIZAR.
+        // Só o valor EXATO (== em centavos) dispara isso. Se o cliente entregou
+        // MAIS que o total, o troco tem de ser conferido pelo operador, então
+        // esse caso continua esperando confirmacao manual (fix #5).
+        var exato = Math.round(totalPago * 100) === Math.round(total_venda * 100);
+        var isCashOrPix = lastType === '<?= lang("Sales.cash") ?>' || lastType === '<?= lang("Sales.pix") ?>';
+        if (!isCashOrPix || exato) {
+            finishCheckout();       // Debito/Credito/Fiado, ou valor exato: finaliza direto
             return;
         }
-        // Dinheiro/PIX: mostra troco, foco no FINALIZAR pra confirmar
+        // Dinheiro/PIX com troco: foco no FINALIZAR pra confirmar
         setTimeout(function() {
             document.getElementById('finish_checkout_btn').focus();
         }, 100);
