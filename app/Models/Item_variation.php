@@ -14,7 +14,7 @@ use CodeIgniter\Model;
  */
 class Item_variation extends Model
 {
-    protected $table = 'item_variations';
+    protected $table = 'ospos_item_variations';
     protected $primaryKey = 'item_variation_id';
     protected $useAutoIncrement = true;
     protected $allowedFields = ['item_id', 'variation_item_id', 'attribute_name', 'attribute_value', 'position'];
@@ -26,18 +26,23 @@ class Item_variation extends Model
      */
     public function get_variations_for_parent(int $parent_id, int $location_id): array
     {
-        $builder = $this->db->table('item_variations AS v');
+        $builder = $this->db->table('ospos_item_variations AS v');
         $builder->select('v.variation_item_id AS item_id');
         $builder->select('v.attribute_name, v.attribute_value, v.position');
         $builder->select('i.name, i.item_number, i.unit_price, i.pic_filename');
         $builder->select('COALESCE(q.quantity, 0) AS stock_qty');
-        $builder->join('items AS i', 'i.item_id = v.variation_item_id');
-        $builder->join('item_quantities AS q', 'q.item_id = v.variation_item_id AND q.location_id = ' . (int) $location_id, 'left');
+        $builder->join('ospos_items AS i', 'i.item_id = v.variation_item_id');
+        $builder->join('ospos_item_quantities AS q', 'q.item_id = v.variation_item_id AND q.location_id = ' . (int) $location_id, 'left');
         $builder->where('v.item_id', $parent_id);
         $builder->where('i.deleted', 0);
         $builder->orderBy('v.position', 'ASC');
 
-        return $builder->get()->getResultArray();
+        $result = $builder->get();
+        if ($result === false) {
+            return [];
+        }
+
+        return $result->getResultArray();
     }
 
     /**
@@ -53,17 +58,22 @@ class Item_variation extends Model
      */
     public function get_children_for_parent(int $parent_id): array
     {
-        $builder = $this->db->table('item_variations AS v');
+        $builder = $this->db->table('ospos_item_variations AS v');
         $builder->select('v.item_variation_id, v.variation_item_id, v.attribute_name, v.attribute_value, v.position');
         $builder->select('i.name, i.item_number, i.unit_price, i.pic_filename');
-        $builder->select('COALESCE((SELECT SUM(q.quantity) FROM item_quantities AS q WHERE q.item_id = v.variation_item_id), 0) AS stock_qty');
-        $builder->join('items AS i', 'i.item_id = v.variation_item_id');
+        $builder->select('COALESCE((SELECT SUM(q.quantity) FROM ospos_item_quantities AS q WHERE q.item_id = v.variation_item_id), 0) AS stock_qty');
+        $builder->join('ospos_items AS i', 'i.item_id = v.variation_item_id');
         $builder->where('v.item_id', $parent_id);
         $builder->where('i.deleted', 0);
         $builder->orderBy('v.position', 'ASC');
         $builder->orderBy('v.item_variation_id', 'ASC');
 
-        return $builder->get()->getResultArray();
+        $result = $builder->get();
+        if ($result === false) {
+            return [];
+        }
+
+        return $result->getResultArray();
     }
 
     /**
@@ -90,7 +100,7 @@ class Item_variation extends Model
 
         // A child belongs to at most one umbrella. Re-linking the same pair is
         // a no-op success so a double click does not look like a failure.
-        $existing = $this->db->table('item_variations')
+        $existing = $this->db->table('ospos_item_variations')
             ->select('item_variation_id, item_id')
             ->where('variation_item_id', $child_item_id)
             ->get()
@@ -104,7 +114,7 @@ class Item_variation extends Model
 
         // Both ends must be live items; linking a deleted row would create an
         // umbrella whose child never renders (the read path filters deleted).
-        $alive = $this->db->table('items')
+        $alive = $this->db->table('ospos_items')
             ->select('item_id')
             ->whereIn('item_id', [$parent_id, $child_item_id])
             ->where('deleted', 0)
@@ -115,7 +125,7 @@ class Item_variation extends Model
         }
 
         if ($position === null) {
-            $position = (int) $this->db->table('item_variations')
+            $position = (int) $this->db->table('ospos_item_variations')
                 ->selectMax('position', 'max_pos')
                 ->where('item_id', $parent_id)
                 ->get()
@@ -123,7 +133,7 @@ class Item_variation extends Model
             $position++;
         }
 
-        $builder = $this->db->table('item_variations');
+        $builder = $this->db->table('ospos_item_variations');
         $ok = $builder->insert([
             'item_id'          => $parent_id,
             'variation_item_id' => $child_item_id,
@@ -144,7 +154,7 @@ class Item_variation extends Model
      */
     public function remove_variation(int $parent_id, int $child_item_id): bool
     {
-        return $this->db->table('item_variations')
+        return $this->db->table('ospos_item_variations')
             ->where('item_id', $parent_id)
             ->where('variation_item_id', $child_item_id)
             ->delete();
@@ -160,7 +170,7 @@ class Item_variation extends Model
      */
     public function get_parent_for_child(int $child_item_id): ?array
     {
-        $row = $this->db->table('item_variations')
+        $row = $this->db->table('ospos_item_variations')
             ->select('item_id, variation_item_id')
             ->where('variation_item_id', $child_item_id)
             ->get()

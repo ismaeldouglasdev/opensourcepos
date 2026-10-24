@@ -2339,6 +2339,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // When modal opens, focus first payment button
     jQuery('#checkoutModal').on('shown.bs.modal', function() {
+        // Atualiza resumo de pagamentos ao reabrir o modal
+        if (typeof updatePaymentSummary === 'function') {
+            updatePaymentSummary();
+        }
+        if (typeof checkIfCanFinish === 'function') {
+            checkIfCanFinish();
+        }
         var firstBtn = document.querySelector('.payment-btn');
         if (firstBtn) firstBtn.focus();
     });
