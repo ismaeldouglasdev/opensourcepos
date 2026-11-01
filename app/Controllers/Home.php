@@ -40,17 +40,30 @@ class Home extends Secure_Controller
         $builder->select("ROUND(SUM($pay_amount), $decimals) AS total");
         $builder->join('sales', 'sales.sale_id = sales_payments.sale_id');
         $builder->where('sales.sale_status', COMPLETED);
-        $builder->where('sales_payments.payment_amount >', 0);
+        $builder->where('sales_payments.payment_amount !=', 0);
         $builder->where("DATE({$p}sales.sale_time)", date('Y-m-d'));
         $row = $builder->get()->getRow();
         $data['today_sales'] = (float)($row->total ?? 0);
+
+        // 1b. Returns/refunds registered today. The totals above already net
+        // them out (payment_amount < 0 subtracts), but the operator needs to
+        // see HOW MUCH came back — a day of R$ 0 in sales may mean "nothing
+        // sold" or "everything was returned", and those are different days.
+        $builder = $this->db->table('sales_payments');
+        $builder->select("ROUND(SUM($pay_amount), $decimals) AS total");
+        $builder->join('sales', 'sales.sale_id = sales_payments.sale_id');
+        $builder->where('sales.sale_status', COMPLETED);
+        $builder->where('sales_payments.payment_amount <', 0);
+        $builder->where("DATE({$p}sales.sale_time)", date('Y-m-d'));
+        $row = $builder->get()->getRow();
+        $data['today_returns'] = abs((float)($row->total ?? 0));
 
         // 2. Yesterday's sales total
         $builder = $this->db->table('sales_payments');
         $builder->select("ROUND(SUM($pay_amount), $decimals) AS total");
         $builder->join('sales', 'sales.sale_id = sales_payments.sale_id');
         $builder->where('sales.sale_status', COMPLETED);
-        $builder->where('sales_payments.payment_amount >', 0);
+        $builder->where('sales_payments.payment_amount !=', 0);
         $builder->where("DATE({$p}sales.sale_time)", date('Y-m-d', strtotime('-1 day')));
         $row = $builder->get()->getRow();
         $data['yesterday_sales'] = (float)($row->total ?? 0);
@@ -60,7 +73,7 @@ class Home extends Secure_Controller
         $builder->select("ROUND(SUM($pay_amount), $decimals) AS total");
         $builder->join('sales', 'sales.sale_id = sales_payments.sale_id');
         $builder->where('sales.sale_status', COMPLETED);
-        $builder->where('sales_payments.payment_amount >', 0);
+        $builder->where('sales_payments.payment_amount !=', 0);
         $builder->where("YEARWEEK({$p}sales.sale_time, 1)", 'YEARWEEK(CURDATE(), 1)', false);
         $row = $builder->get()->getRow();
         $data['week_sales'] = (float)($row->total ?? 0);
@@ -70,7 +83,7 @@ class Home extends Secure_Controller
         $builder->select("ROUND(SUM($pay_amount), $decimals) AS total");
         $builder->join('sales', 'sales.sale_id = sales_payments.sale_id');
         $builder->where('sales.sale_status', COMPLETED);
-        $builder->where('sales_payments.payment_amount >', 0);
+        $builder->where('sales_payments.payment_amount !=', 0);
         $builder->where("MONTH({$p}sales.sale_time)", date('m'));
         $builder->where("YEAR({$p}sales.sale_time)", date('Y'));
         $row = $builder->get()->getRow();
@@ -131,7 +144,7 @@ class Home extends Secure_Controller
         $builder->select("HOUR({$p}sales.sale_time) AS hour, ROUND(SUM($pay_amount), $decimals) AS total");
         $builder->join('sales', 'sales.sale_id = sales_payments.sale_id');
         $builder->where('sales.sale_status', COMPLETED);
-        $builder->where('sales_payments.payment_amount >', 0);
+        $builder->where('sales_payments.payment_amount !=', 0);
         $builder->where("DATE({$p}sales.sale_time)", date('Y-m-d'));
         $builder->groupBy("HOUR({$p}sales.sale_time)");
         $builder->orderBy('hour', 'ASC');

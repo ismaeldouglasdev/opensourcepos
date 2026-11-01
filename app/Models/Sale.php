@@ -967,6 +967,200 @@ class Sale extends Model
     }
 
     /**
+     * Subquery that returns the amount effectively paid for the current `sales` row
+     * (payments minus change/refunds already recorded in cash_refund).
+     */
+    private function exchange_paid_total_sql(): string
+    {
+        $prefix = $this->db->getPrefix();
+
+        return 'ROUND((SELECT IFNULL(SUM(sp.payment_amount - sp.cash_refund), 0)'
+            . ' FROM ' . $prefix . 'sales_payments AS sp WHERE sp.sale_id = sales.sale_id), ' . totals_decimals() . ')';
+    }
+
+    /**
+     * Builds a quoted LIKE pattern with an explicit ESCAPE clause.
+     *
+     * Wildcards are escaped with `!` instead of a backslash: the value is inserted
+     * into a raw SQL fragment, and a backslash would be consumed by MySQL while
+     * parsing the string literal, turning a searched `%` back into a wildcard.
+     */
+    private function exchange_like_pattern(string $value): string
+    {
+        $escaped = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $value);
+
+        return $this->db->escape('%' . $escaped . '%') . " ESCAPE '!'";
+    }
+
+    /**
+     * Applies the exchange screen filters to a builder over `sales AS sales`
+     * (joined to `people AS person`). Shared by search_exchange() and count_exchange()
+     * so the list and the total can never disagree.
+     *
+     * @param array<string, mixed> $filters
+     */
+    private function add_exchange_filters(BaseBuilder $builder, array $filters): void
+    {
+        $db = $this->db;
+        $prefix = $db->getPrefix();
+
+        $start_date = trim((string) ($filters['start_date'] ?? ''));
+        $end_date = trim((string) ($filters['end_date'] ?? ''));
+
+        if ($start_date === '') {
+            $start_date = date('Y-m-d', strtotime('-90 days'));
+        }
+        if ($end_date === '') {
+            $end_date = date('Y-m-d');
+        }
+
+        // Only completed sales are candidates, and a return sale is the result of an
+        // exchange, never the origin of a new one.
+        $builder->where('sales.sale_status', COMPLETED);
+        $builder->where('sales.sale_type !=', SALE_TYPE_RETURN);
+        $builder->where('DATE(sales.sale_time) >= ' . $db->escape($start_date), null, false);
+        $builder->where('DATE(sales.sale_time) <= ' . $db->escape($end_date), null, false);
+
+        $customer = trim((string) ($filters['customer'] ?? ''));
+        if ($customer !== '') {
+            $customer_like = $this->exchange_like_pattern($customer);
+
+            $builder->groupStart();
+            $builder->orWhere("person.first_name LIKE {$customer_like}", null, false);
+            $builder->orWhere("person.last_name LIKE {$customer_like}", null, false);
+            $builder->orWhere("CONCAT(person.first_name, ' ', person.last_name) LIKE {$customer_like}", null, false);
+            $builder->groupEnd();
+        }
+
+        $product = trim((string) ($filters['product'] ?? ''));
+        if ($product !== '') {
+            $like = $this->exchange_like_pattern($product);
+            $builder->where("EXISTS (SELECT 1 FROM {$prefix}sales_items AS si_p"
+                . " INNER JOIN {$prefix}items AS it_p ON it_p.item_id = si_p.item_id"
+                . " WHERE si_p.sale_id = sales.sale_id"
+                . " AND (it_p.name LIKE {$like} OR it_p.item_number LIKE {$like} OR si_p.description LIKE {$like}))", null, false);
+        }
+
+        $paid = $this->exchange_paid_total_sql();
+
+        $value_min = str_replace(',', '.', trim((string) ($filters['value_min'] ?? '')));
+        if ($value_min !== '' && is_numeric($value_min)) {
+            $builder->where($paid . ' >= ' . (float) $value_min, null, false);
+        }
+
+        $value_max = str_replace(',', '.', trim((string) ($filters['value_max'] ?? '')));
+        if ($value_max !== '' && is_numeric($value_max)) {
+            $builder->where($paid . ' <= ' . (float) $value_max, null, false);
+        }
+
+        // Sale number / invoice number typed by the operator (scanner or keyboard).
+        $sale_ref = preg_replace('/[^0-9A-Za-z\-]/', '', trim((string) ($filters['sale_ref'] ?? '')));
+        if ($sale_ref !== '' && $sale_ref !== null) {
+            if (ctype_digit($sale_ref)) {
+                $builder->groupStart();
+                $builder->where('sales.sale_id', (int) $sale_ref);
+                $builder->orWhere('sales.invoice_number', (int) $sale_ref);
+                $builder->groupEnd();
+            } else {
+                $builder->like('sales.invoice_number', $sale_ref);
+            }
+        }
+    }
+
+    /**
+     * Searches completed sales for the exchange/return screen.
+     *
+     * @param array<string, mixed> $filters
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function search_exchange(array $filters, ?int $rows = 25, ?int $limit_from = 0, ?string $sort = 'sale_time', ?string $order = 'desc'): array
+    {
+        if ($rows == null) {
+            $rows = 25;
+        }
+        if ($limit_from == null) {
+            $limit_from = 0;
+        }
+
+        $prefix = $this->db->getPrefix();
+        $paid = $this->exchange_paid_total_sql();
+
+        $builder = $this->db->table('sales AS sales');
+        $builder->select('
+            sales.sale_id AS sale_id,
+            sales.sale_time AS sale_time,
+            sales.invoice_number AS invoice_number,
+            sales.sale_type AS sale_type,
+            sales.customer_id AS customer_id,
+            TRIM(CONCAT(IFNULL(person.first_name, \'\'), \' \', IFNULL(person.last_name, \'\'))) AS customer_name,
+            ' . $paid . ' AS total_paid,
+            (SELECT GROUP_CONCAT(DISTINCT sp.payment_type ORDER BY sp.payment_type SEPARATOR \', \')
+                FROM ' . $prefix . 'sales_payments AS sp WHERE sp.sale_id = sales.sale_id) AS payment_types,
+            (SELECT COUNT(*) FROM ' . $prefix . 'sales_items AS si WHERE si.sale_id = sales.sale_id) AS line_count,
+            (SELECT IFNULL(SUM(si.quantity_purchased), 0) FROM ' . $prefix . 'sales_items AS si WHERE si.sale_id = sales.sale_id) AS units
+        ', false);
+
+        $builder->join('people AS person', 'person.person_id = sales.customer_id', 'LEFT');
+        $this->add_exchange_filters($builder, $filters);
+
+        // Total is a subquery expression, so it is not offered as a sort column.
+        $sort_column = ($sort === 'sale_id') ? 'sales.sale_id' : 'sales.sale_time';
+        $direction = (strtolower((string) $order) === 'asc') ? 'asc' : 'desc';
+        $builder->orderBy($sort_column, $direction);
+        $builder->limit($rows, $limit_from);
+
+        return $builder->get()->getResultArray();
+    }
+
+    /**
+     * Number of sales matching the exchange screen filters.
+     *
+     * @param array<string, mixed> $filters
+     */
+    public function count_exchange(array $filters): int
+    {
+        $builder = $this->db->table('sales AS sales');
+        $builder->join('people AS person', 'person.person_id = sales.customer_id', 'LEFT');
+        $this->add_exchange_filters($builder, $filters);
+
+        return $builder->countAllResults();
+    }
+
+    /**
+     * Items of a sale for the exchange screen: line, quantity, unit price and discount
+     * exactly as they were charged, plus the item identity (name, code, photo).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function get_exchange_items(int $sale_id): array
+    {
+        $item = model(Item::class);
+
+        $builder = $this->db->table('sales_items AS si');
+        $builder->select('
+            si.sale_id,
+            si.item_id,
+            si.line,
+            si.quantity_purchased,
+            si.item_unit_price,
+            si.item_cost_price,
+            si.discount,
+            si.discount_type,
+            si.description,
+            ' . $item->get_item_name('item_name') . ',
+            items.item_number AS item_number,
+            items.pic_filename AS pic_filename,
+            items.stock_type AS stock_type
+        ', false);
+        $builder->join('items AS items', 'items.item_id = si.item_id', 'LEFT');
+        $builder->where('si.sale_id', $sale_id);
+        $builder->orderBy('si.line', 'asc');
+
+        return $builder->get()->getResultArray();
+    }
+
+    /**
      * Gets sale payment options
      */
     public function get_payment_options(bool $giftcard = true, bool $reward_points = true): array

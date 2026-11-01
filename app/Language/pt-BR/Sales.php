@@ -73,6 +73,8 @@ return [
     "employee"                         => "Empregado",
     "entry"                            => "Entrada",
     "error_editing_item"               => "Erro editando item",
+    "exchange"                         => "Troca",
+    "exchange_hint"                    => "Devolva os itens antigos e adicione os novos: o cliente paga ou recebe a diferença.",
     "find_or_scan_item"                => "Pesquisar Item",
     "find_or_scan_item_or_receipt"     => "Produto",
     "giftcard"                         => "Cupom",

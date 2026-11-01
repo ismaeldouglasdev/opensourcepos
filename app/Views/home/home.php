@@ -503,6 +503,15 @@ $date_str = $day_name . ', ' . date('d/m/Y');
             <?php endif; ?>
         </div>
 
+        <?php if (!empty($today_returns) && $today_returns > 0): ?>
+        <div class="dash-kpi">
+            <div class="dash-kpi-icon bg-danger"><span class="glyphicon glyphicon-refresh"></span></div>
+            <div class="dash-kpi-value" style="color:#c62828;">- <?= to_currency($today_returns) ?></div>
+            <div class="dash-kpi-label">Devoluções Hoje</div>
+            <div class="dash-badge dash-badge-neutral">já descontado das vendas</div>
+        </div>
+        <?php endif; ?>
+
         <div class="dash-kpi">
             <div class="dash-kpi-icon bg-info"><span class="glyphicon glyphicon-calendar"></span></div>
             <div class="dash-kpi-value"><?= to_currency($week_sales) ?></div>

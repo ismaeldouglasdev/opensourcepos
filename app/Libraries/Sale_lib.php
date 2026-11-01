@@ -84,6 +84,7 @@ class Sale_lib
         }
 
         $register_modes['return'] = lang('Sales.return');
+        $register_modes['exchange'] = lang('Sales.exchange');
 
         return $register_modes;
     }
@@ -719,7 +720,13 @@ class Sale_lib
         // 0 decimal -> 1 / 2 = 0.5, 1 decimals -> 0.1 / 2 = 0.05, 2 decimals -> 0.01 / 2 = 0.005
         $threshold = bcpow('10', (string)-totals_decimals()) / 2;
 
-        if ($this->get_mode() == 'return') {    // TODO: Convert to ternary notation.
+        // An exchange is a normal sale that may end with the customer receiving
+        // money back. When the returned items are worth more than the new ones
+        // the net total is negative, so it has to be settled like a return.
+        $is_refund_mode = $this->get_mode() == 'return'
+            || ($this->get_mode() == 'exchange' && bccomp($total, '0', totals_decimals()) < 0);
+
+        if ($is_refund_mode) {
             $totals['payments_cover_total'] = $current_due > -$threshold;
         } else {
             $totals['payments_cover_total'] = $current_due < $threshold;
@@ -1279,7 +1286,14 @@ class Sale_lib
      * @param string $receipt_sale_id
      * @return void
      */
-    public function return_entire_sale(string $receipt_sale_id): void
+    /**
+     * Loads a sale into the cart in return mode.
+     *
+     * @param string $receipt_sale_id  "POS <id>" or invoice number
+     * @param array|null $selected     optional map item_id => quantity (positive) to return partially;
+     *                                when null, every line of the original sale is returned.
+     */
+    public function return_entire_sale(string $receipt_sale_id, ?array $selected = null): void
     {
         // POS #
         $pieces = explode(' ', $receipt_sale_id);
@@ -1289,10 +1303,32 @@ class Sale_lib
         $this->remove_customer();
 
         foreach ($this->sale->get_sale_items_ordered($sale_id)->getResult() as $row) {
-            $this->add_item($row->item_id, $row->item_location, -$row->quantity_purchased, $row->discount, $row->discount_type, PRICE_MODE_STANDARD, null, null, $row->item_unit_price, $row->description, $row->serialnumber, null, true);
+            if ($selected !== null && !array_key_exists((string) $row->item_id, $selected) && !array_key_exists((int) $row->item_id, $selected)) {
+                continue;
+            }
+
+            $qty = -$row->quantity_purchased;
+            if ($selected !== null) {
+                $key = array_key_exists((string) $row->item_id, $selected) ? (string) $row->item_id : (int) $row->item_id;
+                $req = (float) $selected[$key];
+                if ($req <= 0) {
+                    continue;
+                }
+                $qty = -$req;
+            }
+
+            $this->add_item($row->item_id, $row->item_location, $qty, $row->discount, $row->discount_type, PRICE_MODE_STANDARD, null, null, $row->item_unit_price, $row->description, $row->serialnumber, null, true);
         }
 
         $this->set_customer($this->sale->get_customer($sale_id)->person_id);
+
+        // Remember which sale was returned so the register can offer its date
+        // when the operator has to refund. Stored in the session because the
+        // register is stateless between requests.
+        $this->session->set('sales_return_origin', [
+            'sale_id'   => (int) $sale_id,
+            'sale_time' => $this->sale->get_sale_time((int) $sale_id)
+        ]);
     }
 
     /**
@@ -1390,6 +1426,7 @@ class Sale_lib
     {
         $this->session->set('sale_id', -1);    // TODO: Replace -1 with constant
         $this->session->remove('sale_reopened');
+        $this->session->remove('sales_return_origin');
         $this->clear_mode();
         $this->clear_table();
         $this->empty_cart();

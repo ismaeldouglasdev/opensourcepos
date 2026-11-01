@@ -177,6 +177,206 @@ class Sales extends Secure_Controller
     }
 
     /**
+     * "Trocas e Devoluções": search screen for a past sale (no receipt required).
+     * Read-only for now — the return itself is a separate step.
+     */
+    public function getExchange(): void
+    {
+        if (!$this->can_exchange()) {
+            $this->response->setStatusCode(302)->setHeader('Location', site_url('no_access/index/sales/reports_sales'));
+            return;
+        }
+
+        $data = [
+            'start_date' => date('Y-m-d', strtotime('-90 days')),
+            'end_date' => date('Y-m-d')
+        ];
+
+        echo view('sales/exchange', $data);
+    }
+
+    /**
+     * AJAX: paginated list of sales matching the exchange screen filters.
+     */
+    public function getExchangeSearch(): void
+    {
+        $this->response->setContentType('application/json');
+
+        if (!$this->can_exchange()) {
+            $this->response->setStatusCode(403);
+            echo json_encode(['error' => 'Sem permissão para consultar vendas.']);
+            return;
+        }
+
+        $filters = $this->exchange_filters_from_request();
+        $limit = (int) ($this->request->getGet('limit') ?? 25);
+        $offset = (int) ($this->request->getGet('offset') ?? 0);
+        $sort = (string) ($this->request->getGet('sort', FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?? 'sale_time');
+        $order = (string) ($this->request->getGet('order', FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?? 'desc');
+
+        if ($limit < 1 || $limit > 100) {
+            $limit = 25;
+        }
+        if ($offset < 0) {
+            $offset = 0;
+        }
+
+        $rows = $this->sale->search_exchange($filters, $limit, $offset, $sort, $order);
+        $total = $this->sale->count_exchange($filters);
+
+        foreach ($rows as &$row) {
+            $row['sale_time_display'] = date('d/m/Y H:i', strtotime((string) $row['sale_time']));
+            $row['total_paid_display'] = number_format((float) $row['total_paid'], 2, ',', '.');
+        }
+        unset($row);
+
+        echo json_encode([
+            'total' => $total,
+            'rows' => $rows,
+            'limit' => $limit,
+            'offset' => $offset,
+            'start_date' => $filters['start_date'],
+            'end_date' => $filters['end_date']
+        ]);
+    }
+
+    /**
+     * AJAX: details (items and payments) of one sale for the exchange screen.
+     */
+    public function getExchangeSale(int $sale_id): void
+    {
+        $this->response->setContentType('application/json');
+
+        if (!$this->can_exchange()) {
+            $this->response->setStatusCode(403);
+            echo json_encode(['error' => 'Sem permissão para consultar vendas.']);
+            return;
+        }
+
+        $sale_info = $this->sale->get_info($sale_id)->getRow();
+
+        if (empty($sale_info)) {
+            $this->response->setStatusCode(404);
+            echo json_encode(['error' => 'Venda não encontrada.']);
+            return;
+        }
+
+        $items = $this->sale->get_exchange_items($sale_id);
+
+        foreach ($items as &$item) {
+            $item['line_total'] = $this->sale_lib->get_item_total(
+                (string) $item['quantity_purchased'],
+                (string) $item['item_unit_price'],
+                (string) $item['discount'],
+                (int) $item['discount_type'],
+                true
+            );
+            $item['line_total_display'] = number_format((float) $item['line_total'], 2, ',', '.');
+            $item['unit_price_display'] = number_format((float) $item['item_unit_price'], 2, ',', '.');
+        }
+        unset($item);
+
+        $payments = $this->sale->get_sale_payments($sale_id)->getResultArray();
+        $payments_total = 0.0;
+
+        foreach ($payments as &$payment) {
+            $net = (float) $payment['payment_amount'] - (float) $payment['cash_refund'];
+            $payments_total += $net;
+            $payment['net_display'] = number_format($net, 2, ',', '.');
+        }
+        unset($payment);
+
+        echo json_encode([
+            'sale' => [
+                'sale_id' => (int) $sale_info->sale_id,
+                'sale_time' => (string) $sale_info->sale_time,
+                'sale_time_display' => date('d/m/Y H:i', strtotime((string) $sale_info->sale_time)),
+                'invoice_number' => $sale_info->invoice_number ?? null,
+                'comment' => $sale_info->comment ?? null,
+                'sale_status' => (int) ($sale_info->sale_status ?? COMPLETED)
+            ],
+            'items' => $items,
+            'payments' => $payments,
+            'payments_total_display' => number_format($payments_total, 2, ',', '.')
+        ]);
+    }
+
+    /**
+     * Grant required by the exchange screen (same one used by sales/manage).
+     */
+    private function can_exchange(): bool
+    {
+        return $this->employee->has_grant('reports_sales', $this->session->get('person_id'));
+    }
+
+    /**
+     * Reads and normalizes the exchange screen filters from the query string.
+     *
+     * @return array<string, string>
+     */
+    private function exchange_filters_from_request(): array
+    {
+        $filters = [];
+        foreach (['start_date', 'end_date', 'customer', 'product', 'value_min', 'value_max', 'sale_ref'] as $key) {
+            $filters[$key] = (string) ($this->request->getGet($key, FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?? '');
+        }
+
+        if ($filters['start_date'] === '') {
+            $filters['start_date'] = date('Y-m-d', strtotime('-90 days'));
+        }
+        if ($filters['end_date'] === '') {
+            $filters['end_date'] = date('Y-m-d');
+        }
+
+        return $filters;
+    }
+
+    /**
+     * Loads a (possibly partial) return of a past sale into the register in
+     * return mode. Used by the exchange screen.
+     */
+    public function postExchangeReturn(): void
+    {
+        if (!$this->can_exchange()) {
+            $this->response->setStatusCode(302)->setHeader('Location', site_url('no_access/index/sales/reports_sales'));
+            return;
+        }
+
+        $sale_id = (int) ($this->request->getPost('sale_id') ?? 0);
+        if ($sale_id <= 0) {
+            $this->response->setStatusCode(400);
+            echo 'Venda invalida';
+            return;
+        }
+
+        $selected_raw = (string) ($this->request->getPost('selected') ?? '');
+        $selected = null;
+        if (trim($selected_raw) !== '') {
+            $decoded = json_decode($selected_raw, true);
+            if (is_array($decoded) && count($decoded) > 0) {
+                $selected = [];
+                foreach ($decoded as $k => $v) {
+                    $selected[(string) $k] = (float) $v;
+                }
+            }
+        }
+
+        // The exchange screen can either send the items back to the register as a
+        // plain return (money back) or as an exchange (old items negative, new
+        // items added by the operator, only the difference changes hands).
+        $mode = (string) ($this->request->getPost('mode') ?? 'return');
+        if (!in_array($mode, ['return', 'exchange'], true)) {
+            $mode = 'return';
+        }
+
+        $this->sale_lib->clear_mode();
+        $this->sale_lib->set_mode($mode);
+        $this->sale_lib->return_entire_sale('POS ' . $sale_id, $selected);
+
+        $this->response->setStatusCode(302)->setHeader('Location', site_url('sales'));
+    }
+
+    /**
      * Gets one row for a sales manage table. This is called using AJAX to update one row.
      *
      * @param int $row_id
@@ -248,7 +448,9 @@ class Sales extends Secure_Controller
                 $amount_due = $this->sale_lib->get_total();
                 $sales_total = $this->sale_lib->get_total(false);
                 $amount_tendered = parse_decimals($this->request->getPost('amount_tendered'));
+                if ($amount_tendered != 0) {
                 $this->sale_lib->add_payment($payment_type, $amount_tendered);
+            }
                 $cash_adjustment_amount = $amount_due - $sales_total;
                 if ($cash_adjustment_amount <> 0) {
                     $this->session->set('cash_mode', CASH_MODE_TRUE);
@@ -330,7 +532,7 @@ class Sales extends Secure_Controller
         $quantity = ($mode == 'return') ? -$quantity : $quantity;
         $item_location = $this->sale_lib->get_sale_location();
 
-        if ($mode == 'return' && $this->sale->is_valid_receipt($item_id_or_number_or_item_kit_or_receipt)) {
+        if (($mode == 'return' || $mode == 'exchange') && $this->sale->is_valid_receipt($item_id_or_number_or_item_kit_or_receipt)) {
             $this->sale_lib->return_entire_sale($item_id_or_number_or_item_kit_or_receipt);
         } elseif ($this->item_kit->is_valid_item_kit($item_id_or_number_or_item_kit_or_receipt)) {
             // Add kit item to order if one is assigned
@@ -1681,28 +1883,43 @@ class Sales extends Secure_Controller
         $amount_tendered_raw = $this->request->getPost('amount_tendered');
         $amount_tendered = !empty($amount_tendered_raw) ? parse_decimals($amount_tendered_raw) : 0;
 
+        // A return — or an exchange where the returned items are worth more than
+        // the new ones — may finish with no payment at all: the customer either
+        // gets cash/PIX back (sent as a positive amount by the UI, negated
+        // below) or gets nothing back at all. Every other mode still requires a
+        // payment.
+        $is_refund_intent = $this->sale_lib->is_return_mode()
+            || ($this->sale_lib->get_mode() === 'exchange'
+                && bccomp($this->sale_lib->get_total(), '0', totals_decimals()) < 0);
+
         // Limpar pagamentos anteriores
         $this->sale_lib->empty_payments();
 
         // Se veio múltiplos pagamentos via JSON
         if (!empty($payments_json)) {
             $payments_data = json_decode($payments_json, true);
+            if ($payments_data === null) {
+                echo json_encode(['success' => false, 'message' => 'Dados de pagamento inválidos']);
+                return;
+            }
             if (is_array($payments_data) && count($payments_data) > 0) {
                 foreach ($payments_data as $payment) {
                     if (isset($payment['type']) && isset($payment['amount'])) {
                         $this->sale_lib->add_payment($payment['type'], $payment['amount']);
                     }
                 }
-            } else {
+            } elseif (!$is_refund_intent) {
                 echo json_encode(['success' => false, 'message' => 'Dados de pagamento inválidos']);
                 return;
             }
-        } elseif (!empty($payment_type) && $amount_tendered > 0) {
+        } elseif (!empty($payment_type) && ($amount_tendered != 0 || $is_refund_intent)) {
             // Modo legacy: um único pagamento
             $this->sale_lib->add_payment($payment_type, $amount_tendered);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Nenhum pagamento informado']);
-            return;
+            if (!$is_refund_intent) {
+                echo json_encode(['success' => false, 'message' => 'Nenhum pagamento informado']);
+                return;
+            }
         }
 
         $cart = $this->sale_lib->get_cart();
@@ -1746,7 +1963,7 @@ class Sales extends Secure_Controller
         $amount_due = $totals['total'];
         $payments_total = $this->sale_lib->get_payments_total();
 
-        if ($payments_total > $amount_due) {
+        if ($payments_total > $amount_due && $amount_due >= 0) {
             $cash_refund = $payments_total - $amount_due;
             foreach ($payments as $key => &$payment) {
                 if (strpos($key, lang('Sales.cash')) !== false && $cash_refund > 0) {
@@ -1765,7 +1982,28 @@ class Sales extends Secure_Controller
             $this->sale_lib->set_payments($payments);
         }
 
-// When the sale was reopened from sales/manage, the original sale_id is
+        // Returns — and exchanges where the returned items are worth more than
+        // the new ones — move money OUT of the till. OSPOS stores that as a
+        // negative payment_amount (Sale::get_payments_summary splits 'sales'
+        // from 'returns' by the sign), but the checkout UI works with positive
+        // numbers because parseCurrency() drops the minus from "-R$ 10".
+        // The sign is therefore fixed here, at the single point where the sale
+        // is persisted, instead of trusting the browser to send it.
+        $is_refund_sale = $this->sale_lib->is_return_mode()
+            || ($this->sale_lib->get_mode() === 'exchange' && bccomp($totals['total'], '0', totals_decimals()) < 0);
+
+        if ($is_refund_sale) {
+            $payments = $this->sale_lib->get_payments();
+            foreach ($payments as $key => $payment) {
+                $amount = (float) $payment['payment_amount'];
+                if ($amount > 0) {
+                    $payments[$key]['payment_amount'] = number_format(-$amount, totals_decimals(), '.', '');
+                }
+            }
+            $this->sale_lib->set_payments($payments);
+        }
+
+        // When the sale was reopened from sales/manage, the original sale_id is
         // kept in the session so finishing UPDATES that same sale in place (no
         // duplicate record). A fresh sale (sale_id <= 0) creates a new entry.
         $sale_id = $this->sale_lib->get_sale_id();
@@ -1778,7 +2016,7 @@ class Sales extends Secure_Controller
             $customer,
             $this->session->get('person_id'),
             $comment,
-            null, null, null, SALE_TYPE_POS,
+            null, null, null, $is_refund_sale ? SALE_TYPE_RETURN : SALE_TYPE_POS,
             $payments,
             $dinner_table,
             $sales_taxes,
@@ -1797,7 +2035,14 @@ class Sales extends Secure_Controller
     {
         $this->response->setContentType('application/json');
 
-        $sale_id = $this->request->getGet('sale_id', FILTER_SANITIZE_NUMBER_INT);
+        $sale_id = filter_var($this->request->getGet('sale_id'), FILTER_VALIDATE_INT);
+
+        if ($sale_id === false || $sale_id <= 0) {
+            $this->response->setStatusCode(400);
+            echo json_encode(['error' => 'Invalid sale_id']);
+            return;
+        }
+
         $items = $this->sale->get_sale_items_ordered($sale_id)->getResultArray();
 
         foreach ($items as &$item) {
@@ -1904,7 +2149,7 @@ class Sales extends Secure_Controller
 
         $added = false;
 
-        if ($mode == 'return' && $this->sale->is_valid_receipt($item_id)) {
+        if (($mode == 'return' || $mode == 'exchange') && $this->sale->is_valid_receipt($item_id)) {
             $this->sale_lib->return_entire_sale($item_id);
             $added = true;
         } elseif ($this->item_kit->is_valid_item_kit($item_id)) {

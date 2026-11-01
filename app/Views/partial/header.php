@@ -256,6 +256,7 @@ try {
                                 <li><a href="<?= site_url('employees') ?>"><span class="glyphicon glyphicon-user"></span> Funcionários</a></li>
                                 <li class="divider"></li>
                                 <li><a href="<?= site_url('sales/manage') ?>"><span class="glyphicon glyphicon-list-alt"></span> Vendas</a></li>
+                                <li><a href="<?= site_url('sales/exchange') ?>"><span class="glyphicon glyphicon-transfer"></span> Trocas e Devoluções</a></li>
                                 <li><a href="<?= site_url('cash') ?>"><span class="glyphicon glyphicon-piggy-bank"></span> Caixa</a></li>
                                 <li><a href="<?= site_url('debtors') ?>"><span class="glyphicon glyphicon-book"></span> Fiado</a></li>
                                 <li><a href="<?= site_url('reports') ?>"><span class="glyphicon glyphicon-stats"></span> Relatórios</a></li>

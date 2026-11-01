@@ -283,6 +283,13 @@ if (isset($success)) {
                             array('class' => 'btn btn-primary btn-sm', 'id' => 'sales_takings_button', 'title' => lang(ucfirst($controller_name) . '.takings'))
                         ) ?>
                     </li>
+                    <li class="pull-right">
+                        <?= anchor(
+                            "$controller_name/exchange",
+                            '<span class="glyphicon glyphicon-transfer">&nbsp;</span>Trocas e Devoluções',
+                            array('class' => 'btn btn-warning btn-sm', 'id' => 'sales_exchange_button', 'title' => 'Trocas e Devoluções', 'target' => '_blank')
+                        ) ?>
+                    </li>
                 <?php } ?>
             </ul>
         </div>
@@ -1573,6 +1580,22 @@ if (isset($success)) {
    daqui de proposito — a secao de desconto migrou para a area do carrinho e
    ganhou CSS propria em modern.css (.cart-discount-section), que e global
    porque o desconto precisa funcionar nos dois modos. */
+
+/* Devolucao/troca: quando o total e negativo o modal deixa de ser um checkout
+   e passa a ser a tela de reembolso. Uma unica classe no modal controla tudo,
+   para nao existir um "modo" paralelo espalhado em varias flags. */
+#refund_actions { display: none; }
+#checkoutModal.is-refund #refund_actions { display: block; }
+#checkoutModal.is-refund .payment-list,
+#checkoutModal.is-refund #amount_group,
+#checkoutModal.is-refund #payment_summary_list,
+#checkoutModal.is-refund .checkout-restante,
+#checkoutModal.is-refund .simple-secondary-label,
+#checkoutModal.is-refund .simple-troco-btn,
+#checkoutModal.is-refund #finish_checkout_btn { display: none !important; }
+#checkoutModal.is-refund .checkout-total { background: #ffebee; }
+#checkoutModal.is-refund #checkout_total { color: #c62828; }
+#refund_actions .btn { margin-bottom: 6px; font-size: 15px; font-weight: 600; }
 </style>
 <div class="modal fade checkout-modal" id="checkoutModal" tabindex="-1" role="dialog">
     <div class="modal-dialog">
@@ -1596,6 +1619,22 @@ if (isset($success)) {
                 <div class="troco-display" id="troco_display" style="font-size: 16px; min-height: 24px; padding: 4px 5px; text-align: center; font-weight: bold;"></div>
                 <div id="troco_notes_display" style="min-height: 0; margin: 0 0 4px; text-align: center;"></div>
 
+                <?php /* Devolucao: o operador nao digita valor nenhum. Ele so
+                         escolhe como o dinheiro volta, e o servidor grava o
+                         pagamento com sinal negativo (ver postQuickFinish). */ ?>
+                <div id="refund_actions">
+                    <p style="text-align:center;font-weight:600;margin:6px 0 8px;">Como devolver o dinheiro?</p>
+                    <button type="button" class="btn btn-danger btn-block" onclick="finishRefund('cash')">
+                        <span class="glyphicon glyphicon-usd"></span> Devolver em Dinheiro
+                    </button>
+                    <button type="button" class="btn btn-danger btn-block" onclick="finishRefund('pix')">
+                        <span class="glyphicon glyphicon-phone"></span> Devolver via PIX
+                    </button>
+                    <button type="button" class="btn btn-default btn-block" onclick="finishRefund('none')">
+                        <span class="glyphicon glyphicon-ban-circle"></span> Sem reembolso (crédito ou troca)
+                    </button>
+                </div>
+
                 <?php /* Tarefa 10 do plano simplificar-fluxo-venda-pdv: a data da
                          venda sai do modal. No Modo Simples ela vira um controle
                          na barra do carrinho (abaixo dos totais), porque quem
@@ -1606,12 +1645,29 @@ if (isset($success)) {
                          devolver sempre o primeiro. No Modo Completo ela fica
                          aqui dentro, exatamente como antes. */ ?>
                 <?php if (empty($simpleMode)) { ?>
-                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 8px;">
+                <?php
+                /* Data da venda original, quando o carrinho veio de uma
+                   devolucao/troca. E a data que o reembolso deve registrar:
+                   devolver hoje uma venda de semana passada nao pode virar
+                   receita de hoje. */
+                $return_origin = session('sales_return_origin');
+                $origin_date = (is_array($return_origin) && !empty($return_origin['sale_time']))
+                    ? substr((string) $return_origin['sale_time'], 0, 10)
+                    : '';
+                ?>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 8px; flex-wrap: wrap;">
                     <label for="sale_date" style="margin: 0; font-weight: 600; font-size: 14px;">📅 Data da venda:</label>
                     <input type="date" id="sale_date" class="form-control"
                            value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>"
                            style="width: auto; display: inline-block; text-align: center; font-size: 15px; padding: 4px 8px; height: 34px;"
                            title="Use para registrar vendas de dias anteriores">
+                    <?php if ($origin_date !== '') { ?>
+                    <button type="button" class="btn btn-default btn-sm" id="use_origin_date_btn"
+                            data-origin-date="<?= esc($origin_date) ?>" onclick="useOriginalSaleDate()"
+                            title="Registrar a devolução na data em que a venda foi feita">
+                        Usar data da venda original (<?= date('d/m/Y', strtotime($origin_date)) ?>)
+                    </button>
+                    <?php } ?>
                 </div>
                 <?php } ?>
                 
@@ -1709,6 +1765,17 @@ var discount_is_percent = false;
 // valor precisa ser recapturado a cada reload — sem ele, aplicar o desconto
 // duas vezes descontaria sobre o valor ja descontado.
 var cart_total_original = 0;
+// Devolucao/troca: o servidor entrega o total do carrinho NEGATIVO quando o
+// modo e return (ou exchange com saldo a devolver). Este flag e a unica coisa
+// que distingue "vender" de "devolver" na tela — ele vem do sinal do total,
+// nunca de uma escolha do operador.
+//
+// O sinal NAO pode ser lido do DOM depois do load: renderCartDiscountedTotal()
+// reescreve #sale_total com o valor positivo (parseCurrency descarta o sinal),
+// entao a deteccao por texto precisa de uma copia que o PHP entrega antes de
+// qualquer JS rodar. Sem esta copia a devolucao voltava a entrar como venda.
+var cart_total_is_refund = <?= bccomp((string)$total, '0', totals_decimals()) < 0 ? 'true' : 'false' ?>;
+var checkout_is_refund = cart_total_is_refund;
 
 function showDiversosModal() {
     $('#diversos_valor').val('');
@@ -1836,6 +1903,10 @@ function refreshDiscountedTotal() {
    renderCartDiscountedTotal(). */
 function renderCartDiscountedTotal() {
     var el = document.getElementById('sale_total');
+    // Devolucao/troca nao tem desconto a aplicar, e reescrever o total aqui
+    // apagaria o sinal negativo que o servidor entregou (a UI de reembolso
+    // depende dele). O valor negativo fica intocado.
+    if (cart_total_is_refund) return;
     if (!el || !(cart_total_original > 0)) return;
 
     var desconto = cart_total_original * (sale_discount_pct / 100);
@@ -1864,7 +1935,14 @@ function renderCartDiscountedTotal() {
 function syncCartTotalBase() {
     var el = document.getElementById('sale_total');
     if (!el) return;
-    cart_total_original = parseCurrency(el.textContent || '0');
+    var text = el.textContent || '0';
+    // O sinal e lido antes do parseCurrency (que o descarta) e RECALCULADO a
+    // cada sync, nas duas direcoes. Numa TROCA o carrinho comeca negativo
+    // (itens devolvidos) e pode virar positivo ao adicionar itens novos; se a
+    // flag ficasse grudada em true, o checkout continuaria em modo reembolso e
+    // esconderia os botoes de pagamento de uma diferenca que o cliente deve.
+    cart_total_is_refund = /-/.test(text);
+    cart_total_original = parseCurrency(text);
     renderCartDiscountedTotal();
 }
 
@@ -1913,11 +1991,98 @@ function applyDiscountInput() {
     refreshDiscountedTotal();
 }
 
+/* Devolucao/troca: o modal deixa de ser um checkout. Nada de forma de
+   pagamento, valor digitado, troco ou "restante" — o operador so diz COMO o
+   dinheiro volta. A classe .is-refund e o unico interruptor (ver CSS acima). */
+function applyRefundMode() {
+    var $modal = jQuery('#checkoutModal');
+    var $total = jQuery('#checkout_total');
+    var $label = $total.prev('strong');
+    $modal.toggleClass('is-refund', checkout_is_refund);
+
+    if (checkout_is_refund) {
+        $modal.find('.modal-title').text('DEVOLUÇÃO / TROCA');
+        $label.text('DEVOLVER:');
+        $total.text('- R$ ' + fmtMoney(total_venda));
+        jQuery('#troco_display').text('');
+        jQuery('#troco_notes_display').html('');
+    } else {
+        $modal.find('.modal-title').text('FINALIZAR VENDA');
+        $label.text('TOTAL:');
+        $total.text('R$ ' + fmtMoney(total_venda));
+    }
+}
+
+/* Fecha uma devolucao/troca. O servidor e quem poe o sinal negativo (ver
+   Sales::postQuickFinish): aqui o valor vai sempre POSITIVO, senao o sinal
+   seria invertido duas vezes. 'none' = nada volta ao cliente (troca de valor
+   igual, troca maior ou credito na loja). */
+function finishRefund(kind) {
+    if (finishingCheckout) return;
+    if (!checkout_is_refund) { return; }
+    if (kind !== 'cash' && kind !== 'pix' && kind !== 'none') { return; }
+    if (kind !== 'none' && total_venda <= 0) { alert('Valor de devolução inválido'); return; }
+
+    finishingCheckout = true;
+    var payload = [];
+    if (kind === 'cash') {
+        payload.push({ type: '<?= lang("Sales.cash") ?>', amount: total_venda });
+    } else if (kind === 'pix') {
+        payload.push({ type: '<?= lang("Sales.pix") ?>', amount: total_venda });
+    }
+
+    jQuery('#checkoutModal').modal('hide');
+
+    var csrfData = {};
+    csrfData['<?= csrf_token() ?>'] = '<?= csrf_hash() ?>';
+    var saleDate = document.getElementById('sale_date') ? document.getElementById('sale_date').value : '';
+
+    jQuery.ajax({
+        url: '<?= site_url("sales/quickFinish") ?>',
+        type: 'POST',
+        data: Object.assign(csrfData, {
+            payments_json: JSON.stringify(payload),
+            discount_pct: sale_discount_pct || '',
+            sale_date: saleDate
+        }),
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                beep.success();
+                window.location.href = '<?= site_url("sales/receipt/") ?>' + response.sale_id;
+            } else {
+                beep.error();
+                alert('Erro: ' + (response.message || 'Falha ao finalizar a devolução'));
+                location.reload();
+            }
+        },
+        error: function(xhr, status, error) {
+            beep.error();
+            alert('Erro de conexão: ' + error);
+            location.reload();
+        }
+    });
+}
+
+/* Reembolso de uma venda de outro dia: a data que o caixa deve registrar e a
+   da VENDA ORIGINAL, nao a de hoje. O servidor guarda essa data na sessao ao
+   carregar a venda para devolucao (Sale_lib::return_entire_sale). */
+function useOriginalSaleDate() {
+    var btn = document.getElementById('use_origin_date_btn');
+    var input = document.getElementById('sale_date');
+    if (!btn || !input) { return; }
+    input.value = btn.getAttribute('data-origin-date') || '';
+}
+
 function openCheckoutModal() {
     var span = document.getElementById('sale_total');
     if (!span) { alert('Nao encontrou sale_total'); return; }
     var totalText = span.textContent || '0';
-    total_venda = parseCurrency(totalText);
+    // O sinal precisa ser lido ANTES do parseCurrency, que o descarta: sem
+    // isso a devolucao entrava no checkout como venda e o valor devolvido
+    // virava receita (payment_amount positivo).
+    checkout_is_refund = cart_total_is_refund || /-/.test(totalText);
+    total_venda = Math.abs(parseCurrency(totalText));
     if (total_venda <= 0) { alert('Carrinho vazio'); return; }
 
     // Tarefa 8: o desconto agora mora no CARRINHO, nao no modal. Duas
@@ -1937,17 +2102,16 @@ function openCheckoutModal() {
         refreshDiscountedTotal();
     }
 
-    payments_list = [];
-    payment_type_selected = '';
-    
+    // Preserva o estado ao fechar/reabrir (F2, X, ESC, backdrop): pagamentos
+    // parciais ja adicionados, forma selecionada e valor digitado continuam na
+    // tela. O reset so acontece quando a pagina recarrega (venda finalizada ou
+    // cancelada). Antes, este bloco apagava tudo a cada abertura.
     document.getElementById('checkout_total').textContent = 'R$ ' + fmtMoney(total_venda);
-    document.getElementById('checkout_restante').textContent = 'R$ ' + fmtMoney(total_venda);
-    document.getElementById('checkout_amount').value = '';
-    document.getElementById('checkout_amount').placeholder = fmtMoney(total_venda);
-    document.getElementById('troco_display').textContent = ' ';
-    document.getElementById('amount_group').style.display = 'none';
-    document.getElementById('payment_summary_list').innerHTML = '';
-    document.getElementById('finish_checkout_btn').disabled = true;
+    document.getElementById('checkout_amount').placeholder = fmtMoney(getRestante());
+    document.getElementById('amount_group').style.display = payment_type_selected ? 'block' : 'none';
+    updatePaymentSummary();
+    checkIfCanFinish();
+    applyRefundMode();
 
     <?php /* Tarefa 10: no Modo Completo o reset continua valendo — a data mora
              no modal, e a de uma venda anterior nao deve vazar para a proxima.
@@ -1962,8 +2126,6 @@ function openCheckoutModal() {
     if (sd) sd.value = '<?= date('Y-m-d') ?>';
     <?php } ?>
     
-    document.querySelectorAll('.payment-btn').forEach(function(btn) { btn.classList.remove('active'); });
-
     // Close the product autocomplete and block a late itemSearch response
     // from reopening it over the checkout modal (z-index is already below
     // the modal, but the menu must not linger at all).
@@ -2337,14 +2499,20 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // When modal opens, focus first payment button
+    // Ao reabrir, preserva o foco no valor pendente; sem valor pendente, foca
+    // a primeira forma de pagamento.
     jQuery('#checkoutModal').on('shown.bs.modal', function() {
-        // Atualiza resumo de pagamentos ao reabrir o modal
         if (typeof updatePaymentSummary === 'function') {
             updatePaymentSummary();
         }
         if (typeof checkIfCanFinish === 'function') {
             checkIfCanFinish();
+        }
+        var pendingAmount = document.getElementById('checkout_amount');
+        if (payment_type_selected && pendingAmount) {
+            pendingAmount.focus();
+            pendingAmount.select();
+            return;
         }
         var firstBtn = document.querySelector('.payment-btn');
         if (firstBtn) firstBtn.focus();
