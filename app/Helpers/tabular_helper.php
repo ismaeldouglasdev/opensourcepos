@@ -572,6 +572,13 @@ function get_item_data_row(object $item, ?array $ctx = null): array
         ? date($config['dateformat'] . ' ' . str_replace(':s', '', $config['timeformat']), strtotime($item->last_modified))
         : '-';
 
+    $ml_sku = trim((string) $item->item_number) !== '' ? trim((string) $item->item_number) : (string) $item->item_id;
+    $ml_publish_button = '<button type="button" class="btn btn-default btn-xs ml-publish-btn"'
+        . ' data-ml-item="' . $item->item_id . '"'
+        . ' data-ml-sku="' . esc($ml_sku, 'attr') . '"'
+        . ' title="' . lang('Items.ml_publish') . '">'
+        . '<span class="glyphicon glyphicon-send"></span></button>';
+
     $columns = [
         'items.item_id' => $item->item_id,
         'item_number'   => $item->item_number,
@@ -583,10 +590,8 @@ function get_item_data_row(object $item, ?array $ctx = null): array
         'quantity'      => to_quantity_decimals($item->quantity),
         'tax_percents'  => !$tax_percents ? '-' : $tax_percents,
         'item_pic'      => $image,
-        'last_modified' => $last_modified
+        'last_modified' => $ml_publish_button . ' ' . $last_modified
     ];
-
-    $ml_sku = trim((string) $item->item_number) !== '' ? trim((string) $item->item_number) : (string) $item->item_id;
 
     $icons = [
         'edit'      => anchor(
@@ -597,11 +602,7 @@ function get_item_data_row(object $item, ?array $ctx = null): array
                 'data-btn-submit' => lang('Common.submit'),
                 'title'           => lang(ucfirst($controller) . ".update")
             ]
-        ) . '<button type="button" class="btn btn-default btn-xs ml-publish-btn"'
-            . ' data-ml-item="' . $item->item_id . '"'
-            . ' data-ml-sku="' . esc($ml_sku, 'attr') . '"'
-            . ' title="' . lang('Items.ml_publish') . '">'
-            . '<span class="glyphicon glyphicon-send"></span></button>'
+        )
     ];
 
     return $columns + expand_attribute_values($definition_names, (array) $item) + $icons;

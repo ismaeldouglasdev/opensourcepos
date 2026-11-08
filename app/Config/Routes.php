@@ -161,6 +161,7 @@ $routes->post('items/deleteItemImage/([0-9-]+)', 'Items::postDeleteItemImage/$1'
 $routes->post('items/setMainImage/([0-9-]+)', 'Items::postSetMainImage/$1');
 
 $routes->get('mercadolivre/mappings', 'MercadoLivre::getMappings');
+$routes->get('mercadolivre/listings', 'MercadoLivre::getListings');
 $routes->get('mercadolivre/categoryAttributes', 'MercadoLivre::getCategoryAttributes');
 $routes->post('mercadolivre/publish', 'MercadoLivre::postPublish');
 $routes->post('mercadolivre/pause', 'MercadoLivre::postPause');

@@ -2895,31 +2895,32 @@ body {
     white-space: nowrap !important;
 }
 
-/* Mercado Livre button inside the action column: icon only, status by colour */
-#table_holder.items-manage td.items-col-edit .ml-publish-btn {
+/* Mercado Livre button inside the last-modified column: icon only, status by colour */
+#table_holder.items-manage td.items-col-dt .ml-publish-btn {
     width: 22px !important;
     height: 22px !important;
     min-width: 0 !important;
     min-height: 0 !important;
     padding: 0 !important;
-    margin: 0 0 0 4px !important;
+    margin: 0 6px 0 0 !important;
     font-size: 11px !important;
     line-height: 22px !important;
     vertical-align: middle !important;
     color: var(--os-text-muted, #7b8a8b);
+    display: inline-block !important;
 }
 
-#table_holder.items-manage td.items-col-edit .ml-publish-btn .glyphicon {
+#table_holder.items-manage td.items-col-dt .ml-publish-btn .glyphicon {
     font-size: 11px !important;
     top: 0 !important;
 }
 
-#table_holder.items-manage td.items-col-edit .ml-publish-btn.ml-status-active {
+#table_holder.items-manage td.items-col-dt .ml-publish-btn.ml-status-active {
     border-color: var(--os-primary, #1a9c6a);
     color: var(--os-primary-dark, #14805a);
 }
 
-#table_holder.items-manage td.items-col-edit .ml-publish-btn.ml-status-paused {
+#table_holder.items-manage td.items-col-dt .ml-publish-btn.ml-status-paused {
     border-color: #d79b00;
     color: #8a6400;
 }

@@ -20,6 +20,57 @@ class MercadoLivre extends Secure_Controller
         $this->forward('GET', '/v1/mercadolivre/mappings', $skus === '' ? [] : ['skus' => $skus]);
     }
 
+    public function getListings(): void
+    {
+        $result = $this->inventoryCall('GET', '/v1/mercadolivre/mappings');
+        if ($result['status'] === 0) {
+            log_message('error', 'MercadoLivre: falha ao chamar /v1/mercadolivre/mappings: ' . $result['error']);
+            $this->emit(502, ['error' => 'Serviço de estoque indisponível.']);
+            return;
+        }
+
+        $decoded = json_decode($result['body'], true);
+        $mappings = $decoded['mappings'] ?? [];
+
+        // Enriquece com dados do OSPOS (nome, preço, estoque total, foto)
+        $listings = [];
+        $itemModel = model(Item::class);
+        foreach ($mappings as $mapping) {
+            $sku = $mapping['sku'] ?? '';
+            $item = $itemModel->get_info_by_id_or_number($sku);
+
+            $listings[] = [
+                'sku'            => $sku,
+                'external_id'    => $mapping['external_id'] ?? null,
+                'external_url'   => $mapping['external_url'] ?? null,
+                'status'         => $mapping['status'] ?? 'unknown',
+                'name'           => $item->name ?? '',
+                'unit_price'     => $item->unit_price ?? 0,
+                'stock_quantity' => max(0, (int) round($this->totalStock((int) ($item->item_id ?? 0)))),
+                'pic_filename'   => $item->pic_filename ?? null,
+            ];
+        }
+
+        // Ordena: ativos primeiro, depois pausados/encerrados, depois o restante
+        usort($listings, function ($a, $b) {
+            $order = ['active' => 0, 'paused' => 1, 'closed' => 2, 'inactive' => 3];
+            $oa = $order[$a['status'] ?? ''] ?? 9;
+            $ob = $order[$b['status'] ?? ''] ?? 9;
+            if ($oa !== $ob) {
+                return $oa <=> $ob;
+            }
+            return strcasecmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? ''));
+        });
+
+        $data = [
+            'listings' => $listings,
+            'count'    => count($listings),
+        ];
+
+        $this->response->setContentType('text/html');
+        echo view('mercadolivre/listings', $data);
+    }
+
     public function getCategoryAttributes(): void
     {
         $categoryId = strtoupper(trim((string) ($this->request->getGet('category_id') ?? '')));
