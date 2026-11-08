@@ -420,12 +420,20 @@ window._tutorialSteps = [
         <button id="delete" class="btn btn-sm btn-danger-outline print_hide" data-destructive="1">
             <span class="glyphicon glyphicon-trash">&nbsp;</span><?= lang('Common.delete') ?>
         </button>
+        <span class="items-today-counters print_hide" style="margin-left:12px; font-size:13px; color:var(--os-text-muted); vertical-align:middle;">
+            Produtos Cadastrados Hoje: <strong><?= (int) ($items_created_today ?? 0) ?></strong>
+            &nbsp;|&nbsp;
+            Produtos Atualizados Hoje: <strong><?= (int) ($items_updated_today ?? 0) ?></strong>
+        </span>
         <button id="bulk_edit" class="btn btn-default btn-sm modal-dlg print_hide" data-btn-submit="<?= lang('Common.submit') ?>" data-href="<?= "items/bulkEdit" ?>" title="<?= lang('Items.edit_multiple_items') ?>">
             <span class="glyphicon glyphicon-edit">&nbsp;</span><?= lang('Items.bulk_edit') ?>
         </button>
         <button id="generate_barcodes" class="btn btn-default btn-sm print_hide" data-href="<?= "$controller_name/generateBarcodes" ?>" title="<?= lang('Items.generate_barcodes') ?>">
             <span class="glyphicon glyphicon-barcode">&nbsp;</span><?= lang('Items.generate_barcodes') ?>
         </button>
+        <a href="#" id="ml_listings_btn" class="btn btn-default btn-sm print_hide" role="button" title="<?= lang('Items.ml_listings_title') ?>">
+            <span class="glyphicon glyphicon-send">&nbsp;</span><?= lang('Items.ml_manage') ?>
+        </a>
         <?= form_input(['name' => 'daterangepicker', 'class' => 'form-control input-sm', 'id' => 'daterangepicker']) ?>
         <?= form_multiselect('filters[]', $filters, [''], [
             'id'                        => 'filters',
@@ -456,5 +464,252 @@ window._tutorialSteps = [
 <div id="table_holder" class="items-manage">
     <table id="table"></table>
 </div>
+
+<div class="modal fade" id="ml_listings_modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                <h4 class="modal-title"><?= lang('Items.ml_listings_title') ?></h4>
+            </div>
+            <div class="modal-body" style="max-height:60vh; overflow-y:auto;">
+                <table class="table table-condensed table-striped" style="font-size:13px;">
+                    <thead>
+                        <tr><th>SKU</th><th>Anúncio</th><th>Status</th><th>Link</th><th></th></tr>
+                    </thead>
+                    <tbody id="ml_listings_body"></tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="ml_publish_modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                <h4 class="modal-title"><?= lang('Items.ml_publish') ?></h4>
+            </div>
+            <div class="modal-body" id="ml_publish_body" style="max-height:60vh; overflow-y:auto;"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="ml_publish_confirm" disabled>Publicar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    (function() {
+        var mlMap = {};
+        var mlPublishItem = null;
+        var ML_LABELS = {
+            active: 'ATIVO', paused: 'PAUSADO', closed: 'ENCERRADO',
+            inactive: 'INATIVO', under_review: 'EM ANÁLISE'
+        };
+        function mlEscape(value) {
+            return $('<div>').text(value === null || value === undefined ? '' : String(value)).html();
+        }
+
+        function mlStatusLabel(status) {
+            return ML_LABELS[status] || (status || '');
+        }
+
+        function mlStatusClass(status) {
+            if (status === 'active') { return 'success'; }
+            if (status === 'paused') { return 'warning'; }
+            return 'default';
+        }
+
+        function mlRequest(type, url, data) {
+            return $.ajax({ url: url, type: type, data: data, dataType: 'json' });
+        }
+
+        function mlNotify(message, type) {
+            $.notify(message, { type: type, placement: { from: 'bottom', align: 'right' }, timer: 3000 });
+        }
+
+        function mlErrorMessage(xhr, fallback) {
+            var payload = xhr && xhr.responseJSON;
+            if (payload && payload.error) { return payload.error; }
+            if (payload && payload.message) { return payload.message; }
+            return fallback;
+        }
+
+        function mlDecorateRows() {
+            $('#table_holder.items-manage tbody tr').each(function() {
+                var $button = $(this).find('.ml-publish-btn');
+                if (!$button.length) { return; }
+                var mapping = mlMap[$button.attr('data-ml-sku')];
+                $button.removeClass('ml-status-active ml-status-paused ml-status-closed ml-status-inactive ml-status-under_review');
+                if (mapping) {
+                    $button.addClass('ml-published ml-status-' + mapping.status);
+                    $button.attr('title', 'Publicado no Mercado Livre — ' + mlStatusLabel(mapping.status));
+                } else {
+                    $button.removeClass('ml-published');
+                    $button.attr('title', <?= json_encode(lang('Items.ml_publish')) ?>);
+                }
+            });
+        }
+
+        function mlRenderListings() {
+            var mappings = [];
+            $.each(mlMap, function(sku, mapping) { mappings.push(mapping); });
+            var $body = $('#ml_listings_body');
+            if (!mappings.length) {
+                $body.html('<tr><td colspan="5" class="text-center text-muted">' + <?= json_encode(lang('Items.ml_no_listings')) ?> + '</td></tr>');
+                return;
+            }
+            var html = '';
+            $.each(mappings, function(index, mapping) {
+                var actions = '';
+                if (mapping.status === 'active') {
+                    actions = '<button type="button" class="btn btn-xs btn-warning ml-status-btn" data-ml-action="pause" data-ml-sku="' + mlEscape(mapping.sku) + '">' + <?= json_encode(lang('Items.ml_pause')) ?> + '</button>';
+                } else if (mapping.status === 'paused') {
+                    actions = '<button type="button" class="btn btn-xs btn-success ml-status-btn" data-ml-action="activate" data-ml-sku="' + mlEscape(mapping.sku) + '">' + <?= json_encode(lang('Items.ml_activate')) ?> + '</button>';
+                }
+                html += '<tr>'
+                    + '<td><code>' + mlEscape(mapping.sku) + '</code></td>'
+                    + '<td>' + mlEscape(mapping.external_id) + '</td>'
+                    + '<td><span class="label label-' + mlStatusClass(mapping.status) + '">' + mlEscape(mlStatusLabel(mapping.status)) + '</span></td>'
+                    + '<td>' + (mapping.external_url ? '<a href="' + mlEscape(mapping.external_url) + '" target="_blank" rel="noopener">abrir anúncio</a>' : '-') + '</td>'
+                    + '<td class="text-right">' + actions + '</td>'
+                    + '</tr>';
+            });
+            $body.html(html);
+        }
+
+        function mlLoadMappings() {
+            return mlRequest('GET', 'mercadolivre/mappings').done(function(response) {
+                mlMap = {};
+                $.each(response.mappings || [], function(index, mapping) { mlMap[mapping.sku] = mapping; });
+                mlDecorateRows();
+                mlRenderListings();
+            }).fail(function(xhr) {
+                mlNotify(mlErrorMessage(xhr, 'Falha ao consultar o Mercado Livre.'), 'danger');
+            });
+        }
+
+        function mlCollectAttributes() {
+            var attributes = [];
+            $('#ml_publish_body .ml-attr-input').each(function() {
+                var value = $.trim($(this).val());
+                if (value !== '') {
+                    attributes.push({ id: $(this).attr('data-attr-id'), value_name: value });
+                }
+            });
+            return attributes;
+        }
+
+        function mlPublish(dryRun, attributes) {
+            var data = { item_id: mlPublishItem.item_id, dry_run: dryRun ? 1 : 0 };
+            $.each(attributes, function(index, attribute) {
+                data['attributes[' + index + '][id]'] = attribute.id;
+                data['attributes[' + index + '][value_name]'] = attribute.value_name;
+            });
+            return mlRequest('POST', 'mercadolivre/publish', data);
+        }
+
+        function mlRenderPublishPreview(response) {
+            var body = (response && response.body) || {};
+            var attributes = body.attributes || [];
+            var missing = body.missing_required_attributes || [];
+            var blocked = body.blocked_reasons || [];
+            var html = '<dl class="dl-horizontal">'
+                + '<dt>Categoria</dt><dd>' + mlEscape(body.category_id || '-') + '</dd>'
+                + '<dt>Preço</dt><dd>' + (body.price !== undefined && body.price !== null ? 'R$ ' + Number(body.price).toFixed(2).replace('.', ',') : '-') + '</dd>'
+                + '<dt>Estoque</dt><dd>' + (body.available_quantity !== undefined && body.available_quantity !== null ? body.available_quantity : '-') + '</dd>'
+                + '<dt>Título</dt><dd>' + mlEscape(body.family_name || '') + '</dd>'
+                + '</dl>';
+            if (attributes.length) {
+                html += '<p><strong>Atributos:</strong></p><ul style="margin:0 0 10px 18px;">';
+                $.each(attributes, function(index, attribute) {
+                    html += '<li>' + mlEscape(attribute.id) + ': ' + mlEscape(attribute.value_name) + '</li>';
+                });
+                html += '</ul>';
+            }
+            if (missing.length) {
+                html += '<p class="text-danger"><strong>' + <?= json_encode(lang('Items.ml_required_attrs')) ?> + ':</strong></p>';
+                $.each(missing, function(index, attribute) {
+                    var id = attribute.id || attribute;
+                    var name = attribute.name || id;
+                    html += '<div class="form-group form-group-sm">'
+                        + '<label style="display:block; font-weight:normal;">' + mlEscape(name) + ' <small class="text-muted">(' + mlEscape(id) + ')</small></label>'
+                        + '<input type="text" class="form-control input-sm ml-attr-input" data-attr-id="' + mlEscape(id) + '">'
+                        + '</div>';
+                });
+            }
+            if (blocked.length) {
+                html += '<p class="text-danger"><strong>' + <?= json_encode(lang('Items.ml_blocked')) ?> + '</strong></p><ul style="margin:0 0 0 18px;">';
+                $.each(blocked, function(index, reason) { html += '<li>' + mlEscape(reason) + '</li>'; });
+                html += '</ul>';
+            }
+            $('#ml_publish_body').html(html);
+            $('#ml_publish_confirm').prop('disabled', blocked.length > 0);
+        }
+
+        $(document).on('load-success.bs.table', function() { mlDecorateRows(); });
+
+        $(document).on('click', '#ml_listings_btn', function(event) {
+            event.preventDefault();
+            $('#ml_listings_body').html('<tr><td colspan="5" class="text-center text-muted">' + <?= json_encode(lang('Items.ml_loading')) ?> + '</td></tr>');
+            $('#ml_listings_modal').modal('show');
+            mlLoadMappings();
+        });
+
+        $(document).on('click', '.ml-publish-btn', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            mlPublishItem = { item_id: $(this).attr('data-ml-item'), sku: $(this).attr('data-ml-sku') };
+            $('#ml_publish_body').html(<?= json_encode(lang('Items.ml_loading')) ?>);
+            $('#ml_publish_confirm').prop('disabled', true);
+            $('#ml_publish_modal').modal('show');
+            mlPublish(true, []).done(mlRenderPublishPreview).fail(function(xhr) {
+                $('#ml_publish_body').html('<p class="text-danger">' + mlEscape(mlErrorMessage(xhr, 'Falha ao consultar o Mercado Livre.')) + '</p>');
+            });
+        });
+
+        $(document).on('click', '#ml_publish_confirm', function() {
+            var $button = $(this).prop('disabled', true);
+            mlPublish(false, mlCollectAttributes()).done(function(response) {
+                var listingId = response && response.body && response.body.id ? response.body.id : '';
+                $('#ml_publish_modal').modal('hide');
+                mlNotify('Publicado no Mercado Livre' + (listingId ? ': ' + listingId : '.'), 'success');
+                mlLoadMappings();
+                if (window.table_support && table_support.refresh) { table_support.refresh(); }
+            }).fail(function(xhr) {
+                var payload = (xhr && xhr.responseJSON) || {};
+                var message = mlEscape(mlErrorMessage(xhr, 'Falha ao publicar o produto.'));
+                if (payload.external_url) {
+                    message += ' <a href="' + mlEscape(payload.external_url) + '" target="_blank" rel="noopener">abrir anúncio</a>';
+                }
+                $('#ml_publish_body').prepend('<p class="text-danger">' + message + '</p>');
+                $button.prop('disabled', false);
+            });
+        });
+
+        $(document).on('click', '.ml-status-btn', function() {
+            var $button = $(this);
+            var sku = $button.attr('data-ml-sku');
+            var action = $button.attr('data-ml-action');
+            var question = action === 'pause' ? 'Pausar o anúncio ' + sku + '?' : 'Reativar o anúncio ' + sku + '?';
+            if (!window.confirm(question)) { return; }
+            $button.prop('disabled', true);
+            mlRequest('POST', 'mercadolivre/' + action, { sku: sku, dry_run: 0 }).done(function() {
+                mlNotify(action === 'pause' ? 'Anúncio pausado.' : 'Anúncio reativado.', 'success');
+                mlLoadMappings();
+            }).fail(function(xhr) {
+                mlNotify(mlErrorMessage(xhr, 'Falha ao alterar o anúncio.'), 'danger');
+                $button.prop('disabled', false);
+            });
+        });
+
+        $(function() { mlLoadMappings(); });
+    })();
+</script>
 
 <?= view('partial/footer') ?>

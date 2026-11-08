@@ -101,6 +101,28 @@ class Item extends Model
         return $builder->countAllResults();
     }
 
+    public function get_created_today_count(): int
+    {
+        $builder = $this->db->table('items');
+        $builder->where('deleted', 0);
+        $builder->where('DATE(created_at)', date('Y-m-d'));
+
+        return $builder->countAllResults();
+    }
+
+    public function get_updated_today_count(): int
+    {
+        $builder = $this->db->table('items');
+        $builder->where('deleted', 0);
+        $builder->where('DATE(last_modified)', date('Y-m-d'));
+        $builder->groupStart();
+        $builder->where('created_at IS NULL');
+        $builder->orWhere('DATE(created_at) !=', date('Y-m-d'));
+        $builder->groupEnd();
+
+        return $builder->countAllResults();
+    }
+
     /**
      * @param int $tax_category_id
      * @return int
@@ -218,7 +240,10 @@ class Item extends Model
                 $builder->like('name', $search);
                 $builder->orLike('item_number', $search);
                 $builder->orLike('items.item_id', $search);
+                $builder->orLike('pack_name', $search);
+                $builder->orLike('items.description', $search);
                 $builder->orLike('company_name', $search);
+                $builder->orLike('agency_name', $search);
                 $builder->orLike('items.category', $search);
                 $builder->groupEnd();
             }
@@ -670,6 +695,7 @@ class Item extends Model
         $item_data['last_modified'] = date('Y-m-d H:i:s');
 
         if ($item_id < 1 || !$this->exists($item_id, true)) {
+            $item_data['created_at'] = date('Y-m-d H:i:s');
             if ($builder->insert($item_data)) {
                 $item_data['item_id'] = (int)$this->db->insertID();
                 if ($item_id < 1) {

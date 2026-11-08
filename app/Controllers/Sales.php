@@ -1963,6 +1963,24 @@ class Sales extends Secure_Controller
         $amount_due = $totals['total'];
         $payments_total = $this->sale_lib->get_payments_total();
 
+        // Defesa em profundidade: o checkout do browser ja bloqueia "Valor
+        // insuficiente", mas este endpoint grava a venda em qualquer caminho.
+        // Um POST direto (ou um cliente com JS quebrado) gravava a venda como
+        // COMPLETED com pagamento a menor — dinheiro faltando no caixa sem
+        // nenhum registro de pendencia. Tolerancia de 1 centavo para casar com
+        // o proprio UI (restante > 0.01) e absorver arredondamento.
+        // Devolucao/troca tem total negativo (amount_due <= 0) e fica de fora.
+        if (bccomp($amount_due, '0', totals_decimals()) > 0) {
+            $shortfall = bcsub($amount_due, $payments_total, totals_decimals());
+            if (bccomp($shortfall, '0.01', totals_decimals()) > 0) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => str_replace('{0}', to_currency($shortfall), lang('Sales.underpayment_blocked')),
+                ]);
+                return;
+            }
+        }
+
         if ($payments_total > $amount_due && $amount_due >= 0) {
             $cash_refund = $payments_total - $amount_due;
             foreach ($payments as $key => &$payment) {
@@ -2080,6 +2098,46 @@ class Sales extends Secure_Controller
     }
 
     /**
+     * Remove a cart line via AJAX — returns JSON with updated cart fragments.
+     * Used by the Undo button to reverse the last add without a page reload.
+     */
+    public function postDeleteItemAjax(): void
+    {
+        $this->response->setContentType('application/json');
+        $data = ['success' => false, 'error' => ''];
+
+        $line = $this->request->getPost('line');
+        if ($line === null || $line === '') {
+            $data['error'] = lang('Sales.unable_to_add_item');
+            echo json_encode($data);
+            return;
+        }
+
+        $this->sale_lib->delete_item((int) $line);
+        $this->sale_lib->empty_payments();
+
+        ob_start();
+        echo view('sales/register', $this->_build_reload_data($data));
+        $full_html = ob_get_clean();
+
+        $fragments = $this->_extract_fragments(
+            $full_html,
+            ['cart_contents', 'sale_totals', 'payment_totals', 'sale_buttons', 'buttons_sale'],
+            ['buttons_form']
+        );
+
+        $data['cart_html'] = $fragments['cart_contents'];
+        $data['totals_html'] = $fragments['sale_totals'];
+        $data['payments_html'] = $fragments['payment_totals'];
+        $data['buttons_html'] = $fragments['sale_buttons'];
+        $data['sale_actions_html'] = $fragments['buttons_sale'];
+        $data['sale_actions_form_html'] = $fragments['buttons_form'];
+        $data['success'] = true;
+
+        echo json_encode($data);
+    }
+
+    /**
      * Add item to cart via AJAX — returns JSON with updated cart HTML + totals.
      */
     public function addAjax(): void
@@ -2148,6 +2206,8 @@ class Sales extends Secure_Controller
         }
 
         $added = false;
+        $added_line = null;
+        $added_merged = null;
 
         if (($mode == 'return' || $mode == 'exchange') && $this->sale->is_valid_receipt($item_id)) {
             $this->sale_lib->return_entire_sale($item_id);
@@ -2183,7 +2243,7 @@ class Sales extends Secure_Controller
         } else {
             if ($item_id == '') {
                 $data['error'] = lang('Sales.unable_to_add_item');
-            } elseif (!$this->sale_lib->add_item($item_id, $item_location, $quantity, $discount, $discount_type, PRICE_MODE_STANDARD, null, null, $price)) {
+            } elseif (!$this->sale_lib->add_item($item_id, $item_location, $quantity, $discount, $discount_type, PRICE_MODE_STANDARD, null, null, $price, null, null, null, false, null, null, $added_line, $added_merged)) {
                 $data['error'] = lang('Sales.item_not_found');
                 // Scanned/digit-only code with no registered item: client opens
                 // the new-item dialog pre-filled so the product can be created.
@@ -2236,6 +2296,8 @@ class Sales extends Secure_Controller
         $data['sale_actions_form_html'] = $fragments['buttons_form'];
 
         $data['success'] = $added;
+        $data['added_line'] = $added_line;
+        $data['added_merged'] = $added_merged;
 
         echo json_encode($data);
     }
@@ -2261,19 +2323,39 @@ class Sales extends Secure_Controller
             return $inner_by_id;
         }
 
+        // O libxml nao trata o conteudo de <script> como texto cru em toda
+        // situacao. Com o carrinho vazio, #payment_totals e #sale_buttons nao
+        // existem no markup (register.php:650/661 so renderizam com carrinho
+        // cheio) e o unico "match" do id esta nas strings HTML que o proprio
+        // JS inline monta. O parser transforma essas strings em ELEMENTOS de
+        // verdade, e getElementById devolve um no que carrega o resto do
+        // script como se fosse markup (~46KB de JS no fragmento). O
+        // _is_inside_script() nao pega esse caso porque o no resultante nao e
+        // filho de <script>. Remover os <script>/<style> ANTES do parse
+        // elimina a origem: os ids que so existem no JS deixam de existir e o
+        // cliente cria o elemento sozinho (register.php:1125-1134).
         $doc = new \DOMDocument();
         libxml_use_internal_errors(true);
-        $doc->loadHTML('<?xml encoding="utf-8" ?>' . $html);
+        $doc->loadHTML('<?xml encoding="utf-8" ?>' . $this->_strip_scripts($html));
         libxml_clear_errors();
 
         foreach ($all_ids as $id) {
             $node = $doc->getElementById($id);
-            if ($node === null) {
+
+            // #payment_totals e #sale_buttons só existem no markup com carrinho
+            // cheio (register.php, guarda count($cart) > 0). Com carrinho vazio
+            // os únicos "matches" do id estão dentro do JS inline — o libxml
+            // parseia a string $('<table ... id="payment_totals">') como markup
+            // e getElementById devolve o TEXTO do script. Enviar isso ao
+            // cliente faz o jQuery executá-lo e estourar SyntaxError. Nó dentro
+            // de <script> nunca é fragmento: o cliente já tem o elemento (ou o
+            // cria sozinho, ver register.php:1052/1127).
+            if ($node === null || $this->_is_inside_script($node) || $this->_looks_like_script_text($node)) {
                 continue;
             }
 
             if (in_array($id, $outer_ids, true)) {
-                $inner_by_id[$id] = trim($doc->saveHTML($node));
+                $inner_by_id[$id] = $this->_strip_scripts($doc->saveHTML($node));
 
                 continue;
             }
@@ -2282,10 +2364,55 @@ class Sales extends Secure_Controller
             foreach ($node->childNodes as $child) {
                 $inner .= $doc->saveHTML($child);
             }
-            $inner_by_id[$id] = trim($inner);
+            $inner_by_id[$id] = $this->_strip_scripts($inner);
         }
 
         return $inner_by_id;
+    }
+
+    /**
+     * Whether the node sits inside a <script>/<style>/<textarea> raw-text
+     * element. Those nodes are not real markup: the HTML parser treats the
+     * contents as text, so returning them as a fragment ships JavaScript to
+     * the client disguised as HTML (jQuery then executes it and throws).
+     */
+    private function _is_inside_script(\DOMNode $node): bool
+    {
+        for ($parent = $node->parentNode; $parent !== null; $parent = $parent->parentNode) {
+            if ($parent instanceof \DOMElement
+                && in_array(strtolower($parent->tagName), ['script', 'style', 'textarea', 'template'], true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Backstop do mesmo modo de falha: um fragmento nunca deve carregar o
+     * JavaScript da propria pagina. Mesmo com os <script> removidos antes do
+     * parse, recusar um no cujo texto ainda parece codigo jQuery impede que um
+     * fragmento mal aninhado chegue ao .html() do cliente.
+     */
+    private function _looks_like_script_text(\DOMNode $node): bool
+    {
+        $text = $node->textContent ?? '';
+
+        return str_contains($text, '$(') || str_contains($text, '.html(') || str_contains($text, 'function(');
+    }
+
+    /**
+     * Remove <script>/<style> blocks from an extracted fragment.
+     *
+     * Defence in depth: the register page's scripts are already loaded and
+     * every fragment is injected with .html(), which makes jQuery evaluate any
+     * inline <script> it finds. A fragment must never carry executable code —
+     * a mis-nested node is enough for the server to hand over a piece of the
+     * page's own JavaScript, and that is exactly what broke the cart.
+     */
+    private function _strip_scripts(string $html): string
+    {
+        return trim((string) preg_replace('#<(script|style)\b[^>]*>.*?</\1>#is', '', $html));
     }
 
     /**
@@ -2397,10 +2524,8 @@ class Sales extends Secure_Controller
     public function addDiversos(): void
     {
         $price = parse_decimals($this->request->getPost('price'));
-        
-        if ($price <= 0) {
-            echo json_encode(['success' => false, 'message' => 'Valor inválido']);
-            return;
+        if ($price === false || $price === null) {
+            $price = '0';
         }
         
         $quantity = parse_decimals($this->request->getPost('quantity')) ?: '1';

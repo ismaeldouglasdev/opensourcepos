@@ -145,4 +145,13 @@ return [
     "update"                             => "Atualizar Item",
     "use_inventory_menu"                 => "Usar Menu Inventário",
     "view_image"                         => "Ver imagem",
+    "ml_manage"                          => "Mercado Livre",
+    "ml_publish"                         => "Publicar no Mercado Livre",
+    "ml_listings_title"                  => "Produtos publicados no Mercado Livre",
+    "ml_no_listings"                     => "Nenhum produto publicado.",
+    "ml_loading"                         => "Consultando o Mercado Livre...",
+    "ml_pause"                           => "Pausar",
+    "ml_activate"                        => "Reativar",
+    "ml_required_attrs"                  => "Atributos obrigatórios pendentes",
+    "ml_blocked"                         => "O Mercado Livre bloqueou a publicação:",
 ];

@@ -994,13 +994,15 @@ class Sale_lib
      * @param bool|null $line
      * @return bool
      */
-    public function add_item(string &$item_id, int $item_location, string $quantity = '1', string &$discount = '0.0', int $discount_type = 0, int $price_mode = PRICE_MODE_STANDARD, ?int $kit_price_option = null, ?int $kit_print_option = null, ?string $price_override = null, ?string $description = null, ?string $serialnumber = null, ?int $sale_id = null, bool $include_deleted = false, ?bool $print_option = null, ?bool $line = null): bool
+    public function add_item(string &$item_id, int $item_location, string $quantity = '1', string &$discount = '0.0', int $discount_type = 0, int $price_mode = PRICE_MODE_STANDARD, ?int $kit_price_option = null, ?int $kit_print_option = null, ?string $price_override = null, ?string $description = null, ?string $serialnumber = null, ?int $sale_id = null, bool $include_deleted = false, ?bool $print_option = null, ?bool $line = null, ?int &$affected_line = null, ?bool &$merged = null): bool
     {
         $item_info = $this->item->get_info_by_id_or_number($item_id, $include_deleted);
 
         // Make sure item exists
         if (empty($item_info)) {
             $item_id = NEW_ENTRY;
+            $affected_line = null;
+            $merged = null;
             return false;
         }
 
@@ -1139,11 +1141,15 @@ class Sale_lib
 
             // Add to existing array
             $items += $item;
+            $affected_line = $insertkey;
+            $merged = false;
         } else {
-            $line = &$items[$updatekey];
-            $line['quantity'] = $quantity;
-            $line['total'] = $total;
-            $line['discounted_total'] = $discounted_total;
+            $lineRef = &$items[$updatekey];
+            $lineRef['quantity'] = $quantity;
+            $lineRef['total'] = $total;
+            $lineRef['discounted_total'] = $discounted_total;
+            $affected_line = $updatekey;
+            $merged = true;
         }
 
         $this->set_cart($items);

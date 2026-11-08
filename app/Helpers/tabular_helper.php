@@ -144,7 +144,7 @@ function get_sale_data_row(object $sale): array
     );
 
     $row['reopen'] = form_open("$controller/reopen/$sale->sale_id", ['class' => 'form-inline', 'style' => 'display:inline']) .
-        '<button type="submit" class="btn btn-xs btn-warning" title="' . lang('Sales.reopen_sale') . '" onclick="return confirm(' . json_encode(lang('Sales.reopen_sale')) . ')">' .
+        '<button type="submit" class="btn btn-xs btn-warning" title="' . esc(lang('Sales.reopen_sale'), 'attr') . '" onclick="return confirm(' . esc(json_encode(lang('Sales.reopen_sale')), 'attr') . ')">' .
         '<span class="glyphicon glyphicon-share-alt"></span> ' . lang('Sales.reopen') .
         '</button>' .
         form_close();
@@ -424,7 +424,7 @@ function item_headers(): array
         // P2/DESIGN.md: 155 de 10.335 itens (1,5%) tem foto. Com a coluna
         // visivel por padrao, 98,5% das linhas gastavam 72px exibindo "-".
         // Oculta por padrao, continua no seletor de colunas para quem usa.
-        ['item_pic'      => lang('Items.image'), 'sortable' => false, 'visible' => false, 'switchable' => true, 'class' => 'items-col-pic'],
+        ['item_pic'      => lang('Items.image'), 'sortable' => false, 'visible' => true, 'switchable' => true, 'class' => 'items-col-pic'],
         ['category'      => lang('Items.category'), 'class' => 'items-col-wrap items-col-cat'],
         ['company_name'  => lang('Suppliers.company_name'), 'visible' => false],
         ['cost_price'    => lang('Items.cost_price'), 'class' => 'items-col-num items-col-cost'],
@@ -586,6 +586,8 @@ function get_item_data_row(object $item, ?array $ctx = null): array
         'last_modified' => $last_modified
     ];
 
+    $ml_sku = trim((string) $item->item_number) !== '' ? trim((string) $item->item_number) : (string) $item->item_id;
+
     $icons = [
         'edit'      => anchor(
             "$controller/view/$item->item_id",
@@ -595,7 +597,11 @@ function get_item_data_row(object $item, ?array $ctx = null): array
                 'data-btn-submit' => lang('Common.submit'),
                 'title'           => lang(ucfirst($controller) . ".update")
             ]
-        )
+        ) . '<button type="button" class="btn btn-default btn-xs ml-publish-btn"'
+            . ' data-ml-item="' . $item->item_id . '"'
+            . ' data-ml-sku="' . esc($ml_sku, 'attr') . '"'
+            . ' title="' . lang('Items.ml_publish') . '">'
+            . '<span class="glyphicon glyphicon-send"></span></button>'
     ];
 
     return $columns + expand_attribute_values($definition_names, (array) $item) + $icons;

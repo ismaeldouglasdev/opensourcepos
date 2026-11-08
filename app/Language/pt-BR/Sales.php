@@ -229,5 +229,6 @@ return [
     "work_order_number"                => "Número da ordem de trabalho",
     "work_order_number_duplicate"      => "O número da ordem de serviço deve ser exclusivo.",
     "work_order_sent"                  => "Ordem de trabalho enviada para",
+    "underpayment_blocked"             => "Pagamento insuficiente: faltam {0}. Adicione o restante antes de finalizar.",
     "work_order_unsent"                => "A ordem de serviço não foi enviada para",
 ];

@@ -495,6 +495,17 @@ $date_str = $day_name . ', ' . date('d/m/Y');
     <!-- KPI Cards -->
     <div class="dash-kpi-grid">
         <div class="dash-kpi">
+            <div class="dash-kpi-icon bg-success"><span class="glyphicon glyphicon-plus"></span></div>
+            <div class="dash-kpi-value"><?= (int) ($items_created_today ?? 0) ?></div>
+            <div class="dash-kpi-label">Produtos Cadastrados Hoje</div>
+        </div>
+
+        <div class="dash-kpi">
+            <div class="dash-kpi-icon bg-info"><span class="glyphicon glyphicon-pencil"></span></div>
+            <div class="dash-kpi-value"><?= (int) ($items_updated_today ?? 0) ?></div>
+            <div class="dash-kpi-label">Produtos Atualizados Hoje</div>
+        </div>
+        <div class="dash-kpi">
             <div class="dash-kpi-icon bg-success"><span class="glyphicon glyphicon-usd"></span></div>
             <div class="dash-kpi-value"><?= to_currency($today_sales) ?></div>
             <div class="dash-kpi-label">Vendas Hoje</div>

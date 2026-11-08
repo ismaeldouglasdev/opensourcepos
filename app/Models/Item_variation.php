@@ -26,13 +26,14 @@ class Item_variation extends Model
      */
     public function get_variations_for_parent(int $parent_id, int $location_id): array
     {
-        $builder = $this->db->table('ospos_item_variations AS v');
+        $item_quantities = $this->db->DBPrefix . 'item_quantities';
+        $builder         = $this->db->table('ospos_item_variations AS v');
         $builder->select('v.variation_item_id AS item_id');
         $builder->select('v.attribute_name, v.attribute_value, v.position');
         $builder->select('i.name, i.item_number, i.unit_price, i.pic_filename');
         $builder->select('COALESCE(q.quantity, 0) AS stock_qty');
         $builder->join('ospos_items AS i', 'i.item_id = v.variation_item_id');
-        $builder->join('ospos_item_quantities AS q', 'q.item_id = v.variation_item_id AND q.location_id = ' . (int) $location_id, 'left');
+        $builder->join($item_quantities . ' AS q', 'q.item_id = v.variation_item_id AND q.location_id = ' . (int) $location_id, 'left');
         $builder->where('v.item_id', $parent_id);
         $builder->where('i.deleted', 0);
         $builder->orderBy('v.position', 'ASC');
@@ -58,10 +59,11 @@ class Item_variation extends Model
      */
     public function get_children_for_parent(int $parent_id): array
     {
-        $builder = $this->db->table('ospos_item_variations AS v');
+        $item_quantities = $this->db->DBPrefix . 'item_quantities';
+        $builder         = $this->db->table('ospos_item_variations AS v');
         $builder->select('v.item_variation_id, v.variation_item_id, v.attribute_name, v.attribute_value, v.position');
         $builder->select('i.name, i.item_number, i.unit_price, i.pic_filename');
-        $builder->select('COALESCE((SELECT SUM(q.quantity) FROM ospos_item_quantities AS q WHERE q.item_id = v.variation_item_id), 0) AS stock_qty');
+        $builder->select('COALESCE((SELECT SUM(q.quantity) FROM ' . $item_quantities . ' AS q WHERE q.item_id = v.variation_item_id), 0) AS stock_qty');
         $builder->join('ospos_items AS i', 'i.item_id = v.variation_item_id');
         $builder->where('v.item_id', $parent_id);
         $builder->where('i.deleted', 0);

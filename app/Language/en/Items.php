@@ -145,4 +145,13 @@ return [
     "last_modified"                      => "Last Modified",
     "use_inventory_menu"                 => "Use Inventory Menu",
     "view_image"                         => "View image",
+    "ml_manage"                          => "Mercado Livre",
+    "ml_publish"                         => "Publish to Mercado Livre",
+    "ml_listings_title"                  => "Products published on Mercado Livre",
+    "ml_no_listings"                     => "No product is published.",
+    "ml_loading"                         => "Querying Mercado Livre...",
+    "ml_pause"                           => "Pause",
+    "ml_activate"                        => "Reactivate",
+    "ml_required_attrs"                  => "Required attributes missing",
+    "ml_blocked"                         => "Mercado Livre blocked the publication:",
 ];

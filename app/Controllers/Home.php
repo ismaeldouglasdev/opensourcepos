@@ -9,11 +9,13 @@ use Config\OSPOS;
 class Home extends Secure_Controller
 {
     private $db;
+    private $item;
 
     public function __construct()
     {
         parent::__construct('home', null, 'home');
         $this->db = db_connect();
+        $this->item = model(\App\Models\Item::class);
     }
 
     /**
@@ -174,6 +176,9 @@ class Home extends Secure_Controller
         $builder->limit(8);
         $data['channel_sales'] = $builder->get()->getResult();
         $data['channel_sales_total'] = count($data['channel_sales']);
+
+        $data['items_created_today'] = $this->item->get_created_today_count();
+        $data['items_updated_today'] = $this->item->get_updated_today_count();
 
         echo view('home/home', $data);
     }

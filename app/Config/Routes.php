@@ -72,6 +72,7 @@ $routes->get('sales/editForm/(:num)', 'Sales::getEditForm/$1');
 $routes->get('sales/row/(:num)', 'Sales::getRow/$1');
 $routes->get('sales/edit/(:num)', 'Sales::getEdit/$1');
 $routes->get('sales/receipt/(:num)', 'Sales::getReceipt/$1');
+$routes->post('sales/deleteItemAjax', 'Sales::postDeleteItemAjax');
 $routes->get('sales/deleteItem/(:num)', 'Sales::getDeleteItem/$1');
 $routes->get('sales/deletePayment/(:segment)', 'Sales::getDeletePayment/$1');
 $routes->get('sales/suspended', 'Sales::getSuspended');
@@ -158,6 +159,12 @@ $routes->post('items/importCsvFile', 'Items::postImportCsvFile');
 $routes->get('items/itemImages/([0-9-]+)', 'Items::getItemImages/$1');
 $routes->post('items/deleteItemImage/([0-9-]+)', 'Items::postDeleteItemImage/$1');
 $routes->post('items/setMainImage/([0-9-]+)', 'Items::postSetMainImage/$1');
+
+$routes->get('mercadolivre/mappings', 'MercadoLivre::getMappings');
+$routes->get('mercadolivre/categoryAttributes', 'MercadoLivre::getCategoryAttributes');
+$routes->post('mercadolivre/publish', 'MercadoLivre::postPublish');
+$routes->post('mercadolivre/pause', 'MercadoLivre::postPause');
+$routes->post('mercadolivre/activate', 'MercadoLivre::postActivate');
 
 // ═══════════════════════════════════════════════════════════
 //  CUSTOMERS

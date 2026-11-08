@@ -229,5 +229,6 @@ return [
     "work_order_number"                => "Work Order Number",
     "work_order_number_duplicate"      => "Work Order Number must be unique.",
     "work_order_sent"                  => "Work Order sent to",
+    "underpayment_blocked"             => "Insufficient payment: {0} remaining. Add the remaining amount before finishing.",
     "work_order_unsent"                => "Work Order failed to be sent to",
 ];

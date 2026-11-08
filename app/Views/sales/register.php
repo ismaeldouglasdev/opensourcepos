@@ -300,12 +300,15 @@ if (isset($success)) {
     <?= form_open("$controller_name/add", ['id' => 'add_item_form', 'class' => 'form-horizontal panel panel-default']) ?>
         <div class="panel-body form-group">
             <ul>
-                <li class="pull-left first_li">
-                    <label for="item" class="control-label"><?= lang(ucfirst($controller_name) . '.find_or_scan_item_or_receipt') ?></label>
-                </li>
                 <li class="pull-left search_field_li">
                     <?= form_input(['name' => 'item', 'id' => 'item', 'class' => 'form-control input-sm', 'size' => '50', 'tabindex' => ++$tabindex]) ?>
                     <span id="item_search_status" class="item-search-status" role="status" aria-live="polite"></span>
+                    <button type="button" id="item_undo" class="btn btn-default btn-sm print_hide" title="Desfazer: remove o último item adicionado" style="margin-left:6px; display:none;">
+                        <span class="glyphicon glyphicon-share-alt" style="transform:scaleX(-1);display:inline-block;"></span> Desfazer
+                    </button>
+                    <button type="button" id="item_redo" class="btn btn-default btn-sm print_hide" title="Refazer: adiciona o item de volta" style="margin-left:4px; display:none;">
+                        <span class="glyphicon glyphicon-share-alt"></span> Refazer
+                    </button>
                     <?php /* Tarefa 7: no Modo Simples o campo precisa explicar o que
                              fazer, porque quem opera esta aqui nao conhece o
                              sistema. Fora do Modo Simples o texto nao existe. */ ?>
@@ -836,6 +839,107 @@ if (isset($success)) {
 
         $('#item').focus();
 
+        // Restaura Desfazer/Refazer (sobrevive a reload)
+        try {
+            var su = sessionStorage.getItem('posUndoAction');
+            if (su) { window._posUndoAction = JSON.parse(su); if (window._posUndoAction && window._posUndoAction.line != null) $('#item_undo').show(); }
+            var sr = sessionStorage.getItem('posRedoAction');
+            if (sr) { window._posRedoAction = JSON.parse(sr); if (window._posRedoAction && window._posRedoAction.itemId) $('#item_redo').show(); }
+        } catch(e) {}
+
+        // Foca o preco da linha Diversos recem-adicionada (sem modal)
+        if (sessionStorage.getItem('focusDiversosPrice') === '1') {
+            sessionStorage.removeItem('focusDiversosPrice');
+            setTimeout(function() {
+                var $rows = $('#cart_contents tr');
+                var $last = $rows.last();
+                var $price = $last.find('input[name="price"]').first();
+                if ($price.length) { $price.focus().select(); }
+            }, 100);
+        }
+
+        // Mantem o foco no campo de pesquisa de produto de forma dinamica:
+        // sempre que o campo perder o foco, recupera-o, exceto quando um modal
+        // esta aberto ou o foco foi para outro campo de entrada (pagamento,
+        // quantidade, desconto, etc.).
+        (function() {
+            var keepFocus = function() {
+                var $f = $('#item');
+                if (!$f.length || $f.is(':disabled')) return;
+                if ($('.modal.in, .modal.show').length) return;
+                var ae = document.activeElement;
+                if (ae && ae !== document.body && ae !== $f[0] &&
+                    (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' ||
+                     ae.tagName === 'SELECT' || ae.isContentEditable)) return;
+                $f.focus();
+            };
+            $('#item').on('blur', function() {
+                setTimeout(keepFocus, 50);
+            });
+            $(document).on('click', function() {
+                setTimeout(keepFocus, 50);
+            });
+        })();
+
+        // Desfazer: remove o último item adicionado do carrinho e restaura
+        // o termo/nome pesquisado no campo. Refazer adiciona de volta.
+        (function() {
+            function posSaveAction(key, obj) {
+                try { if (obj) sessionStorage.setItem(key, JSON.stringify(obj)); else sessionStorage.removeItem(key); } catch(e) {}
+            }
+            window._posSetUndo = function(action) {
+                window._posUndoAction = action;
+                posSaveAction('posUndoAction', action);
+                if (action && action.line != null) $('#item_undo').show(); else $('#item_undo').hide();
+            };
+            window._posSetRedo = function(action) {
+                window._posRedoAction = action;
+                posSaveAction('posRedoAction', action);
+                if (action && action.itemId) $('#item_redo').show(); else $('#item_redo').hide();
+            };
+
+            $('#item_undo').on('click', function() {
+                var act = window._posUndoAction;
+                if (!act || act.line == null) return;
+                var $btn = $(this).prop('disabled', true);
+                $.ajax({
+                    url: '<?= esc("$controller_name/deleteItemAjax") ?>',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { line: act.line, <?= csrf_token() ?>: '<?= csrf_hash() ?>' },
+                    success: function(res) {
+                        $btn.prop('disabled', false);
+                        if (res && res.cart_html !== undefined) {
+                            if (typeof posApplyCartFragments === 'function') posApplyCartFragments(res);
+                            else $('#cart_contents').html(res.cart_html);
+                        }
+                        var $f = $('#item');
+                        var restore = act.term || '';
+                        var isNum = /^[0-9]+$/.test($.trim(restore));
+                        if (!isNum && act.itemName) restore = act.itemName;
+                        else if (isNum && act.itemNumber) restore = act.itemNumber;
+                        $f.val(restore).focus();
+                        try { $f.autocomplete('search', restore); } catch(e) {}
+                        window._posSetRedo({ itemId: act.itemId, term: act.term || act.itemName || '' });
+                        window._posSetUndo(null);
+                    },
+                    error: function() {
+                        $btn.prop('disabled', false);
+                        // fallback: navega para a remoção clássica
+                        window.location = '<?= esc("$controller_name/deleteItem") ?>/' + act.line;
+                    }
+                });
+            });
+
+            $('#item_redo').on('click', function() {
+                var act = window._posRedoAction;
+                if (!act || !act.itemId) return;
+                window._posSetRedo(null);
+                $('#item').val(act.term || '');
+                posAjaxAdd(act.itemId);
+            });
+        })();
+
         // === POS AUTOCOMPLETE — Rich dropdown + AJAX add ===
         var CURRENCY_SYMBOL = '<?= esc($config["currency_symbol"]) ?>';
 
@@ -877,11 +981,23 @@ if (isset($success)) {
             }
         }
 
+        function posThumbFallback(img) {
+            var d = document.createElement('div');
+            d.className = 'pos-thumb pos-thumb-empty';
+            d.innerHTML = '<span class="glyphicon glyphicon-shopping-cart"></span>';
+            if (img && img.replaceWith) img.replaceWith(d);
+        }
+        // O handler inline onerror="posThumbFallback(this)" do <img> montado por
+        // posItemThumb roda no escopo GLOBAL, e a funcao acima vive dentro de
+        // $(document).ready(...). Sem esta linha o fallback nunca executa
+        // ("posThumbFallback is not defined") e a foto quebrada fica com o icone
+        // de imagem rompida no lugar do carrinho.
+        window.posThumbFallback = posThumbFallback;
+
         function posItemThumb(pic) {
             if (!pic) return '<div class="pos-thumb pos-thumb-empty"><span class="glyphicon glyphicon-shopping-cart"></span></div>';
-            var ext = pic.split('.').pop().toLowerCase();
             var base = '<?= base_url("uploads/item_pics/") ?>';
-            return '<img class="pos-thumb" src="' + base + encodeURIComponent(pic) + '" alt="" onerror="this.parentNode.innerHTML=\'<span class=\\\'glyphicon glyphicon-shopping-cart\\\'></span>\'" loading="lazy">';
+            return '<img class="pos-thumb" src="' + base + encodeURIComponent(pic) + '" alt="" loading="lazy" onerror="posThumbFallback(this)">';
         }
 
         // Suspender/Cancelar vivem em #buttons_sale, DENTRO do <form
@@ -955,6 +1071,7 @@ if (isset($success)) {
                 window.location.reload();
             });
         }
+        window.posSubmitRow = posSubmitRow;
 
         // Open the new-item dialog pre-filled with an unknown barcode and
         // try to fill the name/brand from an internet lookup (Open Food Facts).
@@ -1005,25 +1122,46 @@ if (isset($success)) {
                 $.notify({ message: 'Produto encontrado (' + res.source + '): "' + full + '". Confira os dados e salve.' }, { type: 'success', timer: 6000 });
             });
         }
-        function posAjaxAdd(itemId) {
+        function posApplyCartFragments(res) {
+            if (!res || res.cart_html === undefined) return;
+            $('#cart_contents').html(res.cart_html);
+            var $totals = $('#sale_totals');
+            if ($totals.length && res.totals_html !== undefined) $totals.html(res.totals_html);
+            if (typeof syncCartTotalBase === 'function') syncCartTotalBase();
+            var $pay = $('#payment_totals');
+            if (!$pay.length) {
+                $pay = $('<table class="sales_table_100" id="payment_totals">');
+                $('#sale_totals').after($pay);
+            }
+            if (res.payments_html !== undefined) $pay.html(res.payments_html);
+            var $btns = $('#sale_buttons');
+            if (!$btns.length) {
+                $btns = $('<div id="sale_buttons">');
+                $('#payment_totals').after($btns);
+            }
+            if (res.buttons_html !== undefined) $btns.html(res.buttons_html);
+            if (res.sale_actions_form_html) {
+                var $tmp = $('<div>').html(res.sale_actions_form_html);
+                posMountSaleActions($tmp.find('#buttons_form'));
+            }
+        }
+
+        function posAjaxAdd(itemId, meta) {
             if (posAjaxPending) return;
             posAjaxPending = true;
+            meta = meta || {};
             $.ajax({
                 url: '<?= esc("$controller_name/addAjax") ?>',
                 type: 'POST',
                 dataType: 'json',
-                data: { item: itemId },
+                data: { item: itemId, <?= csrf_token() ?>: '<?= csrf_hash() ?>' },
                 success: function(res) {
                     posAjaxPending = false;
                     if (res.needs_variation) {
-                        // Variation parent: it owns the barcode but holds no stock,
-                        // so ask which size before touching the cart.
                         posShowVariationModal(res);
                         return;
                     }
                     if (res.error && res.unknown_code) {
-                        // Scanned a code that is not registered: open the new-item
-                        // dialog pre-filled and try to fetch product info online.
                         beep.error();
                         $('#item').autocomplete('close');
                         $('#item').val('').focus();
@@ -1037,47 +1175,16 @@ if (isset($success)) {
                     if (res.warning) {
                         $.notify({ message: res.warning }, { type: 'warning', timer: 3000 });
                     }
-                    if (res.cart_html !== undefined) {
-                        $('#cart_contents').html(res.cart_html);
-                        // Totals table exists since page load
-                        var $totals = $('#sale_totals');
-                        if ($totals.length && res.totals_html !== undefined) $totals.html(res.totals_html);
-                        // Tarefa 8: este e o caminho do scanner, o mesmo que o
-                        // plano usa como teste de regressao. O desconto vive so
-                        // no cliente e o servidor devolve #sale_total cheio, entao
-                        // sem esta chamada o desconto aplicado some assim que o
-                        // proximo produto e escaneado.
-                        if (typeof syncCartTotalBase === 'function') syncCartTotalBase();
-
-                        // When the cart goes from empty to non-empty, the
-                        // payments table and buttons container don't exist yet:
-                        // create them right after the totals table.
-                        var $pay = $('#payment_totals');
-                        if (!$pay.length) {
-                            $pay = $('<table class="sales_table_100" id="payment_totals">');
-                            $('#sale_totals').after($pay);
+                    posApplyCartFragments(res);
+                    // Desfazer: só faz sentido para item novo em linha própria.
+                    // Se o add apenas somou quantidade a uma linha existente (merged),
+                    // remover a linha inteira seria destrutivo — então não registra.
+                    if (res.success && res.added_line != null && !res.added_merged) {
+                        if (typeof _posSetUndo === 'function') {
+                            _posSetUndo({ line: res.added_line, itemId: itemId, term: meta.term || '', itemName: meta.itemName || '' });
                         }
-                        if (res.payments_html) $pay.html(res.payments_html);
-
-                        var $btns = $('#sale_buttons');
-                        if (!$btns.length) {
-                            $btns = $('<div id="sale_buttons">');
-                            $('#payment_totals').after($btns);
-                        }
-                        if (res.buttons_html) $btns.html(res.buttons_html);
-
-                        // Suspender/Cancelar (#buttons_sale) sao renderizados
-                        // fora de #sale_buttons; sem este fragmento o operador
-                        // perde as duas acoes apos o primeiro item escaneado.
-                        // Vai o <form id="buttons_form"> inteiro, e nao so o
-                        // innerHTML dos botoes — ver posMountSaleActions().
-                        if (res.sale_actions_form_html) {
-                            var $tmp = $('<div>').html(res.sale_actions_form_html);
-                            posMountSaleActions($tmp.find('#buttons_form'));
-                        }
+                        if (typeof _posSetRedo === 'function') _posSetRedo(null);
                     }
-                    // Suppress any late autocomplete response from reopening
-                    // the menu right after we cleared the field.
                     window._posSuppressMenuUntil = Date.now() + 900;
                     $('#item').autocomplete('close');
                     $('#item').val('').focus();
@@ -1085,7 +1192,6 @@ if (isset($success)) {
                 },
                 error: function() {
                     posAjaxPending = false;
-                    // Fallback: submit form normally
                     document.getElementById('add_item_form').submit();
                 }
             });
@@ -1135,9 +1241,10 @@ if (isset($success)) {
             $m.on('click', '.pos-var-item', function() {
                 if ($(this).prop('disabled')) return;
                 var id = $(this).data('item-id');
+                var nm = $(this).find('.pos-var-size').text() || '';
                 $m.modal('hide');
                 beep.ok();
-                posAjaxAdd(id);
+                posAjaxAdd(id, { term: nm, itemName: nm });
             });
             $m.on('hidden.bs.modal', function() { $m.remove(); });
             $m.modal('show');
@@ -1170,7 +1277,9 @@ if (isset($success)) {
             autoFocus: false,
             delay: 150,
             open: function() {
-                $(this).autocomplete('widget').addClass('pos-autocomplete');
+                var $w = $(this).autocomplete('widget');
+                $w.addClass('pos-autocomplete');
+                $w.css('width', $(this).outerWidth());
             },
             select: function(e, ui) {
                 if (ui.item.type === 'diversos') {
@@ -1187,7 +1296,7 @@ if (isset($success)) {
                 // Add item via AJAX (no page reload)
                 window._posItemSelectedAt = Date.now();
                 beep.ok();
-                posAjaxAdd(ui.item.value);
+                posAjaxAdd(ui.item.value, { term: $(this).val().trim(), itemName: ui.item.name || ui.item.label || '', itemNumber: ui.item.item_number || '' });
                 return false;
             }
         });
@@ -1225,7 +1334,8 @@ if (isset($success)) {
 
         // Custom dropdown rendering — must be attached to the widget INSTANCE
         // (passing _renderItem as an option is silently ignored by jQuery UI).
-        $('#item').autocomplete('instance')._renderItem = function(ul, item) {            if (item.type === 'diversos') {
+        $('#item').autocomplete('instance')._renderItem = function(ul, item) {
+            if (item.type === 'diversos') {
                 return $('<li class="pos-ac-diversos"><div><span class="glyphicon glyphicon-plus-sign"></span> DIVERSOS — Preço avulso</div></li>')
                     .appendTo(ul);
             }
@@ -1288,8 +1398,28 @@ if (isset($success)) {
                 var valor = $(this).val().trim().toLowerCase();
                 if (valor === '1' || valor === 'diversos') {
                     e.preventDefault();
-                    showDiversosModal();
                     $(this).val('');
+                    // Adiciona Diversos direto, sem modal, e foca no preco
+                    $.ajax({
+                        url: '<?= site_url('sales/addDiversos') ?>',
+                        type: 'POST',
+                        data: {
+                            price: '0',
+                            quantity: '1',
+                            description: 'Diversos',
+                            <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+                        },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                beep.ok();
+                                sessionStorage.setItem('focusDiversosPrice', '1');
+                                location.reload();
+                            } else {
+                                beep.error();
+                            }
+                        }
+                    });
                     return false;
                 }
                 var $menu = $('#item').autocomplete('widget');
@@ -1307,7 +1437,8 @@ if (isset($success)) {
                     return false;
                 }
                 beep.ok();
-                posAjaxAdd($(this).val().trim());
+                var _term = $(this).val().trim();
+                posAjaxAdd(_term, { term: _term, itemName: '' });
                 return false;
             }
         });
@@ -1355,7 +1486,7 @@ if (isset($success)) {
                         if (scanCharTimes[i] - scanCharTimes[i - 1] > 120) return;
                     }
                     beep.ok();
-                    posAjaxAdd(cur);
+                    posAjaxAdd(cur, { term: cur, itemName: '' });
                 }, 300);
             }
         });
@@ -2447,14 +2578,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Enter em campos de edição inline no carrinho (preço, qtd, desconto).
     // Delegado em #cart_contents porque posSubmitRow() substitui o HTML da
-    // tabela a cada edição: um addEventListener direto nos inputs seria
-    // descartado na primeira atualização AJAX. E não pode usar
-    // closest('form').submit() — o <form> da linha vive dentro de <table> e o
-    // parser HTML o ergue para fora (foster parenting), então o input nunca é
-    // descendente do form, closest() devolve null e o Enter não fazia nada.
-    $('#cart_contents').on('keypress', 'input', function(e) {
-        if (e.key !== 'Enter' && e.keyCode !== 13) return;
+    // tabela a cada edição. Não pode usar closest('form').submit() — o <form>
+    // da linha vive dentro de <table> e o parser HTML o ergue para fora
+    // (foster parenting). blur() atualiza defaultValue via change natural? não;
+    // chamamos posSubmitRow direto e marcamos para evitar duplo submit no change.
+    $('#cart_contents').on('keydown', 'input', function(e) {
+        if (e.key !== 'Enter' && e.which !== 13) return;
         e.preventDefault();
+        $(this).data('pos-enter-submit', true);
         if (typeof posSubmitRow === 'function') posSubmitRow($(this).closest('tr'));
     });
 

@@ -79,6 +79,8 @@ class Items extends Secure_Controller
         $data['table_headers'] = get_items_manage_table_headers();
         $data['stock_location'] = $this->item_lib->get_item_location();
         $data['stock_locations'] = $this->stock_location->get_allowed_locations();
+        $data['items_created_today'] = $this->item->get_created_today_count();
+        $data['items_updated_today'] = $this->item->get_updated_today_count();
 
         // Filters that will be loaded in the multiselect dropdown
         $data['filters'] = [
@@ -167,7 +169,7 @@ class Items extends Secure_Controller
             if (sizeof($images) < 2 && !file_exists($thumb_path)) {
                 $image = Services::image('gd2');
                 $image->withFile($image_path)
-                    ->resize(52, 32, true, 'height')
+                    ->resize(180, 180, true, 'height')
                     ->save($thumb_path);
             }
 
@@ -1877,7 +1879,7 @@ class Items extends Secure_Controller
 
         if ($field === 'quantity') {
             $new_qty = parse_quantity($value);
-            $location_id = $this->item_lib->get_item_location();
+            $location_id = 1; // frente (estoque da frente)
 
             $item_quantity = $this->item_quantity->get_item_quantity($item_id, $location_id);
             $old_qty = (int) ($item_quantity->quantity ?? 0);
@@ -1908,10 +1910,18 @@ class Items extends Secure_Controller
                 ], false);
             }
 
+            // total de estoque (frente + fundo) para exibir na grid
+            $total_qty = 0;
+            $locs = $this->stock_location->get_undeleted_all()->getResultArray();
+            foreach ($locs as $loc) {
+                $q = $this->item_quantity->get_item_quantity($item_id, $loc['location_id']);
+                $total_qty += (float) ($q->quantity ?? 0);
+            }
+
             echo json_encode([
                 'success' => $ok,
                 'message' => $ok ? 'Estoque atualizado' : 'Erro ao atualizar estoque',
-                'value'   => to_quantity_decimals($new_qty),
+                'value'   => to_quantity_decimals($total_qty),
             ]);
             return;
         }
