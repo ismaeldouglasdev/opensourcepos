@@ -637,12 +637,23 @@ function parse_decimals(string $number, ?int $decimals = null): mixed
     // O último separador seguido de 1-2 dígitos é o decimal; o restante é agrupador de milhar.
     $cleaned = str_replace(' ', '', (string) preg_replace('/[^0-9.,\-]/', '', $number));
     if ($cleaned !== '') {
-        $last_separator = max(strrpos($cleaned, '.'), strrpos($cleaned, ','));
+        $dot = strrpos($cleaned, '.');
+        $comma = strrpos($cleaned, ',');
+        $last_separator = max($dot, $comma);
         if ($last_separator !== false) {
             $fraction_digits = strlen($cleaned) - $last_separator - 1;
-            $cleaned = str_replace(['.', ','], '', $cleaned);
+            $sep_count = substr_count($cleaned, '.') + substr_count($cleaned, ',');
             if ($fraction_digits > 0 && $fraction_digits <= 2) {
+                // Last separator followed by 1-2 digits: treat as decimal separator.
+                $cleaned = str_replace(['.', ','], '', $cleaned);
                 $cleaned = substr($cleaned, 0, -$fraction_digits) . '.' . substr($cleaned, -$fraction_digits);
+            } elseif ($sep_count === 1) {
+                // Single separator with >2 trailing digits (e.g. JS float 11.9047619...):
+                // treat as decimal separator to preserve precision.
+                $cleaned = str_replace(',', '.', $cleaned);
+            } else {
+                // Multiple separators and last has >2 digits: treat all as thousands/grouping.
+                $cleaned = str_replace(['.', ','], '', $cleaned);
             }
         }
         $number = $cleaned;

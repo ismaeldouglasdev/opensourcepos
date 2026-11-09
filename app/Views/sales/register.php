@@ -2173,7 +2173,7 @@ function finishRefund(kind) {
         type: 'POST',
         data: Object.assign(csrfData, {
             payments_json: JSON.stringify(payload),
-            discount_pct: sale_discount_pct || '',
+            discount_pct: sale_discount_pct ? (Math.round(sale_discount_pct * 10000) / 10000) : '',
             sale_date: saleDate
         }),
         dataType: 'json',
@@ -2521,7 +2521,7 @@ function finishCheckout() {
         type: 'POST',
         data: Object.assign(csrfData, {
             payments_json: paymentsData,
-            discount_pct: sale_discount_pct || '',
+            discount_pct: sale_discount_pct ? (Math.round(sale_discount_pct * 10000) / 10000) : '',
             sale_date: saleDate
         }),
         dataType: 'json',
