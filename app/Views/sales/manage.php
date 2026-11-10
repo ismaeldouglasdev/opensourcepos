@@ -109,6 +109,16 @@ window._tutorialSteps = [
         border-top: 1px solid #eef1f4;
         padding: 10px 16px;
     }
+    /* Filtros rápidos (1 clique) */
+    #quick_filters { display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:8px 10px; margin:6px 0 10px; background:var(--os-surface); border:1px solid var(--os-border); border-radius:8px; }
+    .qf-chip { border-radius:999px; padding:4px 14px; font-size:12px; font-weight:600; letter-spacing:.02em; background:#f1f5f9; border:1px solid #cbd5e1; color:#334155; }
+    .qf-chip:hover { border-color:var(--os-primary); color:var(--os-primary-dark); }
+    .qf-chip.active { background:var(--os-primary); border-color:var(--os-primary); color:#fff; box-shadow:0 1px 2px rgba(0,0,0,.15); }
+    .qf-chip.active:hover { color:#fff; }
+    .qf-label { font-size:12px; font-weight:700; text-transform:uppercase; color:var(--os-text-muted); letter-spacing:.03em; }
+    .qf-divider { color:#cbd5e1; margin:0 4px; }
+    .qf-debts { border-radius:999px; padding:4px 14px; font-size:12px; font-weight:600; background:#fef3c7; border:1px solid #f59e0b; color:#92400e; }
+    .qf-debts:hover { background:#fde68a; }
 </style>
 
 <script type="text/javascript">
@@ -117,6 +127,7 @@ window._tutorialSteps = [
 
     $(document).ready(function() {
         $("#filters").on("hidden.bs.select", function(e) {
+            syncMethodChips();
             table_support.refresh();
         });
         <?= view("partial/daterangepicker") ?>
@@ -132,9 +143,67 @@ window._tutorialSteps = [
         $("#daterangepicker").on("apply.daterangepicker", function(ev, picker) {
             start_date = picker.startDate.format("YYYY-MM-DD");
             end_date = picker.endDate.format("YYYY-MM-DD");
+            $('.qf-period').removeClass('active');
             table_support.refresh();
             updatePaymentSummary();
         });
+
+        function syncMethodChips() {
+            var vals = $("#filters").val() || [];
+            var map = {
+                'only_cash': 'cash',
+                'only_creditcard': 'card',
+                'only_pix': 'pix',
+                'only_account_receivable': 'fiado'
+            };
+            var key = vals.length === 0 ? 'all' : (vals.length === 1 ? (map[vals[0]] || null) : null);
+            $('.qf-method').removeClass('active');
+            if (key) { $('.qf-method[data-method="' + key + '"]').addClass('active'); }
+        }
+
+        function applyPeriodChip(period) {
+            var start, end;
+            var now = moment();
+            if (period === 'today') { start = now.clone(); end = now.clone(); }
+            else if (period === 'yesterday') { start = now.clone().subtract(1, 'days'); end = now.clone().subtract(1, 'days'); }
+            else if (period === 'week') { start = now.clone().subtract(6, 'days'); end = now.clone(); }
+            else { start = now.clone().startOf('month'); end = now.clone(); }
+            start_date = start.format('YYYY-MM-DD');
+            end_date = end.format('YYYY-MM-DD');
+            var _p = $('#daterangepicker').data('daterangepicker');
+            if (_p) { _p.setStartDate(start.clone()); _p.setEndDate(end.clone()); }
+            $('.qf-period').removeClass('active');
+            $('.qf-period[data-period="' + period + '"]').addClass('active');
+            table_support.refresh();
+            updatePaymentSummary();
+        }
+
+        function applyMethodChip(key) {
+            var map = {
+                'all': [],
+                'cash': ['only_cash'],
+                'card': ['only_creditcard'],
+                'pix': ['only_pix'],
+                'fiado': ['only_account_receivable']
+            };
+            $('#filters').selectpicker('val', map[key] || []);
+            syncMethodChips();
+            table_support.refresh();
+            updatePaymentSummary();
+        }
+
+        $(document).on('click', '.qf-period', function() {
+            applyPeriodChip($(this).data('period'));
+        });
+        $(document).on('click', '.qf-method', function() {
+            applyMethodChip($(this).data('method'));
+        });
+
+        if (activeCustomerId <= 0) {
+            $('.qf-period[data-period="today"]').addClass('active');
+            syncMethodChips();
+        }
+
         
         function updatePaymentSummary() {
             var filters = $("#filters").val() || [];
@@ -278,6 +347,24 @@ window._tutorialSteps = [
 
 <div id="payment_summary">
     <?= $payment_summary ?>
+</div>
+
+<div id="quick_filters" class="print_hide">
+    <span class="qf-label"><span class="glyphicon glyphicon-calendar"></span> Período:</span>
+    <button type="button" class="btn btn-sm qf-chip qf-period" data-period="today">HOJE</button>
+    <button type="button" class="btn btn-sm qf-chip qf-period" data-period="yesterday">ONTEM</button>
+    <button type="button" class="btn btn-sm qf-chip qf-period" data-period="week">7 DIAS</button>
+    <button type="button" class="btn btn-sm qf-chip qf-period" data-period="month">MÊS</button>
+    <span class="qf-divider">|</span>
+    <button type="button" class="btn btn-sm qf-chip qf-method" data-method="all">TODAS</button>
+    <button type="button" class="btn btn-sm qf-chip qf-method" data-method="cash">DINHEIRO</button>
+    <button type="button" class="btn btn-sm qf-chip qf-method" data-method="card">CARTÃO</button>
+    <button type="button" class="btn btn-sm qf-chip qf-method" data-method="pix">PIX</button>
+    <button type="button" class="btn btn-sm qf-chip qf-method" data-method="fiado">FIADO</button>
+    <span class="qf-divider">|</span>
+    <a class="btn btn-sm qf-debts" href="<?= site_url('debtors') ?>" title="Quitar dívidas fiado">
+        <span class="glyphicon glyphicon-usd"></span> DÍVIDAS / QUITAR
+    </a>
 </div>
 
 <div id="toolbar">

@@ -27,6 +27,9 @@ $routes->get('home/changePassword/(:num)', 'Home::getChangePassword/$1');
 $routes->post('home/save/([0-9-]+)', 'Home::postSave/$1');
 $routes->post('home/saveDailyTarget', 'Home::postSaveDailyTarget');
 $routes->get('debtors', 'Debtors::getIndex');
+$routes->get('debtors/debts/(:num)', 'Debtors::getDebts/$1');
+$routes->get('debtors/history', 'Debtors::getHistory');
+$routes->post('debtors/settle', 'Debtors::postSettle');
 
 $routes->add('reports/summary_(:any)/(:any)/(:any)', 'Reports::Summary_$1/$2/$3/$4');
 $routes->add('reports/summary_expenses_categories', 'Reports::date_input_only');

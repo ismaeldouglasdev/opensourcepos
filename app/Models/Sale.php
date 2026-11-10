@@ -1824,7 +1824,127 @@ class Sale extends Model
         }
 
         if ($filters['only_account_receivable']) {
-            $builder->where('payments.payment_type', credit_payment_type_name());
+            // The temp table stores payment_type as a GROUP_CONCAT ("Fiado 60.00, Dinheiro 40.00"),
+            // so an equality check can never match; a prefix match is required (same as cash/credit/pix).
+            $builder->like('payments.payment_type', credit_payment_type_name());
         }
+    }
+
+    /**
+     * Outstanding Fiado (account receivable) debt per sale for a customer, oldest sale first.
+     * Only completed sales with a positive account-receivable balance are returned.
+     *
+     * @return array list of rows: sale_id, sale_time, fiado_outstanding
+     */
+    public function get_fiado_open_sales(int $customer_id): array
+    {
+        $scale = totals_decimals();
+
+        $builder = $this->db->table('sales_payments AS payments');
+        $builder->select([
+            'sales.sale_id AS sale_id',
+            'sales.sale_time AS sale_time',
+            "ROUND(SUM(payments.payment_amount), $scale) AS fiado_outstanding"
+        ]);
+        $builder->join('sales', 'sales.sale_id = payments.sale_id', 'inner');
+        $builder->where('payments.payment_type', credit_payment_type_name());
+        $builder->where('sales.sale_status', COMPLETED);
+        $builder->where('sales.customer_id', $customer_id);
+        $builder->groupBy(['sales.sale_id', 'sales.sale_time']);
+        $builder->having('SUM(payments.payment_amount) >', 0);
+        $builder->orderBy('sales.sale_time', 'ASC');
+        $builder->orderBy('sales.sale_id', 'ASC');
+
+        return $builder->get()->getResultArray();
+    }
+
+    /**
+     * Settles (partially or fully) the Fiado debt of one sale: the customer paid part
+     * of the balance left on credit, outside the original sale.
+     *
+     * The account-receivable payment rows of the sale are consumed oldest-first (reduced
+     * or, when exhausted, deleted) by the settled amount, and one audit payment row is
+     * appended with the actual payment method used. Effects:
+     *  - the sale's payment total stays constant (Sale_lib::get_payments_total math,
+     *    so reopening/editing the sale keeps amount_due correct);
+     *  - the sale's day revenue is net-unchanged (-X in Fiado, +X in the method used,
+     *    both inside the same sale_time window);
+     *  - the customer's outstanding balance and pending_receivables drop by exactly X;
+     *  - no negative payment rows are created (returns-style summaries stay clean).
+     *
+     * @param int    $sale_id      the sale being settled
+     * @param string $payment_type the real payment method used (e.g. "Dinheiro", "PIX")
+     * @param string $amount       bcmath-compatible decimal string (the settled amount)
+     * @return string the remaining outstanding balance for the sale (bcmath string)
+     * @throws \InvalidArgumentException when the amount is not positive
+     * @throws \RuntimeException         when the amount exceeds the sale's outstanding balance
+     */
+    public function settle_fiado_payment(int $sale_id, string $payment_type, string $amount): string
+    {
+        $scale = totals_decimals();
+        $amount = \bcadd('0', $amount, $scale);
+
+        if (\bccomp($amount, '0', $scale) !== 1) {
+            throw new \InvalidArgumentException('O valor da quitação deve ser maior que zero.');
+        }
+
+        $this->db->transBegin();
+
+        try {
+            $builder = $this->db->table('sales_payments');
+            $builder->select('payment_id, payment_amount');
+            $builder->where('sale_id', $sale_id);
+            $builder->where('payment_type', credit_payment_type_name());
+            $builder->where('payment_amount >', 0);
+            $builder->orderBy('payment_id', 'ASC');
+            $fiado_rows = $builder->get()->getResult();
+
+            $outstanding = '0';
+            foreach ($fiado_rows as $row) {
+                $outstanding = \bcadd($outstanding, (string) $row->payment_amount, $scale);
+            }
+
+            if (\bccomp($amount, $outstanding, $scale) === 1) {
+                throw new \RuntimeException('O valor da quitação excede o saldo devedor da venda.');
+            }
+
+            $remaining_to_consume = $amount;
+            foreach ($fiado_rows as $row) {
+                if (\bccomp($remaining_to_consume, '0', $scale) !== 1) {
+                    break;
+                }
+
+                $row_amount = (string) $row->payment_amount;
+                $row_builder = $this->db->table('sales_payments');
+
+                if (\bccomp($row_amount, $remaining_to_consume, $scale) !== 1) {
+                    // Row fully consumed: delete it so grids/summaries don't show "Fiado 0.00".
+                    $row_builder->where('payment_id', $row->payment_id)->delete();
+                    $remaining_to_consume = \bcsub($remaining_to_consume, $row_amount, $scale);
+                } else {
+                    $row_builder->where('payment_id', $row->payment_id)
+                        ->update(['payment_amount' => \bcsub($row_amount, $remaining_to_consume, $scale)]);
+                    $remaining_to_consume = '0';
+                }
+            }
+
+            $this->db->table('sales_payments')->insert([
+                'sale_id'         => $sale_id,
+                'payment_type'    => $payment_type,
+                'payment_amount'  => $amount,
+                'cash_refund'     => 0.00,
+                'cash_adjustment' => 0,
+                'employee_id'     => (int) session('person_id'),
+                'payment_time'    => date('Y-m-d H:i:s'),
+                'reference_code'  => 'FIADO'
+            ]);
+
+            $this->db->transCommit();
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+            throw $e;
+        }
+
+        return \bcsub($outstanding, $amount, $scale);
     }
 }
