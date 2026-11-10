@@ -2784,10 +2784,24 @@ document.addEventListener('DOMContentLoaded', function() {
 (function($){
     'use strict';
 
+    var pickerForQuitar = false;
+
     function pickerSubmit(v) {
-        $('#customer').val(v);
-        $('#customer_picker_modal').modal('hide');
-        $('#select_customer_form').submit();
+        if (pickerForQuitar) {
+            // Came from Quitar Fiado fallback: set customer on button and re-trigger it
+            var $btn = $('#quitar_fiado_button');
+            $btn.removeAttr('data-customer').removeAttr('data-name');
+            $btn.attr({ 'data-customer': v, 'data-name': $('#customer_search').autocomplete('instance').selectedItem?.label || '' });
+            $btn.removeData();
+            $('#customer_picker_modal').modal('hide');
+            $btn.click();
+            pickerForQuitar = false;
+        } else {
+            // Normal flow: add customer to sale
+            $('#customer').val(v);
+            $('#customer_picker_modal').modal('hide');
+            $('#select_customer_form').submit();
+        }
     }
 
     window.openNewItemCustomer = function() {
@@ -2802,6 +2816,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     $(document).on('click', '#add_customer_button', function() {
+        pickerForQuitar = false;
         $('#customer_picker_modal').modal('show');
     });
 

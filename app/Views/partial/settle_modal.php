@@ -171,6 +171,7 @@ $reload_on_close = $reload_on_close ?? false;
             if ($customer.length && $customer.is(':visible')) {
                 $customer.focus();
             } else if ($('#add_customer_button').length) {
+                if (window.pickerForQuitar !== undefined) { window.pickerForQuitar = true; }
                 $('#add_customer_button').click();
             }
             return;
