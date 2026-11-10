@@ -514,6 +514,12 @@ $date_str = $day_name . ', ' . date('d/m/Y');
             <?php endif; ?>
         </div>
 
+        <div class="dash-kpi">
+            <div class="dash-kpi-icon bg-primary"><span class="glyphicon glyphicon-list-alt"></span></div>
+            <div class="dash-kpi-value"><?= esc((string)($sales_count_today ?? 0)) ?></div>
+            <div class="dash-kpi-label">Nº de Vendas Hoje</div>
+        </div>
+
         <?php if (!empty($today_returns) && $today_returns > 0): ?>
         <div class="dash-kpi">
             <div class="dash-kpi-icon bg-danger"><span class="glyphicon glyphicon-refresh"></span></div>

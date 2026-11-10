@@ -785,6 +785,9 @@ code, .font-monospace, pre {
     border: 1px solid var(--os-border) !important;
     box-shadow: var(--os-shadow) !important;
     padding: 12px !important;
+    /* Bootstrap .panel vem com overflow:hidden, que mata o position:sticky
+       da barra de acoes (#pos_action_bar) dentro do register */
+    overflow: visible !important;
 }
 
 #overall_sale .form-group {

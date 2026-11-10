@@ -119,6 +119,8 @@ class Customers extends Persons
      */
     public function getSuggest(): void
     {
+        $this->response->setContentType('application/json');
+
         $search = $this->request->getGet('term');
         $suggestions = $this->customer->get_search_suggestions($search);
 
@@ -130,6 +132,8 @@ class Customers extends Persons
      */
     public function suggest_search(): void
     {
+        $this->response->setContentType('application/json');
+
         $search = $this->request->getGet('term');
         $suggestions = $this->customer->get_search_suggestions($search, 25, false);
 

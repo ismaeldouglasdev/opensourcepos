@@ -60,6 +60,16 @@ class Home extends Secure_Controller
         $row = $builder->get()->getRow();
         $data['today_returns'] = abs((float)($row->total ?? 0));
 
+        // 1c. Number of sales (transactions) today — count of COMPLETED sales.
+        // The "Vendas Hoje" card shows the R$ total; the operator also wants
+        // to know HOW MANY sales made up that total.
+        $builder = $this->db->table('sales');
+        $builder->select("COUNT({$p}sales.sale_id) AS count");
+        $builder->where('sales.sale_status', COMPLETED);
+        $builder->where("DATE({$p}sales.sale_time)", date('Y-m-d'));
+        $row = $builder->get()->getRow();
+        $data['sales_count_today'] = (int)($row->count ?? 0);
+
         // 2. Yesterday's sales total
         $builder = $this->db->table('sales_payments');
         $builder->select("ROUND(SUM($pay_amount), $decimals) AS total");

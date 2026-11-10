@@ -136,6 +136,10 @@ window._tutorialSteps = [
 #btn_finalizar_venda { height: 44px; font-size: 17px; font-weight: bold; margin-top: 8px; }
 #finish_checkout_btn { height: 40px; font-size: 17px; }
 
+/* Barra de ações presa ao topo (visível sem rolar e ao rolar o carrinho) */
+#pos_action_bar { position: sticky; top: 0; z-index: 900; background: var(--os-surface, #fff); margin: -10px -10px 10px; padding: 8px 12px 10px; border-bottom: 1px solid var(--os-border, #d0d7de); box-shadow: 0 6px 10px -8px rgba(0,0,0,0.30); border-radius: var(--os-radius-lg, 8px) var(--os-radius-lg, 8px) 0 0; }
+button[disabled]#btn_finalizar_venda { opacity: 0.55; }
+
 </style>
 
 <style>
@@ -242,12 +246,12 @@ if (isset($success)) {
     <?= form_open("$controller_name/changeMode", ['id' => 'mode_form', 'class' => 'form-horizontal panel panel-default']) ?>
         <div class="panel-body form-group">
             <ul>
-                <li class="pull-left first_li">
-                    <label class="control-label"><?= lang(ucfirst($controller_name) . '.mode') ?></label>
-                </li>
-                <li class="pull-left">
-                    <?= form_dropdown('mode', $modes, $mode, ['onchange' => "$('#mode_form').submit();", 'class' => 'selectpicker show-menu-arrow', 'data-style' => 'btn-default btn-sm', 'data-width' => 'fit']) ?>
-                </li>
+                <?php /* O dropdown "Registrar como" (mode = Venda/Devolução) e o
+                         label que o acompanhavam foram REMOVIDOS a pedido do
+                         dono — o fluxo de devolução morphou para a página
+                         "Trocas e Devoluções" (sales/exchange, botão abaixo).
+                         O form #mode_form é mantido: o dropdown de
+                         stock_location ainda submete por ele. */ ?>
                 <?php if ($config['dinner_table_enable']) { ?>
                     <li class="pull-left first_li">
                         <label class="control-label"><?= lang(ucfirst($controller_name) . '.table') ?></label>
@@ -272,17 +276,25 @@ if (isset($success)) {
                     </button>
                 </li>
 
+                <li class="pull-right">
+                    <?php /* O bloco "Selecionar Cliente" (label + input + Novo
+                            Cliente) do painel lateral foi condensado aqui em 1
+                            único botão: ela abre o seletor
+                            #customer_picker_modal no fim do arquivo. Cliente
+                            novo segue disponível dentro do seletor. */ ?>
+                    <button type="button" class="btn btn-info btn-sm" id="add_customer_button"
+                        title="Selecionar cliente — obrigatório para pagamentos vencidos (fiado)">
+                        <span class="glyphicon glyphicon-user">&nbsp;</span>Adicionar Cliente
+                    </button>
+                </li>
+
+                <?php /* O botão "Vendas" (sales_takings_button → sales/manage)
+                         foi REMOVIDO a pedido do dono: a navegação é feita pelo
+                         menu RESUMO do topbar, o botão virou redundante. */ ?>
                 <?php
                 $employee = model(Employee::class);
                 if ($employee->has_grant('reports_sales', session('person_id'))) {
                 ?>
-                    <li class="pull-right">
-                        <?= anchor(
-                            "$controller_name/manage",
-                            '<span class="glyphicon glyphicon-list-alt">&nbsp;</span>' . lang(ucfirst($controller_name) . '.takings'),
-                            array('class' => 'btn btn-primary btn-sm', 'id' => 'sales_takings_button', 'title' => lang(ucfirst($controller_name) . '.takings'))
-                        ) ?>
-                    </li>
                     <li class="pull-right">
                         <?= anchor(
                             "$controller_name/exchange",
@@ -504,6 +516,50 @@ if (isset($success)) {
 
 <div id="overall_sale" class="panel panel-default">
     <div class="panel-body">
+        <?php /* Barra de ações FIXA no topo da lateral (position: sticky) — os
+                 botões ficam visíveis no primeiro dobra e presos ao topo ao
+                 rolar. #sale_buttons é renderizado SEM a guarda count($cart)
+                 de propósito (mesmo padrão da seção DESCONTO abaixo): os
+                 fragmentos AJAX fazem innerHTML swap e o container nunca
+                 migra de lugar; #buttons_form vive dentro da barra e o
+                 posMountSaleActions() insere/replace ali. */ ?>
+        <div id="pos_action_bar" class="<?= count($cart) > 0 ? 'has-items' : 'empty-cart' ?>">
+            <div id="sale_buttons">
+                <div style="margin: 6px 0;">
+                    <button type="button" class="btn btn-success btn-lg btn-block" id="btn_finalizar_venda" onclick="openCheckoutModal()"<?php if (count($cart) === 0) echo ' disabled'; ?>>
+                        <span class="glyphicon glyphicon-shopping-cart"></span>
+                        <?php /* Tarefa 11 do plano simplificar-fluxo-venda-pdv: no
+                                 Modo Simples o rótulo é a frase exata "Finalizar
+                                 venda" e o atalho F2 some do texto. No Modo
+                                 Completo o rótulo antigo, com o F2, permanece. */ ?>
+                        <?= ! empty($simpleMode) ? 'Finalizar venda' : 'FINALIZAR VENDA (F2)' ?>
+                    </button>
+                </div>
+
+                <div style="margin: 6px 0; display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-default btn-block" id="btn_reimprimir_venda" onclick="reprintLastSale()" style="border: 1px solid var(--os-border, #d0d7de);">
+                        <span class="glyphicon glyphicon-print"></span> Reimprimir Última Venda
+                    </button>
+                    <button type="button" class="btn btn-default btn-block fiado-quit-open" id="quitar_fiado_button" style="border: 1px solid var(--os-border, #d0d7de);" title="Receber dívida de fiado do cliente selecionado">
+                        <span class="glyphicon glyphicon-check"></span> Quitar Fiado
+                    </button>
+                </div>
+            </div>
+
+            <?php if (count($cart) > 0) { // Only show suspend/cancel if there are Items already in the register ?>
+                <?= form_open("$controller_name/cancel", ['id' => 'buttons_form']) ?>
+                <div class="form-group" id="buttons_sale">
+                    <div class="btn btn-sm btn-default pull-left" id="suspend_sale_button"><span class="glyphicon glyphicon-align-justify">&nbsp;</span><?= lang(ucfirst($controller_name) . '.suspend_sale') ?></div>
+                    <?php if (!$pos_mode && isset($customer)) { // Only show this part if the payment covers the total ?>
+                        <div class="btn btn-sm btn-success" id="finish_invoice_quote_button"><span class="glyphicon glyphicon-ok">&nbsp;</span><?= esc($mode_label) ?></div>
+                    <?php } ?>
+
+                    <div class="btn btn-sm btn-danger pull-right" id="cancel_sale_button"><span class="glyphicon glyphicon-remove">&nbsp;</span><?= lang(ucfirst($controller_name) . '.cancel_sale') ?></div>
+                </div>
+                <?= form_close() ?>
+            <?php } ?>
+        </div>
+
         <?= form_open("$controller_name/selectCustomer", ['id' => 'select_customer_form', 'class' => 'form-horizontal']) ?>
             <?php if (isset($customer)) { ?>
                 <table class="sales_table_100">
@@ -564,16 +620,14 @@ if (isset($success)) {
                 )
                 ?>
             <?php } else { ?>
-                <div class="form-group" id="select_customer">
-                    <label id="customer_label" for="customer" class="control-label" style="margin-bottom: 1em; margin-top: -1em;">
-                        <?= lang(ucfirst($controller_name) . '.select_customer') . esc(" $customer_required") ?>
-                    </label>
-                    <?= form_input(['name' => 'customer', 'id' => 'customer', 'class' => 'form-control input-sm', 'value' => lang(ucfirst($controller_name) . '.start_typing_customer_name')]) ?>
-
-                    <button class="btn btn-info btn-sm modal-dlg" data-btn-submit="<?= lang('Common.submit') ?>" data-href="<?= "customers/view" ?>" title="<?= lang(ucfirst($controller_name) . ".new_customer") ?>">
-                        <span class="glyphicon glyphicon-user">&nbsp;</span><?= lang(ucfirst($controller_name) . ".new_customer") ?>
-                    </button>
-                </div>
+                <?php /* O painel não renderiza MAIS o bloco "Selecionar
+                        Cliente" (label + input + Novo Cliente): a seleção foi
+                        condensada no botão "Adicionar Cliente" da barra
+                        superior. O input hidden abaixo permanece como destino
+                        de TODAS as seleções (seletor, "Novo Cliente" via
+                        table_support.handle_submit) — o foco do Alt+2 e de
+                        handlers legacy (#customer) continua válido. */ ?>
+                <input type="hidden" name="customer" id="customer" value="">
             <?php } ?>
         <?= form_close() ?>
 
@@ -657,37 +711,6 @@ if (isset($success)) {
                     <th style="width: 45%; font-size: 130%; text-align: right;"><span id="sale_amount_due"><?= to_currency($amount_due) ?></span></th>
                 </tr>
             </table>
-
-            <div id="sale_buttons">
-                <div style="margin: 6px 0;">
-    <button type="button" class="btn btn-success btn-lg btn-block" id="btn_finalizar_venda" onclick="openCheckoutModal()">
-        <span class="glyphicon glyphicon-shopping-cart"></span>
-        <?php /* Tarefa 11 do plano simplificar-fluxo-venda-pdv: no Modo Simples o
-                 rotulo e a frase exata "Finalizar venda" e o atalho F2 some do
-                 texto — quem esta começando nao sabe o que e F2, e um atalho que
-                 ele nao pode descobrir e pior que nenhum. No Modo Completo o
-                 rotulo antigo, com o F2, permanece. */ ?>
-        <?= ! empty($simpleMode) ? 'Finalizar venda' : 'FINALIZAR VENDA (F2)' ?>
-    </button>
-</div>
-
-<div style="margin: 6px 0; display: flex; gap: 8px;">
-    <button type="button" class="btn btn-default btn-block" id="btn_reimprimir_venda" onclick="reprintLastSale()" style="border: 1px solid var(--os-border, #d0d7de);">
-        <span class="glyphicon glyphicon-print"></span> Reimprimir Última Venda
-    </button>
-</div>
-            </div>
-
-            <?= form_open("$controller_name/cancel", ['id' => 'buttons_form']) ?>
-            <div class="form-group" id="buttons_sale">
-                <div class="btn btn-sm btn-default pull-left" id="suspend_sale_button"><span class="glyphicon glyphicon-align-justify">&nbsp;</span><?= lang(ucfirst($controller_name) . '.suspend_sale') ?></div>
-                <?php if (!$pos_mode && isset($customer)) { // Only show this part if the payment covers the total ?>
-                    <div class="btn btn-sm btn-success" id="finish_invoice_quote_button"><span class="glyphicon glyphicon-ok">&nbsp;</span><?= esc($mode_label) ?></div>
-                <?php } ?>
-
-                <div class="btn btn-sm btn-danger pull-right" id="cancel_sale_button"><span class="glyphicon glyphicon-remove">&nbsp;</span><?= lang(ucfirst($controller_name) . '.cancel_sale') ?></div>
-            </div>
-            <?= form_close() ?>
 
             <?php if ($payments_cover_total || !$pos_mode) { // Only show this part if the payment cover the total ?>
                 <div class="container-fluid">
@@ -1064,7 +1087,10 @@ if (isset($success)) {
                     $btns = $('<div id="sale_buttons">');
                     $('#payment_totals').after($btns);
                 }
-                if ($h.find('#sale_buttons').length) $btns.html($h.find('#sale_buttons').html());
+                if ($h.find('#sale_buttons').length) {
+                    $btns.html($h.find('#sale_buttons').html());
+                    $('#btn_finalizar_venda').prop('disabled', false);
+                }
                 posMountSaleActions($h.find('#buttons_form'));
             }, 'html').fail(function() {
                 posAjaxPending = false;
@@ -1139,7 +1165,10 @@ if (isset($success)) {
                 $btns = $('<div id="sale_buttons">');
                 $('#payment_totals').after($btns);
             }
-            if (res.buttons_html !== undefined) $btns.html(res.buttons_html);
+            if (res.buttons_html !== undefined) {
+                $btns.html(res.buttons_html);
+                $('#btn_finalizar_venda').prop('disabled', false);
+            }
             if (res.sale_actions_form_html) {
                 var $tmp = $('<div>').html(res.sale_actions_form_html);
                 posMountSaleActions($tmp.find('#buttons_form'));
@@ -1585,6 +1614,28 @@ if (isset($success)) {
             }
         });
 
+        // Quitar Fiado (partial/settle_modal): preenche data-customer/data-name
+        // na fase CAPTURE do clique. O handler de bubble do partial roda no
+        // $(document) e foi registrado ANTES deste $(ready), então leu os attrs
+        // antigos aqui; capture roda antes de qualquer bubble. A âncora
+        // customers/view/{id} só existe com cliente selecionado. removeData()
+        // força o .data() a reler os atributos atualizados.
+        document.addEventListener('click', function(e) {
+            var btn = e.target && e.target.closest ? e.target.closest('#quitar_fiado_button') : null;
+            if (!btn) { return; }
+            var $quitAnchor = $('#select_customer_form a[href*="customers/view/"]');
+            var quitId = 0;
+            var quitName = '';
+            if ($quitAnchor.length) {
+                var quitMatch = String($quitAnchor.attr('href')).match(/customers\/view\/(\d+)/);
+                if (quitMatch) { quitId = quitMatch[1]; }
+                quitName = $quitAnchor.text().trim();
+            }
+            $(btn).removeAttr('data-customer').removeAttr('data-name');
+            $(btn).attr({ 'data-customer': quitId, 'data-name': quitName });
+            $(btn).removeData();
+        }, true);
+
         dialog_support.init('a.modal-dlg, button.modal-dlg');
 
         table_support.handle_submit = function(resource, response, stay_open) {
@@ -1631,9 +1682,8 @@ if (isset($success)) {
                 $("#item").focus();
                 $("#item").select();
                 break;
-            case 50: // Alt + 2 Customers Search
-                $("#customer").focus();
-                $("#customer").select();
+            case 50: // Alt + 2 abre o seletor de cliente (input #customer ficou escondido)
+                $("#add_customer_button").click();
                 break;
             case 51: // Alt + 3 Suspend Current Sale
                 $("#suspend_sale_button").click();
@@ -2702,3 +2752,89 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <?= view('partial/footer') ?>
+
+<?= view('partial/settle_modal', ['reload_on_close' => false]) /* quitação não mexe no carrinho (false; /debtors usa true — doc no header do partial) */ ?>
+
+<?php /* appendTo '.modal.in .modal-content' é OBRIGATÓRIO (lição #86:
+        '.modal-content' solto casa com o PRIMEIRO modal do documento, que não
+        é o aberto) — sem isso o menu do autocomplete nasce invisível. */ ?>
+<div class="modal fade" id="customer_picker_modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">&times;</button>
+                <h4 class="modal-title">Adicionar Cliente</h4>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="customer_search" class="form-control input-sm" placeholder="Nome do cliente..." autocomplete="off">
+                <button type="button" class="btn btn-info btn-sm" style="margin-top:10px;" data-dismiss="modal" onclick="openNewItemCustomer()">
+                    <span class="glyphicon glyphicon-user">&nbsp;</span>Novo Cliente
+                </button>
+                <div style="font-size:11px;color:#777;margin-top:8px;">
+                    Digite e selecione na lista (Digite para começar). Cliente está em uso para pagamentos vencidos (fiado).
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+#customer_picker_modal .modal-body { padding:12px 16px; }
+</style>
+<script>
+(function($){
+    'use strict';
+
+    function pickerSubmit(v) {
+        $('#customer').val(v);
+        $('#customer_picker_modal').modal('hide');
+        $('#select_customer_form').submit();
+    }
+
+    window.openNewItemCustomer = function() {
+        var $link = $('<a>').addClass('modal-dlg').attr({
+            'data-btn-submit': 'Enviar',
+            'data-href': 'customers/view',
+            'title': 'Novo Cliente'
+        }).hide().appendTo('body');
+        dialog_support.init($link);
+        $link[0].click();
+        setTimeout(function() { $link.remove(); }, 1500);
+    };
+
+    $(document).on('click', '#add_customer_button', function() {
+        $('#customer_picker_modal').modal('show');
+    });
+
+    $('#customer_picker_modal').on('shown.bs.modal', function() {
+        $('#customer_search').val('').focus();
+        if (!$('#customer_search').autocomplete('instance')) {
+            $('#customer_search').autocomplete({
+                source: "<?= site_url('customers/suggest') ?>",
+                minLength: 0,
+                delay: 150,
+                open: function() {
+                    $(this).autocomplete('widget').appendTo('#customer_picker_modal .modal-content');
+                },
+                select: function(a, ui) {
+                    pickerSubmit(ui.item.value);
+                    return false;
+                }
+            });
+        } else {
+            $('#customer_search').autocomplete('search', '');
+        }
+    });
+
+    $('#customer_search').keypress(function(e) {
+        if (e.which == 13) {
+            e.preventDefault();
+            pickerSubmit($(this).val());
+            return false;
+        }
+    });
+
+    $('#customer_search').dblclick(function() {
+        $(this).autocomplete('search', '');
+    });
+})(window.jQuery);
+</script>
