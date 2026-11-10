@@ -536,11 +536,11 @@ if (isset($success)) {
                     </button>
                 </div>
 
-                <div style="margin: 6px 0; display: flex; gap: 8px;">
-                    <button type="button" class="btn btn-default btn-block" id="btn_reimprimir_venda" onclick="reprintLastSale()" style="border: 1px solid var(--os-border, #d0d7de);">
+                <div style="margin: 6px 0; display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-default" id="btn_reimprimir_venda" onclick="reprintLastSale()" style="border: 1px solid var(--os-border, #d0d7de); white-space: nowrap;">
                         <span class="glyphicon glyphicon-print"></span> Reimprimir Última Venda
                     </button>
-                    <button type="button" class="btn btn-default btn-block fiado-quit-open" id="quitar_fiado_button" style="border: 1px solid var(--os-border, #d0d7de);" title="Receber dívida de fiado do cliente selecionado">
+                    <button type="button" class="btn btn-default fiado-quit-open" id="quitar_fiado_button" style="border: 1px solid var(--os-border, #d0d7de); white-space: nowrap;" title="Receber dívida de fiado do cliente selecionado">
                         <span class="glyphicon glyphicon-check"></span> Quitar Fiado
                     </button>
                 </div>
