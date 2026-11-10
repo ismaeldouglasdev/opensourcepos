@@ -178,12 +178,15 @@
             $("input[name='customer_name']").val(ui.item.label);
         };
 
+        // appendTo escopado ao dialog ATIVO: '.modal-content' solto casa com o
+        // primeiro modal do documento (ex.: modal oculto de itens em sales/manage)
+        // e o menu nasce dentro de um modal escondido (invivel).
         $('#customer_name').autocomplete({
             source: "<?= 'customers/suggest' ?>",
             minChars: 0,
             delay: 15,
             cacheLength: 1,
-            appendTo: '.modal-content',
+            appendTo: '.modal.in .modal-content',
             select: fill_value_customer,
             focus: fill_value_customer
         });
@@ -199,7 +202,7 @@
             minChars: 0,
             delay: 15,
             cacheLength: 1,
-            appendTo: '.modal-content',
+            appendTo: '.modal.in .modal-content',
             select: fill_value_employee,
             focus: fill_value_employee
         });
