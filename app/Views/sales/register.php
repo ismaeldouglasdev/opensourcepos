@@ -270,13 +270,6 @@ if (isset($success)) {
                 <?php } ?>
 
                 <li class="pull-right">
-                    <button class="btn btn-default btn-sm modal-dlg" id="show_suspended_sales_button" data-href="<?= esc("$controller_name/suspended") ?>"
-                        title="<?= lang(ucfirst($controller_name) . '.suspended_sales') ?>">
-                        <span class="glyphicon glyphicon-align-justify">&nbsp;</span><?= lang(ucfirst($controller_name) . '.suspended_sales') ?>
-                    </button>
-                </li>
-
-                <li class="pull-right">
                     <?php /* O bloco "Selecionar Cliente" (label + input + Novo
                             Cliente) do painel lateral foi condensado aqui em 1
                             único botão: ela abre o seletor
@@ -306,6 +299,18 @@ if (isset($success)) {
             </ul>
         </div>
     <?= form_close() ?>
+
+    <!-- Suspended Sales Tabs -->
+    <div class="suspended-tabs-bar" id="suspended_tabs_bar" style="display:none;">
+        <div class="suspended-tabs-container">
+            <ul class="nav nav-tabs suspended-tabs" role="tablist" id="suspended_tabs_list"></ul>
+            <div class="suspended-tabs-actions">
+                <button type="button" class="btn btn-xs btn-default" id="suspend_current_btn" title="Suspender venda atual">
+                    <span class="glyphicon glyphicon-pause">&nbsp;</span>Suspender
+                </button>
+            </div>
+        </div>
+    </div>
 
     <?php $tabindex = 0; ?>
 
@@ -1638,6 +1643,141 @@ if (isset($success)) {
 
         dialog_support.init('a.modal-dlg, button.modal-dlg');
 
+        // Suspended Sales Tabs
+        var suspendedTabs = {
+            init: function() {
+                this.loadTabs();
+                this.bindEvents();
+                // Refresh tabs every 30 seconds
+                this.refreshInterval = setInterval(this.loadTabs.bind(this), 30000);
+            },
+
+            loadTabs: function() {
+                $.get('<?= site_url("sales/suspendedTabs") ?>', function(data) {
+                    suspendedTabs.renderTabs(data);
+                }).fail(function() {
+                    $('#suspended_tabs_bar').hide();
+                });
+            },
+
+            renderTabs: function(data) {
+                var $list = $('#suspended_tabs_list');
+                var $bar = $('#suspended_tabs_bar');
+                var tabs = data.tabs || [];
+                var currentSuspendedId = data.current_suspended_id;
+
+                if (tabs.length === 0) {
+                    $bar.hide();
+                    return;
+                }
+
+                var html = '';
+                var hasSuspended = false;
+
+                tabs.forEach(function(tab) {
+                    if (tab.id !== 'current') {
+                        hasSuspended = true;
+                    }
+
+                    var activeClass = tab.active ? ' active' : '';
+                    var closeBtn = tab.closable ? '<button type="button" class="close suspended-tab-close" data-suspended-id="' + tab.suspended_id + '" aria-label="Fechar">&times;</button>' : '';
+                    var cartBadge = tab.cart_count > 0 ? '<span class="badge suspended-tab-badge">' + tab.cart_count + '</span>' : '';
+
+                    html += '<li role="presentation" class="' + activeClass + '">' +
+                        '<a href="javascript:void(0);" class="suspended-tab-link" data-tab-id="' + tab.id + '" data-suspended-id="' + (tab.suspended_id || '') + '" data-sale-id="' + (tab.sale_id || '') + '">' +
+                            '<span class="suspended-tab-label">' + tab.label + '</span>' +
+                            cartBadge +
+                            closeBtn +
+                        '</a>' +
+                    '</li>';
+                });
+
+                $list.html(html);
+                $bar.toggle(hasSuspended || tabs.length > 1);
+            },
+
+            bindEvents: function() {
+                var self = this;
+
+                // Tab click - switch to suspended sale
+                $(document).on('click', '.suspended-tab-link', function() {
+                    var $this = $(this);
+                    var tabId = $this.data('tab-id');
+                    var suspendedId = $this.data('suspended-id');
+
+                    if (tabId === 'current') {
+                        // Already on current sale
+                        return;
+                    }
+
+                    if (!suspendedId) {
+                        return;
+                    }
+
+                    if (confirm('Carregar a venda suspensa #' + $this.find('.suspended-tab-label').text().match(/#(\d+)/)[1] + '? A venda atual será suspensa automaticamente.')) {
+                        self.switchToSuspended(suspendedId);
+                    }
+                });
+
+                // Close tab (delete suspended sale)
+                $(document).on('click', '.suspended-tab-close', function(e) {
+                    e.stopPropagation();
+                    var $this = $(this);
+                    var suspendedId = $this.data('suspended-id');
+                    var label = $this.closest('li').find('.suspended-tab-label').text();
+
+                    if (confirm('Remover permanentemente a venda suspensa "' + label + '"? Esta ação não pode ser desfeita.')) {
+                        self.closeSuspended(suspendedId, $this.closest('li'));
+                    }
+                });
+
+                // Suspend current sale button
+                $(document).on('click', '#suspend_current_btn', function() {
+                    if (confirm('Suspender a venda atual?')) {
+                        posSubmitSaleForm('<?= site_url("sales/suspend") ?>');
+                    }
+                });
+            },
+
+            switchToSuspended: function(suspendedId) {
+                $.post('<?= site_url("sales/switchSuspendedTab") ?>', { suspended_id: suspendedId }, function(data) {
+                    if (data.success) {
+                        window.location.href = data.redirect || '<?= site_url("sales") ?>';
+                    } else {
+                        $.notify({ message: data.message || 'Erro ao carregar venda' }, { type: 'danger' });
+                    }
+                }).fail(function() {
+                    $.notify({ message: 'Erro de comunicação com o servidor' }, { type: 'danger' });
+                });
+            },
+
+            closeSuspended: function(suspendedId, $li) {
+                $.post('<?= site_url("sales/closeSuspendedTab") ?>', { suspended_id: suspendedId }, function(data) {
+                    if (data.success) {
+                        $.notify({ message: data.message }, { type: 'success' });
+                        $li.remove();
+                        // Hide bar if no suspended tabs left
+                        if ($('#suspended_tabs_list li').not('.active').length === 0) {
+                            $('#suspended_tabs_bar').hide();
+                        }
+                    } else {
+                        $.notify({ message: data.message || 'Erro ao remover venda' }, { type: 'danger' });
+                    }
+                }).fail(function() {
+                    $.notify({ message: 'Erro de comunicação com o servidor' }, { type: 'danger' });
+                });
+            },
+
+            destroy: function() {
+                if (this.refreshInterval) {
+                    clearInterval(this.refreshInterval);
+                }
+            }
+        };
+
+        // Initialize suspended tabs
+        suspendedTabs.init();
+
         table_support.handle_submit = function(resource, response, stay_open) {
             $.notify({
                 message: response.message
@@ -1688,8 +1828,8 @@ if (isset($success)) {
             case 51: // Alt + 3 Suspend Current Sale
                 $("#suspend_sale_button").click();
                 break;
-            case 52: // Alt + 4 Check Suspended
-                $("#show_suspended_sales_button").click();
+            case 52: // Alt + 4 Focar abas de vendas suspensas
+                $('#suspended_tabs_list .suspended-tab-link').first().focus();
                 break;
             case 56: // Alt + 8 Finish Quote/Invoice without payment
                 $("#finish_invoice_quote_button").click();

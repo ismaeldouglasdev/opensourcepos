@@ -3767,3 +3767,156 @@ body {
           max-width: 92vw;
       }
   }
+
+  /* ===== Suspended Sales Tabs ===== */
+  .suspended-tabs-bar {
+      background: #f8f9fa;
+      border-bottom: 1px solid #e2e6ea;
+      padding: 4px 8px 2px;
+      margin: -1px -1px 8px -1px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+
+  .suspended-tabs-container {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      max-width: 100%;
+      overflow: hidden;
+  }
+
+  .suspended-tabs {
+      flex: 1 1 auto;
+      border-bottom: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #ccc transparent;
+  }
+
+  .suspended-tabs::-webkit-scrollbar {
+      height: 4px;
+  }
+
+  .suspended-tabs::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 2px;
+  }
+
+  .suspended-tabs > li {
+      flex: 0 0 auto;
+      margin: 0 2px 0 0;
+      border-radius: 6px 6px 0 0;
+      background: #eef1f4;
+      border: 1px solid #d0d7de;
+      border-bottom: none;
+      transition: all 0.15s ease;
+  }
+
+  .suspended-tabs > li.active {
+      background: #fff;
+      border-color: #d0d7de;
+      border-bottom: 2px solid #fff;
+      margin-bottom: -1px;
+      z-index: 10;
+      box-shadow: 0 -1px 3px rgba(0,0,0,0.08);
+  }
+
+  .suspended-tabs > li:hover:not(.active) {
+      background: #e4e8ec;
+  }
+
+  .suspended-tab-link {
+      display: flex;
+      align-items: center;
+      padding: 6px 12px;
+      color: #24292f;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+      min-height: 30px;
+  }
+
+  .suspended-tabs > li.active .suspended-tab-link {
+      color: #0969da;
+      font-weight: 600;
+  }
+
+  .suspended-tab-label {
+      flex: 1 1 auto;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 180px;
+  }
+
+  .suspended-tab-badge {
+      flex: 0 0 auto;
+      background: #0969da;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 10px;
+      margin-left: 6px;
+      line-height: 1.2;
+  }
+
+  .suspended-tabs > li.active .suspended-tab-badge {
+      background: #0969da;
+  }
+
+  .suspended-tab-close {
+      flex: 0 0 auto;
+      width: 18px;
+      height: 18px;
+      line-height: 16px;
+      padding: 0;
+      margin-left: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #656d76;
+      background: transparent;
+      border: none;
+      border-radius: 3px;
+      opacity: 0.6;
+      transition: opacity 0.1s, background 0.1s, color 0.1s;
+  }
+
+  .suspended-tab-close:hover {
+      opacity: 1;
+      background: #f85149;
+      color: #fff;
+  }
+
+  .suspended-tabs-actions {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: flex-end;
+      margin-left: 4px;
+  }
+
+  .suspended-tabs-actions .btn {
+      padding: 4px 10px;
+      font-size: 11px;
+      line-height: 1.4;
+      min-height: 26px;
+      border-radius: 4px;
+  }
+
+  @media (max-width: 768px) {
+      .suspended-tab-label {
+          max-width: 120px;
+      }
+
+      .suspended-tabs-actions .btn span {
+          display: none;
+      }
+
+      .suspended-tabs-actions .btn {
+          padding: 4px 8px;
+      }
+  }

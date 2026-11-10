@@ -1719,6 +1719,136 @@ class Sales extends Secure_Controller
     }
 
     /**
+     * Return JSON with suspended sales + current sale for the tab bar.
+     *
+     * @return void
+     */
+    public function getSuspendedTabs(): void
+    {
+        $this->response->setContentType('application/json');
+
+        $customer_id = $this->sale_lib->get_customer();
+        $suspended_sales = $this->sale->get_all_suspended($customer_id);
+
+        $current_sale_id = $this->sale_lib->get_sale_id();
+        $current_suspended_id = $this->sale_lib->get_suspended_id();
+
+        $tabs = [];
+
+        // Current sale tab
+        $cart = $this->sale_lib->get_cart();
+        $cart_count = count($cart);
+        $tabs[] = [
+            'id' => 'current',
+            'sale_id' => $current_sale_id > 0 ? $current_sale_id : null,
+            'suspended_id' => null,
+            'label' => $cart_count > 0 ? 'Venda atual (' . $cart_count . ' itens)' : 'Venda atual',
+            'active' => $current_suspended_id === NEW_ENTRY,
+            'closable' => false,
+            'cart_count' => $cart_count,
+        ];
+
+        // Suspended sales tabs
+        foreach ($suspended_sales as $ss) {
+            $tabs[] = [
+                'id' => 'suspended_' . $ss['sale_id'],
+                'sale_id' => $ss['sale_id'],
+                'suspended_id' => $ss['sale_id'],
+                'label' => 'Suspensa #' . $ss['doc_id'] . ' (' . date($this->config['dateformat'], strtotime($ss['sale_time'])) . ')',
+                'active' => $current_suspended_id === $ss['sale_id'],
+                'closable' => true,
+                'cart_count' => 0,
+                'doc_id' => $ss['doc_id'],
+                'sale_time' => $ss['sale_time'],
+                'customer' => isset($ss['customer_id']) ? $this->get_customer_name($ss['customer_id']) : '',
+                'employee' => isset($ss['employee_id']) ? $this->get_employee_name($ss['employee_id']) : '',
+            ];
+        }
+
+        echo json_encode([
+            'tabs' => $tabs,
+            'current_suspended_id' => $current_suspended_id,
+        ]);
+    }
+
+    /**
+     * Switch to a suspended sale (unsuspend) via AJAX.
+     *
+     * @return void
+     */
+    public function postSwitchSuspendedTab(): void
+    {
+        $this->response->setContentType('application/json');
+
+        $suspended_id = $this->request->getPost('suspended_id', FILTER_SANITIZE_NUMBER_INT);
+
+        if ($suspended_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID inválido']);
+            return;
+        }
+
+        $this->sale_lib->clear_all();
+        $this->sale_lib->copy_entire_sale($suspended_id);
+        $this->sale->update_sale_status($suspended_id, CANCELED);
+        $this->change_register_mode($this->sale_lib->get_sale_type());
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Venda carregada',
+            'redirect' => site_url('sales'),
+        ]);
+    }
+
+    /**
+     * Close (delete) a suspended sale via AJAX.
+     *
+     * @return void
+     */
+    public function postCloseSuspendedTab(): void
+    {
+        $this->response->setContentType('application/json');
+
+        $suspended_id = $this->request->getPost('suspended_id', FILTER_SANITIZE_NUMBER_INT);
+
+        if ($suspended_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID inválido']);
+            return;
+        }
+
+        $this->sale->delete_suspended_sale($suspended_id);
+
+        echo json_encode(['success' => true, 'message' => 'Venda suspensa removida']);
+    }
+
+    /**
+     * Helper to get customer name.
+     */
+    private function get_customer_name(int $customer_id): string
+    {
+        try {
+            $customer = model(\App\Models\Customer::class);
+            $info = $customer->get_info($customer_id);
+            return $info ? $info->first_name . ' ' . $info->last_name : '';
+        } catch (\Throwable) {
+            return '';
+        }
+    }
+
+    /**
+     * Helper to get employee name.
+     */
+    private function get_employee_name(int $employee_id): string
+    {
+        try {
+            $employee = model(\App\Models\Employee::class);
+            $info = $employee->get_info($employee_id);
+            return $info ? $info->first_name . ' ' . $info->last_name : '';
+        } catch (\Throwable) {
+            return '';
+        }
+    }
+
+    /**
      * Reopen a completed sale in the register so it can be edited
      * (prices, discounts, add/remove items) and finished IN PLACE: the same
      * sale_id is reused when the sale is finalized again (no duplicate sale
