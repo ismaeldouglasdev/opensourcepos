@@ -201,8 +201,9 @@ window._tutorialSteps = [
 
         if (activeCustomerId <= 0) {
             $('.qf-period[data-period="today"]').addClass('active');
-            syncMethodChips();
         }
+        // Sempre sincroniza os chips de método (inclui "TODAS" ativo por padrão quando sem filtro)
+        syncMethodChips();
 
         
         function updatePaymentSummary() {
@@ -356,7 +357,7 @@ window._tutorialSteps = [
     <button type="button" class="btn btn-sm qf-chip qf-period" data-period="week">7 DIAS</button>
     <button type="button" class="btn btn-sm qf-chip qf-period" data-period="month">MÊS</button>
     <span class="qf-divider">|</span>
-    <button type="button" class="btn btn-sm qf-chip qf-method" data-method="all">TODAS</button>
+    <button type="button" class="btn btn-sm qf-chip qf-method active" data-method="all">TODAS</button>
     <button type="button" class="btn btn-sm qf-chip qf-method" data-method="cash">DINHEIRO</button>
     <button type="button" class="btn btn-sm qf-chip qf-method" data-method="card">CARTÃO</button>
     <button type="button" class="btn btn-sm qf-chip qf-method" data-method="pix">PIX</button>
