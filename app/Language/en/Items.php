@@ -154,4 +154,29 @@ return [
     "ml_activate"                        => "Reactivate",
     "ml_required_attrs"                  => "Required attributes missing",
     "ml_blocked"                         => "Mercado Livre blocked the publication:",
+
+    // Sales Channels
+    "channels"                         => "Sales Channels",
+    "channel_management"               => "Manage Channels",
+    "only_ml"                          => "Only Mercado Livre",
+    "only_loja"                        => "Only Online Store",
+    "needs_sync"                       => "Needs Sync",
+    "out_of_sync"                      => "Out of Sync",
+    "ml_paused"                        => "ML Paused",
+    "ml_under_review"                  => "ML Under Review",
+    "ml_status"                        => "ML Status",
+    "ml_price"                         => "ML Price",
+    "loja_status"                      => "Store Status",
+    "loja_price"                       => "Store Price",
+    "shopee_status"                    => "Shopee Status",
+    "last_sync"                        => "Last Sync",
+    "publish_all"                      => "Publish All",
+    "pause_all"                        => "Pause All",
+    "sync_selected"                    => "Sync Selected",
+
+    // Channel actions
+    "select_products"                => "Select at least one product",
+    "action_completed"               => "Action completed: %d of %d products",
+    "invalid_action"                 => "Invalid action",
+    "item_not_found"                 => "Product not found",
 ];

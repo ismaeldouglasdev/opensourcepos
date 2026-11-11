@@ -1606,6 +1606,192 @@ class Item extends Model
             $item_name = 'items.name' . $as_name;
         }
 
-        return $item_name;
+return $item_name;
+    }
+
+    /**
+     * Get channels data for marketplace management
+     */
+    public function get_channels_data(array $filters, int $limit = 50, int $offset = 0, string $sort = 'items.name', string $order = 'asc'): ResultInterface
+    {
+        $config = config(OSPOS::class)->settings;
+        $builder = $this->db->table('items AS items');
+
+        // Select fields for channels view
+        $builder->select('MAX(items.item_id) AS item_id');
+        $builder->select('MAX(items.name) AS name');
+        $builder->select('MAX(items.item_number) AS item_number');
+        $builder->select('MAX(items.category) AS category');
+        $builder->select('MAX(items.unit_price) AS unit_price');
+        $builder->select('MAX(items.cost_price) AS cost_price');
+        $builder->select('MAX(items.pic_filename) AS pic_filename');
+        $builder->select('MAX(items.last_modified) AS last_modified');
+        $builder->select('MAX(items.deleted) AS deleted');
+        $builder->select('MAX(items.item_type) AS item_type');
+
+        // Qtd total across all locations
+        $qty_total = '(SELECT COALESCE(SUM(iq.quantity), 0) FROM ' . $this->db->prefixTable('item_quantities')
+            . ' AS iq WHERE iq.item_id = items.item_id) AS quantity';
+        $builder->select($qty_total, false);
+
+        $builder->join('suppliers AS suppliers', 'suppliers.person_id = items.supplier_id', 'left');
+
+        // Subquery for ML mapping
+        $ml_sub = $this->db->prefixTable('channel_product_mapping') . ' AS cpm_ml
+            WHERE cpm_ml.sku = items.item_number AND cpm_ml.channel = \'mercadolivre\'';
+        $builder->select("(
+            SELECT CASE
+                WHEN cpm.status = 'active' THEN 'Ativo'
+                WHEN cpm.status = 'paused' THEN 'Pausado'
+                WHEN cpm.status = 'under_review' THEN 'Em Análise'
+                WHEN cpm.status = 'closed' THEN 'Encerrado'
+                ELSE 'Inativo'
+            END
+            FROM {$ml_sub}
+        ) AS ml_status", false);
+
+        $builder->select("(
+            SELECT cpm.external_url
+            FROM {$ml_sub}
+        ) AS ml_url", false);
+
+        // Subquery for Loja (store_products)
+        $loja_sub = $this->db->prefixTable('store_products') . ' AS sp
+            WHERE sp.item_number = items.item_number AND sp.store_visible = 1';
+        $builder->select("(
+            SELECT CASE WHEN sp.store_visible = 1 THEN 'Publicado' ELSE 'Oculto' END
+            FROM {$loja_sub}
+        ) AS loja_status", false);
+
+        $builder->select("(
+            SELECT sp.price
+            FROM {$loja_sub}
+        ) AS loja_price", false);
+
+        // Subquery for Shopee mapping
+        $shp_sub = $this->db->prefixTable('channel_product_mapping') . ' AS cpm_shp
+            WHERE cpm_shp.sku = items.item_number AND cpm_shp.channel = \'shopee\'';
+        $builder->select("(
+            SELECT CASE
+                WHEN cpm.status = 'active' THEN 'Ativo'
+                WHEN cpm.status = 'paused' THEN 'Pausado'
+                ELSE 'Inativo'
+            END
+            FROM {$shp_sub}
+        ) AS shopee_status", false);
+
+        // Last sync from product_mapping
+        $builder->select("(
+            SELECT pm.last_sync_at
+            FROM " . $this->db->prefixTable('product_mapping') . " AS pm
+            WHERE pm.sku = items.item_number
+        ) AS last_sync", false);
+
+        // Joins
+        $builder->join('inventory AS inventory', 'inventory.trans_items = items.item_id');
+
+        // Filters
+        $where = empty($config['date_or_time_format'])
+            ? 'DATE_FORMAT(inventory.trans_date, "%Y-%m-%d") BETWEEN ' . $this->db->escape($filters['start_date'] ?? date('Y-m-d', strtotime('-1 year'))) . ' AND ' . $this->db->escape($filters['end_date'] ?? date('Y-m-d'))
+            : 'inventory.trans_date BETWEEN ' . $this->db->escape(rawurldecode($filters['start_date'] ?? date('Y-m-d', strtotime('-1 year')))) . ' AND ' . $this->db->escape(rawurldecode($filters['end_date'] ?? date('Y-m-d')));
+        $builder->where($where);
+
+        if (!empty($filters['search'])) {
+            $builder->groupStart();
+            $builder->like('name', $filters['search']);
+            $builder->orLike('item_number', $filters['search']);
+            $builder->orLike('items.item_id', $filters['search']);
+            $builder->orLike('pack_name', $filters['search']);
+            $builder->groupEnd();
+        }
+
+        if (!empty($filters['only_ml'])) {
+            $builder->where("EXISTS (SELECT 1 FROM {$ml_sub})");
+        }
+        if (!empty($filters['only_loja'])) {
+            $builder->where("EXISTS (SELECT 1 FROM {$loja_sub})");
+        }
+        if (!empty($filters['ml_paused'])) {
+            $builder->where("EXISTS (SELECT 1 FROM {$ml_sub} WHERE status = 'paused')");
+        }
+        if (!empty($filters['ml_under_review'])) {
+            $builder->where("EXISTS (SELECT 1 FROM {$ml_sub} WHERE status = 'under_review')");
+        }
+        if (!empty($filters['needs_sync'])) {
+            $builder->where("NOT EXISTS (SELECT 1 FROM {$ml_sub}) AND NOT EXISTS (SELECT 1 FROM {$loja_sub})");
+        }
+        if (!empty($filters['out_of_sync'])) {
+            // Items with mismatched prices between channels
+            $builder->where("EXISTS (SELECT 1 FROM {$ml_sub}) OR EXISTS (SELECT 1 FROM {$loja_sub})");
+        }
+
+        $builder->where('items.deleted', 0);
+        $builder->whereIn('items.item_type', [ITEM, ITEM_KIT, ITEM_AMOUNT_ENTRY]);
+
+        $builder->groupBy('items.item_id');
+        $builder->orderBy($sort, $order);
+
+        if ($limit > 0) {
+            $builder->limit($limit, $offset);
+        }
+
+        return $builder->get();
+    }
+
+    /**
+     * Get total count for channels data
+     */
+    public function get_channels_count(array $filters): int
+    {
+        $config = config(OSPOS::class)->settings;
+        $builder = $this->db->table('items AS items');
+
+        $builder->select('COUNT(DISTINCT items.item_id) AS count');
+
+        // Subqueries
+        $ml_sub = $this->db->prefixTable('channel_product_mapping') . ' AS cpm_ml
+            WHERE cpm_ml.sku = items.item_number AND cpm_ml.channel = \'mercadolivre\'';
+        $loja_sub = $this->db->prefixTable('store_products') . ' AS sp
+            WHERE sp.item_number = items.item_number AND sp.store_visible = 1';
+
+        $builder->join('inventory AS inventory', 'inventory.trans_items = items.item_id');
+
+        $where = empty($config['date_or_time_format'])
+            ? 'DATE_FORMAT(inventory.trans_date, "%Y-%m-%d") BETWEEN ' . $this->db->escape($filters['start_date'] ?? date('Y-m-d', strtotime('-1 year'))) . ' AND ' . $this->db->escape($filters['end_date'] ?? date('Y-m-d'))
+            : 'inventory.trans_date BETWEEN ' . $this->db->escape(rawurldecode($filters['start_date'] ?? date('Y-m-d', strtotime('-1 year')))) . ' AND ' . $this->db->escape(rawurldecode($filters['end_date'] ?? date('Y-m-d')));
+        $builder->where($where);
+
+        if (!empty($filters['search'])) {
+            $builder->groupStart();
+            $builder->like('name', $filters['search']);
+            $builder->orLike('item_number', $filters['search']);
+            $builder->orLike('items.item_id', $filters['search']);
+            $builder->orLike('pack_name', $filters['search']);
+            $builder->groupEnd();
+        }
+
+        if (!empty($filters['only_ml'])) {
+            $builder->where("EXISTS (SELECT 1 FROM {$ml_sub})");
+        }
+        if (!empty($filters['only_loja'])) {
+            $builder->where("EXISTS (SELECT 1 FROM {$loja_sub})");
+        }
+        if (!empty($filters['ml_paused'])) {
+            $builder->where("EXISTS (SELECT 1 FROM {$ml_sub} WHERE status = 'paused')");
+        }
+        if (!empty($filters['ml_under_review'])) {
+            $builder->where("EXISTS (SELECT 1 FROM {$ml_sub} WHERE status = 'under_review')");
+        }
+        if (!empty($filters['needs_sync'])) {
+            $builder->where("NOT EXISTS (SELECT 1 FROM {$ml_sub}) AND NOT EXISTS (SELECT 1 FROM {$loja_sub})");
+        }
+        if (!empty($filters['out_of_sync'])) {
+            $builder->where("EXISTS (SELECT 1 FROM {$ml_sub}) OR EXISTS (SELECT 1 FROM {$loja_sub})");
+        }
+
+        $builder->where('items.deleted', 0);
+        $builder->whereIn('items.item_type', [ITEM, ITEM_KIT, ITEM_AMOUNT_ENTRY]);
+
+        return (int)($builder->get()->getRow()->count ?? 0);
     }
 }

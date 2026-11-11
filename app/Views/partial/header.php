@@ -168,6 +168,7 @@ try {
                         $is_vendas = ($current == 'sales' && (strpos($current_url, 'sales/add') !== false || strpos($current_url, 'sales/register') !== false));
                         $is_itens = ($current == 'items');
                         $is_clientes = ($current == 'customers');
+                        $is_channels = ($current == 'channels');
                         ?>
                         <li class="<?= $is_home ? 'active' : '' ?>">
                             <a href="<?= base_url('home') ?>">
@@ -187,14 +188,19 @@ try {
                         <li class="<?= $is_itens ? 'active' : '' ?>">
                             <a href="<?= base_url('items') ?>">
                                 <span class="glyphicon glyphicon-th-large" aria-hidden="true"></span> ITENS
-                            </a>
-                        </li>
-                        <li class="<?= $is_clientes ? 'active' : '' ?>">
-                            <a href="<?= base_url('customers') ?>">
-                                <span class="glyphicon glyphicon-user" aria-hidden="true"></span> CLIENTES
-                            </a>
-                        </li>
-                    </ul>
+</a>
+                    </li>
+                    <li class="<?= $is_clientes ? 'active' : '' ?>">
+                        <a href="<?= base_url('customers') ?>">
+                            <span class="glyphicon glyphicon-user" aria-hidden="true"></span> CLIENTES
+                        </a>
+                    </li>
+                    <li class="<?= $is_channels ? 'active' : '' ?>">
+                        <a href="<?= base_url('channels') ?>">
+                            <span class="glyphicon glyphicon-globe" aria-hidden="true"></span> CANAIS
+                        </a>
+                    </li>
+                </ul>
 
                     <!-- Botao de troca rapida do Modo de venda (tarefa 5 do plano
                          simplificar-fluxo-venda-pdv). Fica no topo porque e o

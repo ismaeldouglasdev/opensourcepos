@@ -97,6 +97,311 @@ class Items extends Secure_Controller
     }
 
     /**
+     * Canal de Vendas - visão unificada de produtos no Mercado Livre, Loja Online e futuros canais
+     * @return void
+     */
+    public function getChannels(): void
+    {
+        $this->session->set('allow_temp_items', 0);
+
+        $data['table_headers'] = get_channels_manage_table_headers();
+        $data['stock_location'] = $this->item_lib->get_item_location();
+        $data['stock_locations'] = $this->stock_location->get_allowed_locations();
+
+        // Filters for channels
+        $data['filters'] = [
+            'only_ml'        => lang('Items.only_ml'),
+            'only_loja'      => lang('Items.only_loja'),
+            'needs_sync'     => lang('Items.needs_sync'),
+            'out_of_sync'    => lang('Items.out_of_sync'),
+            'ml_paused'      => lang('Items.ml_paused'),
+            'ml_under_review'=> lang('Items.ml_under_review'),
+        ];
+
+        echo view('items/channels', $data);
+    }
+
+    /**
+     * Returns Channels table data rows. Called via AJAX.
+     * @noinspection PhpUnused
+     **/
+    public function getChannelsSearch(): void
+    {
+        $search = $this->request->getGet('search');
+        $limit = $this->request->getGet('limit', FILTER_SANITIZE_NUMBER_INT);
+        $offset = $this->request->getGet('offset', FILTER_SANITIZE_NUMBER_INT);
+        $sort = $this->sanitizeSortColumn(channel_headers(), $this->request->getGet('sort', FILTER_SANITIZE_FULL_SPECIAL_CHARS), 'item_id');
+        $order = $this->request->getGet('order', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+        $this->item_lib->set_item_location($this->request->getGet('stock_location'));
+
+        $filters = [
+            'search'            => $search,
+            'start_date'        => $this->request->getGet('start_date'),
+            'end_date'          => $this->request->getGet('end_date'),
+            'stock_location_id' => $this->item_lib->get_item_location(),
+            'only_ml'           => false,
+            'only_loja'         => false,
+            'needs_sync'        => false,
+            'out_of_sync'       => false,
+            'ml_paused'         => false,
+            'ml_under_review'   => false,
+        ];
+
+        $request_filters = array_fill_keys($this->request->getGet('filters', FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?? [], true);
+
+        foreach ($request_filters as $filter => $val) {
+            if (isset($filters[$filter])) {
+                $filters[$filter] = true;
+            }
+        }
+
+        $rows = $this->item->get_channels_data($filters, $limit, $offset, $sort, $order);
+        $total_rows = $this->item->get_channels_count($filters);
+
+        $this->response->setContentType('application/json');
+        echo json_encode([
+            'total' => $total_rows,
+            'rows'  => $rows
+        ]);
+    }
+
+    /**
+     * Bulk action for channels (publish all, pause all, sync selected)
+     * @return void
+     */
+    public function channelBulkAction(): void
+    {
+        $action = $this->request->getPost('action');
+        $item_ids = $this->request->getPost('item_ids');
+
+        if (empty($action) || empty($item_ids)) {
+            $this->response->setContentType('application/json');
+            echo json_encode(['success' => false, 'message' => lang('Items.invalid_action')]);
+            return;
+        }
+
+        $results = [];
+        foreach ($item_ids as $item_id) {
+            $item = $this->item->find($item_id);
+            if (!$item) continue;
+
+            try {
+                if ($action === 'publish_all') {
+                    // Publish to ML
+                    if ($item->item_number) {
+                        $results[] = $this->publishToML($item);
+                    }
+                    // Publish to Loja
+                    $results[] = $this->publishToLoja($item);
+                } elseif ($action === 'pause_all') {
+                    // Pause on ML
+                    if ($item->item_number) {
+                        $results[] = $this->pauseOnML($item);
+                    }
+                    // Hide on Loja
+                    $results[] = $this->hideOnLoja($item);
+                } elseif ($action === 'sync_selected') {
+                    // Sync to both
+                    if ($item->item_number) {
+                        $results[] = $this->syncToML($item);
+                    }
+                    $results[] = $this->syncToLoja($item);
+                }
+            } catch (\Throwable $e) {
+                log_message('error', 'Channel bulk action failed: ' . $e->getMessage());
+                $results[] = ['success' => false, 'item_id' => $item_id, 'error' => $e->getMessage()];
+            }
+        }
+
+        $success_count = count(array_filter($results, fn($r) => $r['success'] ?? false));
+        $this->response->setContentType('application/json');
+        echo json_encode([
+            'success' => true,
+            'message' => lang('Items.action_completed', [$success_count, count($item_ids)]),
+            'results' => $results
+        ]);
+    }
+
+    /**
+     * Single channel action (publish/pause on specific channel)
+     * @return void
+     */
+    public function channelSingleAction(): void
+    {
+        $item_id = $this->request->getPost('item_id');
+        $channel = $this->request->getPost('channel');
+        $action = $this->request->getPost('action');
+
+        if (empty($item_id) || empty($channel) || empty($action)) {
+            $this->response->setContentType('application/json');
+            echo json_encode(['success' => false, 'message' => lang('Items.invalid_action')]);
+            return;
+        }
+
+        $item = $this->item->find($item_id);
+        if (!$item) {
+            $this->response->setContentType('application/json');
+            echo json_encode(['success' => false, 'message' => lang('Items.item_not_found')]);
+            return;
+        }
+
+        $result = ['success' => false, 'message' => 'Ação não reconhecida'];
+
+        try {
+            if ($channel === 'mercadolivre' || $channel === 'ML') {
+                if ($action === 'publish') {
+                    $result = $this->publishToML($item);
+                } elseif ($action === 'pause') {
+                    $result = $this->pauseOnML($item);
+                }
+            } elseif ($channel === 'loja' || $channel === 'loja_online') {
+                if ($action === 'publish') {
+                    $result = $this->publishToLoja($item);
+                } elseif ($action === 'pause') {
+                    $result = $this->hideOnLoja($item);
+                }
+            } elseif ($channel === 'shopee') {
+                if ($action === 'publish') {
+                    $result = $this->publishToShopee($item);
+                } elseif ($action === 'pause') {
+                    $result = $this->pauseOnShopee($item);
+                }
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'Channel single action failed: ' . $e->getMessage());
+            $result = ['success' => false, 'message' => $e->getMessage()];
+        }
+
+        $this->response->setContentType('application/json');
+        echo json_encode($result);
+    }
+
+    /**
+     * Publish item to Mercado Livre
+     */
+    private function publishToML(object $item): array
+    {
+        // Call ML publish endpoint via inventory-service
+        $client = new \GuzzleHttp\Client(['timeout' => 30]);
+        $resp = $client->post('http://localhost:8000/v1/mercadolivre/publish', [
+            'json' => [
+                'ospos_item_id' => $item->item_id,
+                'dry_run' => false
+            ],
+            'headers' => [
+                'X-API-Key' => config(OSPOS::class)->settings['inventory_api_key'] ?? ''
+            ]
+        ]);
+        return json_decode($resp->getBody(), true) ?: ['success' => false, 'message' => 'ML: resposta inválida'];
+    }
+
+    /**
+     * Pause item on Mercado Livre
+     */
+    private function pauseOnML(object $item): array
+    {
+        if (empty($item->item_number)) {
+            return ['success' => false, 'message' => 'Item sem SKU para ML'];
+        }
+        // Call ML pause via inventory-service
+        $client = new \GuzzleHttp\Client(['timeout' => 30]);
+        $resp = $client->post('http://localhost:8000/v1/mercadolivre/pause', [
+            'json' => ['seller_custom_field' => $item->item_number],
+            'headers' => [
+                'X-API-Key' => config(OSPOS::class)->settings['inventory_api_key'] ?? ''
+            ]
+        ]);
+        return json_decode($resp->getBody(), true) ?: ['success' => false, 'message' => 'ML pause: resposta inválida'];
+    }
+
+    /**
+     * Sync item to Mercado Livre
+     */
+    private function syncToML(object $item): array
+    {
+        // Trigger delta sync for this item
+        $client = new \GuzzleHttp\Client(['timeout' => 30]);
+        $resp = $client->post('http://localhost:8000/v1/store/sync', [
+            'query' => ['mode' => 'delta'],
+            'headers' => [
+                'X-API-Key' => config(OSPOS::class)->settings['inventory_api_key'] ?? ''
+            ]
+        ]);
+        return json_decode($resp->getBody(), true) ?: ['success' => false, 'message' => 'ML sync: resposta inválida'];
+    }
+
+    /**
+     * Publish item to Loja Online
+     */
+    private function publishToLoja(object $item): array
+    {
+        // Trigger sync which updates store_products (loja)
+        $client = new \GuzzleHttp\Client(['timeout' => 30]);
+        $resp = $client->post('http://localhost:8000/v1/store/sync', [
+            'query' => ['mode' => 'delta'],
+            'headers' => [
+                'X-API-Key' => config(OSPOS::class)->settings['inventory_api_key'] ?? ''
+            ]
+        ]);
+        return ['success' => true, 'message' => 'Loja: sincronização disparada'];
+    }
+
+    /**
+     * Hide item on Loja Online
+     */
+    private function hideOnLoja(object $item): array
+    {
+        // Set store_visible = 0 in store_products
+        $this->db->table('store_products')
+            ->where('ospos_id', $item->item_id)
+            ->update(['store_visible' => 0]);
+        return ['success' => true, 'message' => 'Loja: produto ocultado'];
+    }
+
+    /**
+     * Sync item to Loja Online
+     */
+    private function syncToLoja(object $item): array
+    {
+        return $this->publishToLoja($item);
+    }
+
+    /**
+     * Publish item to Shopee
+     */
+    private function publishToShopee(object $item): array
+    {
+        // Shopee publish via inventory-service
+        $client = new \GuzzleHttp\Client(['timeout' => 30]);
+        $resp = $client->post('http://localhost:8000/v1/shopee/publish', [
+            'json' => ['ospos_item_id' => $item->item_id, 'dry_run' => false],
+            'headers' => [
+                'X-API-Key' => config(OSPOS::class)->settings['inventory_api_key'] ?? ''
+            ]
+        ]);
+        return json_decode($resp->getBody(), true) ?: ['success' => false, 'message' => 'Shopee: resposta inválida'];
+    }
+
+    /**
+     * Pause item on Shopee
+     */
+    private function pauseOnShopee(object $item): array
+    {
+        if (empty($item->item_number)) {
+            return ['success' => false, 'message' => 'Item sem SKU para Shopee'];
+        }
+        $client = new \GuzzleHttp\Client(['timeout' => 30]);
+        $resp = $client->post('http://localhost:8000/v1/shopee/pause', [
+            'json' => ['sku' => $item->item_number],
+            'headers' => [
+                'X-API-Key' => config(OSPOS::class)->settings['inventory_api_key'] ?? ''
+            ]
+        ]);
+        return json_decode($resp->getBody(), true) ?: ['success' => false, 'message' => 'Shopee pause: resposta inválida'];
+    }
+
+    /**
      * Returns Items table data rows. This will be called with AJAX.
      * @noinspection PhpUnused
      **/

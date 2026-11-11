@@ -124,6 +124,10 @@ $routes->post('sales/restore/(:num)', 'Sales::restore/$1');
 //  ITEMS
 // ═══════════════════════════════════════════════════════════
 $routes->get('items', 'Items::getIndex');
+$routes->get('channels', 'Items::getChannels');
+$routes->get('channels/search', 'Items::getChannelsSearch');
+$routes->post('items/channelBulkAction', 'Items::channelBulkAction');
+$routes->post('items/channelSingleAction', 'Items::channelSingleAction');
 $routes->get('items/search', 'Items::getSearch');
 $routes->get('items/row/(:segment)', 'Items::getRow/$1');
 $routes->get('items/view', 'Items::getView');

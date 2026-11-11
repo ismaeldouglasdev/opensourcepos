@@ -434,6 +434,33 @@ function item_headers(): array
 }
 
 /**
+ * Headers for the channels (marketplace) tabular view
+ */
+function channel_headers(): array
+{
+    return [
+        ['items.item_id' => lang('Common.id'), 'class' => 'items-col-id'],
+        ['item_number'   => lang('Items.item_number'), 'class' => 'items-col-mono'],
+        ['name'          => lang('Items.name'), 'class' => 'items-col-name items-col-wrap'],
+        ['quantity'      => lang('Items.quantity_short'), 'class' => 'items-col-num items-col-qty', 'titleTooltip' => lang('Items.quantity')],
+        ['ml_status'     => lang('Items.ml_status'), 'class' => 'channels-col-status', 'sortable' => false],
+        ['ml_price'      => lang('Items.ml_price'), 'class' => 'channels-col-price', 'sortable' => false],
+        ['loja_status'   => lang('Items.loja_status'), 'class' => 'channels-col-status', 'sortable' => false],
+        ['loja_price'    => lang('Items.loja_price'), 'class' => 'channels-col-price', 'sortable' => false],
+        ['shopee_status' => lang('Items.shopee_status'), 'class' => 'channels-col-status', 'sortable' => false],
+        ['last_sync'     => lang('Items.last_sync'), 'class' => 'channels-col-dt', 'sortable' => false],
+    ];
+}
+
+/**
+ * Get the header for the channels tabular view
+ */
+function get_channels_manage_table_headers(): string
+{
+    return transform_headers(channel_headers(), false, false);
+}
+
+/**
  * Get the header for the items tabular view
  */
 function get_items_manage_table_headers(): string

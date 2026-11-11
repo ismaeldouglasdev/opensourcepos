@@ -154,4 +154,29 @@ return [
     "ml_activate"                        => "Reativar",
     "ml_required_attrs"                  => "Atributos obrigatórios pendentes",
     "ml_blocked"                         => "O Mercado Livre bloqueou a publicação:",
+
+    // Canais de Venda
+    "channels"                         => "Canais de Venda",
+    "channel_management"               => "Gerenciar Canais",
+    "only_ml"                          => "Apenas Mercado Livre",
+    "only_loja"                        => "Apenas Loja Online",
+    "needs_sync"                       => "Precisa Sincronizar",
+    "out_of_sync"                      => "Fora de Sincronia",
+    "ml_paused"                        => "ML Pausado",
+    "ml_under_review"                  => "ML Em Análise",
+    "ml_status"                        => "Status ML",
+    "ml_price"                         => "Preço ML",
+    "loja_status"                      => "Status Loja",
+    "loja_price"                       => "Preço Loja",
+    "shopee_status"                    => "Status Shopee",
+    "last_sync"                        => "Última Sync",
+    "publish_all"                      => "Publicar em Todos",
+    "pause_all"                        => "Pausar em Todos",
+    "sync_selected"                    => "Sincronizar Selecionados",
+
+    // Channel actions
+    "select_products"                => "Selecione ao menos um produto",
+    "action_completed"               => "Ação concluída: %d de %d produtos",
+    "invalid_action"                 => "Ação inválida",
+    "item_not_found"                 => "Produto não encontrado",
 ];
