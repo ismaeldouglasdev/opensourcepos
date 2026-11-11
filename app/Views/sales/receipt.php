@@ -11,6 +11,10 @@ use App\Models\Employee;
 
 <?= view('partial/header') ?>
 
+<style>
+    html { zoom: 1 !important; }
+</style>
+
 <?php
 if (isset($error_message)) {
     echo '<div class="alert alert-dismissible alert-danger">' . $error_message . '</div>';

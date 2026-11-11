@@ -187,9 +187,6 @@ try {
                         <li class="<?= $is_itens ? 'active' : '' ?>">
                             <a href="<?= base_url('items') ?>">
                                 <span class="glyphicon glyphicon-th-large" aria-hidden="true"></span> ITENS
-                                <?php if ($stock_alert_count > 0): ?>
-                                    <span class="stock-badge"><?= $stock_alert_count > 99 ? '99+' : $stock_alert_count ?></span>
-                                <?php endif; ?>
                             </a>
                         </li>
                         <li class="<?= $is_clientes ? 'active' : '' ?>">

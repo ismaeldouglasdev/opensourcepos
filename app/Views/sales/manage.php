@@ -153,6 +153,7 @@ window._tutorialSteps = [
             var map = {
                 'only_cash': 'cash',
                 'only_creditcard': 'card',
+                'only_card': 'card',
                 'only_pix': 'pix',
                 'only_account_receivable': 'fiado'
             };
@@ -182,7 +183,7 @@ window._tutorialSteps = [
             var map = {
                 'all': [],
                 'cash': ['only_cash'],
-                'card': ['only_creditcard'],
+                'card': ['only_card'],
                 'pix': ['only_pix'],
                 'fiado': ['only_account_receivable']
             };

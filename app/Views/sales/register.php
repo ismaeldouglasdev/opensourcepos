@@ -2552,23 +2552,15 @@ function addPayment() {
     // Se o pagamento cobriu o total
     var novoRestante = getRestante();
     if (novoRestante <= 0.01 && payments_list.length > 0) {
-        var lastType = payments_list[payments_list.length - 1].type;
-        var totalPago = payments_list.reduce(function(sum, p) { return sum + p.amount; }, 0);
-        // Pedido do dono: digitar o valor COMPLETO da venda finaliza na hora,
-        // em qualquer forma de pagamento — elimina o toque extra no FINALIZAR.
-        // Só o valor EXATO (== em centavos) dispara isso. Se o cliente entregou
-        // MAIS que o total, o troco tem de ser conferido pelo operador, então
-        // esse caso continua esperando confirmacao manual (fix #5).
-        var exato = Math.round(totalPago * 100) === Math.round(total_venda * 100);
-        var isCashOrPix = lastType === '<?= lang("Sales.cash") ?>' || lastType === '<?= lang("Sales.pix") ?>';
-        if (!isCashOrPix || exato) {
-            finishCheckout();       // Debito/Credito/Fiado, ou valor exato: finaliza direto
-            return;
-        }
-        // Dinheiro/PIX com troco: foco no FINALIZAR pra confirmar
-        setTimeout(function() {
-            document.getElementById('finish_checkout_btn').focus();
-        }, 100);
+        // Pedido do dono (11/nov/2026): valor que CUBRA o total finaliza na
+        // hora — Enter no campo dispensa o "+" e o FINALIZAR, inclusive no
+        // caso com troco. Suplanta a confirmacao manual do fix #5 (o troco
+        // sai impresso no cupom: receipt_default "Troco"/amount_change e
+        // ThermalPrinter "Troco"; o servidor grava cash_refund no
+        // postQuickFinish). Pagamento PARCIAL (restante > 0.01, ex.: fiado)
+        // continua manual.
+        finishCheckout();
+        return;
     }
     
     // Senão, voltar foco pro primeiro botão de pagamento

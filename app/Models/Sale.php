@@ -269,6 +269,13 @@ class Sale extends Model
             $builder->like('payment_type', lang('Sales.credit'));
         }
 
+        if (!empty($filters['only_card'])) {
+            $builder->groupStart();
+            $builder->like('payment_type', lang('Sales.debit'));
+            $builder->orWhere('payment_type', lang('Sales.credit'));
+            $builder->groupEnd();
+        }
+
         if ($filters['only_pix']) {
             $builder->like('payment_type', lang('Sales.pix'));
         }
@@ -1821,6 +1828,15 @@ class Sale extends Model
 
         if ($filters['only_creditcard']) {
             $builder->like('payments.payment_type', lang('Sales.credit'));
+        }
+
+        // "CARTÃO" (chip do manage): débito OU crédito. O payment_type na temp table
+        // é GROUP_CONCAT ("Cartão Débito 40.00, Dinheiro 10.00"), então prefix-match.
+        if (!empty($filters['only_card'])) {
+            $builder->groupStart();
+            $builder->like('payments.payment_type', lang('Sales.debit'));
+            $builder->orWhere('payments.payment_type', lang('Sales.credit'));
+            $builder->groupEnd();
         }
 
         if ($filters['only_pix']) {

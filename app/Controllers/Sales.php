@@ -131,6 +131,7 @@ class Sales extends Secure_Controller
             $data['filters'] = [
                 'only_cash'               => lang('Sales.cash_filter'),
                 'only_creditcard'          => lang('Sales.credit_filter'),
+                'only_card'                => lang('Sales.card_filter'),
                 'only_pix'                => 'PIX',
                 'only_account_receivable' => lang('Sales.account_receivable'),
                 'only_invoices'           => lang('Sales.invoice_filter'),
@@ -152,6 +153,7 @@ class Sales extends Secure_Controller
                 'sale_type' => 'sales',
                 'only_cash' => false,
                 'only_creditcard' => false,
+                'only_card' => false,
                 'only_pix' => false,
                 'only_account_receivable' => false,
                 'only_invoices' => false,
@@ -2808,6 +2810,7 @@ class Sales extends Secure_Controller
             'only_pix'    => false,
             'only_account_receivable' => false,
             'only_creditcard' => false,
+            'only_card' => false,
             'only_due' => false,
             'only_check' => false
         ];
@@ -2838,6 +2841,7 @@ class Sales extends Secure_Controller
             'sale_type' => 'sales',
             'only_cash' => $filters['only_cash'] ?? false,
             'only_creditcard' => $filters['only_creditcard'] ?? false,
+            'only_card' => $filters['only_card'] ?? false,
             'only_pix' => $filters['only_pix'] ?? false,
             'only_account_receivable' => $filters['only_account_receivable'] ?? false,
             'only_invoices' => false,
@@ -2864,6 +2868,7 @@ class Sales extends Secure_Controller
             'sale_type' => 'sales',
             'only_cash' => false,
             'only_creditcard' => false,
+            'only_card' => false,
             'only_pix' => false,
             'only_account_receivable' => false,
             'only_invoices' => false,
@@ -2880,6 +2885,9 @@ class Sales extends Secure_Controller
                         break;
                     case 'only_creditcard':
                         $inputs['only_creditcard'] = true;
+                        break;
+                    case 'only_card':
+                        $inputs['only_card'] = true;
                         break;
                     case 'only_pix':
                         $inputs['only_pix'] = true;

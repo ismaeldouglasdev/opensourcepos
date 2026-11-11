@@ -35,6 +35,7 @@ return [
     "credit"                           => "Credit Card",
     "credit_deposit"                   => "Credit Deposit",
     "credit_filter"                    => "Credit Card",
+    "card_filter"                      => "Card (Debit/Credit)",
     "current_table"                    => "",
     "customer"                         => "Customer",
     "customer_address"                 => "Address",

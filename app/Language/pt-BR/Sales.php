@@ -35,6 +35,7 @@ return [
     "credit"                           => "Cartão Crédito",
     "credit_deposit"                   => "Depósito de crédito",
     "credit_filter"                    => "Cartão de Crédito",
+    "card_filter"                      => "Cartão (Débito/Crédito)",
     "current_table"                    => "",
     "customer"                         => "Cliente",
     "customer_address"                 => "Endereço",
