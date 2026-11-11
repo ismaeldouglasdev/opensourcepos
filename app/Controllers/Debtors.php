@@ -93,6 +93,7 @@ class Debtors extends Secure_Controller
         $scale = totals_decimals();
 
         if ($sale_id <= 0 || !in_array($payment_type, self::ALLOWED_PAYMENT_METHODS, true) || !is_numeric($amount)) {
+            log_message('error', "debtors/settle: dados inválidos. sale_id=$sale_id payment_type='$payment_type' amount='$amount'");
             echo json_encode(['success' => false, 'message' => 'Dados inválidos para quitação.']);
             return;
         }
@@ -104,6 +105,7 @@ class Debtors extends Secure_Controller
             ->get()->getRow();
 
         if ($sale === null) {
+            log_message('error', "debtors/settle: venda $sale_id não encontrada ou não concluída");
             echo json_encode(['success' => false, 'message' => 'Venda não encontrada ou não concluída.']);
             return;
         }
@@ -115,9 +117,12 @@ class Debtors extends Secure_Controller
                 \bcadd('0', $amount, $scale)
             );
         } catch (\RuntimeException | \InvalidArgumentException $e) {
+            log_message('error', "debtors/settle: falha na quitação da venda $sale_id: " . $e->getMessage());
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
             return;
         }
+
+        log_message('info', "debtors/settle: fiado quitado. sale_id=$sale_id método=$payment_type valor=$amount restante=$remaining");
 
         echo json_encode([
             'success'          => true,
