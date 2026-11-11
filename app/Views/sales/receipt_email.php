@@ -18,8 +18,13 @@
 <div id="receipt_wrapper" style="width: 100%;">
     <div id="receipt_header" style="text-align: center;">
         <?php if ($config['company_logo'] != '') { ?>
+            <?php
+            $logo_path = 'uploads/' . $config['company_logo'];
+            $logo_mime = mime_content_type($logo_path) ?: 'image/png';
+            $logo_b64 = base64_encode(file_get_contents($logo_path));
+            ?>
             <div id="company_name">
-                <img id="image" src="data:image/png;base64,<?= base64_encode(file_get_contents('uploads/' . $config['company_logo'])) ?>" alt="company_logo">
+                <img id="image" src="data:<?= $logo_mime ?>;base64,<?= $logo_b64 ?>" alt="company_logo">
             </div>
         <?php } ?>
 

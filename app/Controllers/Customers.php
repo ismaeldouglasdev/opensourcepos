@@ -83,7 +83,7 @@ class Customers extends Persons
      */
     public function getSearch(): void
     {
-        $search = $this->request->getGet('search');
+        $search = $this->request->getGet('search', FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?? '';
         $limit = $this->request->getGet('limit', FILTER_SANITIZE_NUMBER_INT);
         $offset = $this->request->getGet('offset', FILTER_SANITIZE_NUMBER_INT);
         $sort = $this->sanitizeSortColumn(customer_headers(), $this->request->getGet('sort', FILTER_SANITIZE_FULL_SPECIAL_CHARS), 'people.person_id');
@@ -305,6 +305,7 @@ class Customers extends Persons
                 ]);
             }
         } else { // Failure
+            log_message('error', 'customers/save: falha ao salvar cliente. id=' . $customer_id . ' nome=' . $first_name . ' ' . $last_name);
             echo json_encode([
                 'success' => false,
                 'message' => lang('Customers.error_adding_updating') . ' ' . $first_name . ' ' . $last_name,

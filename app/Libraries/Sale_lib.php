@@ -1164,22 +1164,7 @@ class Sale_lib
      */
     public function out_of_stock(int $item_id, int $item_location): string
     {
-        // Make sure item exists
-        if ($item_id != -1) {    // TODO: !== ?.  Also Replace -1 with a constant
-            $item_info = $this->item->get_info_by_id_or_number($item_id);
-
-            if ($item_info->stock_type == HAS_STOCK) {    // TODO: === ?
-                $item_quantity = $this->item_quantity->get_item_quantity($item_id, $item_location);
-                $quantity_added = $this->get_quantity_already_added($item_id, $item_location);
-
-                if ($item_quantity->quantity - $quantity_added < 0) {
-                    return lang('Sales.quantity_less_than_zero');
-                } elseif ($item_quantity->quantity - $quantity_added < $item_info->reorder_level) {
-                    return lang('Sales.quantity_less_than_reorder_level');
-                }
-            }
-        }
-
+        // Warning disabled per user request
         return '';
     }
 

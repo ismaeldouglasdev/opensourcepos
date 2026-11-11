@@ -38,7 +38,7 @@
                 <?php if (isset($config['company_logo']) && !empty($config['company_logo'])): ?>
                     <img class="logo w-100" src="<?= base_url('uploads/' . $config['company_logo']) ?>" alt="<?= lang('Common.logo') . '&nbsp;' . $config['company'] ?>">
                 <?php else: ?>
-                    <img class="logo" src="<?= base_url('uploads/elshaday_logo.svg') ?>" alt="Elshaday Utilidades" style="width: 120px; height: auto;">
+                    <img class="logo" src="<?= base_url('uploads/elshaday_logo.jpg') ?>" alt="Elshaday Utilidades" style="width: 120px; height: auto;">
                 <?php endif; ?>
             </div>
             <section class="box-login d-flex flex-column justify-content-center align-items-center p-md-4">

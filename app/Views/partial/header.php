@@ -123,7 +123,7 @@ try {
     <?= view('partial/tutorial') ?>
 </head>
 
-<body>
+<body<?= $request->getUri()->getSegment(1) === 'sales' && $request->getUri()->getSegment(2) === 'receipt' ? ' id="receipt"' : '' ?>>
     <div class="wrapper">
         <div class="topbar">
             <div class="container">
@@ -141,6 +141,9 @@ try {
                 </div>
 
                 <div class="navbar-center" style="text-align: center;">
+                    <?php if (!empty($config['company_logo'])): ?>
+                        <img src="<?= base_url('uploads/' . esc($config['company_logo'], 'url')) ?>" alt="Logo" style="height: 28px; vertical-align: middle; margin-right: 8px;">
+                    <?php endif; ?>
                     <strong><?= esc($config['company']) ?></strong>
                 </div>
             </div>

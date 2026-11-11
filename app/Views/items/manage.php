@@ -61,6 +61,7 @@ window._tutorialSteps = [
         $('#daterangepicker').data('daterangepicker').setStartDate("<?= date($config['dateformat'], mktime(0, 0, 0, 01, 01, 2010)) ?>");
         // Update the hidden inputs with the selected dates before submitting the search data
         var start_date = "<?= date('Y-m-d', mktime(0, 0, 0, 01, 01, 2010)) ?>";
+        var end_date = "<?= date('Y-m-d') ?>";
         $("#daterangepicker").on('apply.daterangepicker', function(ev, picker) {
             table_support.refresh();
         });

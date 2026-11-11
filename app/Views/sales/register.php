@@ -333,15 +333,6 @@ if (isset($success)) {
                         <span class="simple-mode-hint">Escaneie o produto ou digite o nome e aperte Enter</span>
                     <?php } ?>
                 </li>
-                <li class="pull-right">
-                    <?php /* Tarefa 7: 'Novo Item' e um rotulo de sistema. No Modo Simples
-                             a pergunta real do operador e "e se o produto nao
-                             existir?", e a resposta esta no proprio botao. */ ?>
-                    <?php $__newItemLabel = ! empty($simpleMode) ? 'Produto não encontrado? Cadastrar' : lang(ucfirst($controller_name) . '.new_item'); ?>
-                    <button type="button" id="new_item_button" class="btn btn-info btn-sm pull-right modal-dlg modal-dlg-1000 modal-dlg-quick" data-btn-new="<?= lang('Common.new') ?>" data-btn-submit="<?= lang('Common.submit') ?>" data-href="<?= "items/view?quick=1" ?>" title="<?= $__newItemLabel ?>">
-                        <span class="glyphicon glyphicon-tag">&nbsp;</span><?= $__newItemLabel ?>
-                    </button>
-                </li>
             </ul>
         </div>
     <?= form_close() ?>
@@ -1314,6 +1305,8 @@ if (isset($success)) {
                 var $w = $(this).autocomplete('widget');
                 $w.addClass('pos-autocomplete');
                 $w.css('width', $(this).outerWidth());
+                // Force position below input, never flip up
+                $w.position({ my: "left top", at: "left bottom", of: $(this), collision: "none" });
             },
             select: function(e, ui) {
                 if (ui.item.type === 'diversos') {

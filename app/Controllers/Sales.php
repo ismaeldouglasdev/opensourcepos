@@ -96,6 +96,7 @@ class Sales extends Secure_Controller
         if ($success) {
             echo json_encode(['success' => true, 'message' => count($sale_ids) . ' venda(s) apagada(s)']);
         } else {
+            log_message('error', 'sales/delete: falha ao apagar venda(s). ids=' . implode(',', $sale_ids) . ' employee=' . $employee_id);
             echo json_encode(['success' => false, 'message' => 'Erro ao apagar venda(s)']);
         }
     }
@@ -1388,6 +1389,7 @@ class Sales extends Secure_Controller
                     'ids'     => $sale_ids
                 ]);
             } else {
+                log_message('error', 'sales/delete: Sale::delete falhou. ids=' . implode(',', $sale_ids));
                 echo json_encode(['success' => false, 'message' => lang('Sales.unsuccessfully_deleted')]);
             }
         }
@@ -1415,6 +1417,7 @@ class Sales extends Secure_Controller
                     'ids'     => $sale_ids
                 ]);
             } else {
+                log_message('error', 'sales/restore: falha ao restaurar venda(s). ids=' . implode(',', $sale_ids));
                 echo json_encode(['success' => false, 'message' => lang('Sales.unsuccessfully_restored')]);
             }
         }
@@ -1533,6 +1536,7 @@ class Sales extends Secure_Controller
         if ($this->sale->update($sale_id, $sale_data)) {
             echo json_encode(['success' => true, 'message' => lang('Sales.successfully_updated'), 'id' => $sale_id]);
         } else {
+            log_message('error', 'sales/save: falha ao atualizar venda ' . $sale_id);
             echo json_encode(['success' => false, 'message' => lang('Sales.unsuccessfully_updated'), 'id' => $sale_id]);
         }
     }
@@ -1738,24 +1742,48 @@ class Sales extends Secure_Controller
         // Current sale tab
         $cart = $this->sale_lib->get_cart();
         $cart_count = count($cart);
+
+        // Determine label for current tab
+        $current_label = 'Venda atual';
+        if ($cart_count > 0) {
+            $current_label .= ' (' . $cart_count . ' itens)';
+        } elseif ($current_suspended_id > 0) {
+            // Find the suspended sale that's currently loaded to show its doc_id
+            foreach ($suspended_sales as $ss) {
+                if ($ss['sale_id'] == $current_suspended_id) {
+                    $first_item = $this->get_first_sale_item_name($ss['sale_id']);
+                    $current_label = $first_item ?: ('Suspensa #' . $ss['doc_id'] . ' (atual)');
+                    break;
+                }
+            }
+        }
+
         $tabs[] = [
             'id' => 'current',
             'sale_id' => $current_sale_id > 0 ? $current_sale_id : null,
-            'suspended_id' => null,
-            'label' => $cart_count > 0 ? 'Venda atual (' . $cart_count . ' itens)' : 'Venda atual',
-            'active' => $current_suspended_id === NEW_ENTRY,
+            'suspended_id' => $current_suspended_id > 0 ? $current_suspended_id : null,
+            'label' => $current_label,
+            'active' => true,
             'closable' => false,
             'cart_count' => $cart_count,
         ];
 
-        // Suspended sales tabs
+        // Suspended sales tabs (exclude the one currently loaded)
         foreach ($suspended_sales as $ss) {
+            // Skip the suspended sale that's currently loaded in the session
+            if ($current_suspended_id > 0 && $ss['sale_id'] == $current_suspended_id) {
+                continue;
+            }
+
+            $first_item = $this->get_first_sale_item_name($ss['sale_id']);
+            $label = $first_item ?: 'Suspensa #' . $ss['doc_id'];
+
             $tabs[] = [
                 'id' => 'suspended_' . $ss['sale_id'],
                 'sale_id' => $ss['sale_id'],
                 'suspended_id' => $ss['sale_id'],
-                'label' => 'Suspensa #' . $ss['doc_id'] . ' (' . date($this->config['dateformat'], strtotime($ss['sale_time'])) . ')',
-                'active' => $current_suspended_id === $ss['sale_id'],
+                'label' => $label,
+                'active' => false,
                 'closable' => true,
                 'cart_count' => 0,
                 'doc_id' => $ss['doc_id'],
@@ -1772,7 +1800,27 @@ class Sales extends Secure_Controller
     }
 
     /**
-     * Switch to a suspended sale (unsuspend) via AJAX.
+     * Get first item name for a sale.
+     *
+     * @param int $sale_id
+     * @return string|null
+     */
+    private function get_first_sale_item_name(int $sale_id): ?string
+    {
+        try {
+            $items = $this->sale->get_sale_items($sale_id)->getResultArray();
+            if (! empty($items)) {
+                return $items[0]['name'] ?? null;
+            }
+        } catch (\Throwable) {
+            // ignore
+        }
+        return null;
+    }
+
+    /**
+     * Switch to a suspended sale via AJAX.
+     * Suspends current cart (if has items) and loads selected suspended sale.
      *
      * @return void
      */
@@ -1780,16 +1828,32 @@ class Sales extends Secure_Controller
     {
         $this->response->setContentType('application/json');
 
-        $suspended_id = $this->request->getPost('suspended_id', FILTER_SANITIZE_NUMBER_INT);
+        $target_suspended_id = $this->request->getPost('suspended_id', FILTER_SANITIZE_NUMBER_INT);
 
-        if ($suspended_id <= 0) {
+        if ($target_suspended_id <= 0) {
+            log_message('error', 'sales/reopen: suspended_id inválido no POST');
             echo json_encode(['success' => false, 'message' => 'ID inválido']);
             return;
         }
 
+        // If current cart has items, suspend it first (save as suspended sale)
+        $current_cart = $this->sale_lib->get_cart();
+        $current_suspended_id = $this->sale_lib->get_suspended_id();
+
+        if (! empty($current_cart)) {
+            if ($current_suspended_id > 0 && $current_suspended_id !== $target_suspended_id) {
+                // Update existing suspended sale
+                $this->save_current_as_suspended($current_suspended_id);
+            } else {
+                // Create new suspended sale
+                $this->save_current_as_suspended();
+            }
+        }
+
+        // Load target suspended sale into session
         $this->sale_lib->clear_all();
-        $this->sale_lib->copy_entire_sale($suspended_id);
-        $this->sale->update_sale_status($suspended_id, CANCELED);
+        $this->sale_lib->copy_entire_sale($target_suspended_id);
+        $this->sale_lib->set_suspended_id($target_suspended_id);
         $this->change_register_mode($this->sale_lib->get_sale_type());
 
         echo json_encode([
@@ -1797,6 +1861,44 @@ class Sales extends Secure_Controller
             'message' => 'Venda carregada',
             'redirect' => site_url('sales'),
         ]);
+    }
+
+    /**
+     * Save current cart as suspended sale.
+     * If $suspended_id provided, updates that record; otherwise creates new.
+     *
+     * @param int|null $suspended_id
+     * @return int The suspended sale ID
+     */
+    private function save_current_as_suspended(?int $suspended_id = null): int
+    {
+        $sale_id = $this->sale_lib->get_sale_id();
+        $dinner_table = $this->sale_lib->get_dinner_table();
+        $cart = $this->sale_lib->get_cart();
+        $payments = $this->sale_lib->get_payments();
+        $employee_id = $this->employee->get_logged_in_employee_info()->person_id;
+        $customer_id = $this->sale_lib->get_customer();
+        $invoice_number = $this->sale_lib->get_invoice_number();
+        $work_order_number = $this->sale_lib->get_work_order_number();
+        $quote_number = $this->sale_lib->get_quote_number();
+        $sale_type = $this->sale_lib->get_sale_type();
+
+        if ($sale_type == '') {
+            $sale_type = SALE_TYPE_POS;
+        }
+
+        $comment = $this->sale_lib->get_comment();
+        $sale_status = SUSPENDED;
+
+        $sales_taxes = [[], []];
+
+        $result = $this->sale->save_value($sale_id, $sale_status, $cart, $customer_id, $employee_id, $comment, $invoice_number, $work_order_number, $quote_number, $sale_type, $payments, $dinner_table, $sales_taxes);
+
+        if ($result == '-1') {
+            throw new \RuntimeException('Falha ao suspender venda');
+        }
+
+        return (int) $result;
     }
 
     /**
@@ -1811,6 +1913,7 @@ class Sales extends Secure_Controller
         $suspended_id = $this->request->getPost('suspended_id', FILTER_SANITIZE_NUMBER_INT);
 
         if ($suspended_id <= 0) {
+            log_message('error', 'sales/unsuspend: suspended_id inválido no POST');
             echo json_encode(['success' => false, 'message' => 'ID inválido']);
             return;
         }
@@ -2029,6 +2132,7 @@ class Sales extends Secure_Controller
         if (!empty($payments_json)) {
             $payments_data = json_decode($payments_json, true);
             if ($payments_data === null) {
+                log_message('error', 'sales/addPayment: JSON de pagamento inválido (len=' . strlen($payments_json) . '): ' . substr($payments_json, 0, 200));
                 echo json_encode(['success' => false, 'message' => 'Dados de pagamento inválidos']);
                 return;
             }
@@ -2039,6 +2143,7 @@ class Sales extends Secure_Controller
                     }
                 }
             } elseif (!$is_refund_intent) {
+                log_message('error', 'sales/addPayment: lista de pagamentos vazia. json=' . substr($payments_json, 0, 200));
                 echo json_encode(['success' => false, 'message' => 'Dados de pagamento inválidos']);
                 return;
             }
@@ -2047,6 +2152,7 @@ class Sales extends Secure_Controller
             $this->sale_lib->add_payment($payment_type, $amount_tendered);
         } else {
             if (!$is_refund_intent) {
+                log_message('error', 'sales/addPayment: nenhum pagamento informado. payment_type=' . (string) $payment_type);
                 echo json_encode(['success' => false, 'message' => 'Nenhum pagamento informado']);
                 return;
             }
@@ -2103,6 +2209,8 @@ class Sales extends Secure_Controller
         if (bccomp($amount_due, '0', totals_decimals()) > 0) {
             $shortfall = bcsub($amount_due, $payments_total, totals_decimals());
             if (bccomp($shortfall, '0.01', totals_decimals()) > 0) {
+                log_message('error', 'sales/quickFinish: subpagamento bloqueado. sale_id_sessao=' . $this->sale_lib->get_sale_id()
+                    . ' total=' . $amount_due . ' pago=' . $payments_total . ' faltam=' . $shortfall);
                 echo json_encode([
                     'success' => false,
                     'message' => str_replace('{0}', to_currency($shortfall), lang('Sales.underpayment_blocked')),
@@ -2172,8 +2280,14 @@ class Sales extends Secure_Controller
         );
 
         if ($data['sale_id_num'] == NEW_ENTRY) {
+            log_message('critical', 'sales/quickFinish: Sale::save_value falhou (NEW_ENTRY). sale_id_sessao=' . $this->sale_lib->get_sale_id()
+                . ' status=' . $sale_status . ' itens=' . count($cart) . ' total=' . $amount_due
+                . ' pagamentos=' . count($payments) . ' cliente=' . ($customer['customer_id'] ?? 0));
             echo json_encode(['success' => false, 'message' => 'Erro ao finalizar venda']);
         } else {
+            log_message('info', 'venda salva: id=' . $data['sale_id_num']
+                . ' total=' . $amount_due . ' status=' . $sale_status
+                . ' pagamentos=' . count($payments) . ($sale_time ? ' sale_time=' . $sale_time : ''));
             $this->sale_lib->clear_all();
             echo json_encode(['success' => true, 'sale_id' => $data['sale_id_num']]);
         }
