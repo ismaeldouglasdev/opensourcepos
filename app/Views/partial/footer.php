@@ -260,7 +260,8 @@ use Config\OSPOS;
             }
         } catch (e) {}
     })();
-    </script>
-</body>
+</script>
 
+    <script src="<?= base_url('js/nav-cache.js?v=' . filemtime(FCPATH . 'js/nav-cache.js')) ?>"></script>
+</body>
 </html>

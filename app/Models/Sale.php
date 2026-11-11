@@ -547,9 +547,13 @@ class Sale extends Model
             $this->clear_suspended_sale_detail($sale_id);
         }
 
-        // Respect an explicitly backdated sale_time; otherwise keep the original
-        // time for reused sale_ids (in-place update) or default to now for new sales.
-        $sale_time = $sale_time ?? ($original_sale_time ?? date('Y-m-d H:i:s'));
+        // Respect an explicitly backdated sale_time. A reused sale_id keeps its
+        // original time only when it was already COMPLETED (reopen of a finished
+        // sale = history edit). Completing a SUSPENDED/CANCELED sale is a new
+        // event that happened now, so it dates now even though the suspension
+        // may be from a previous day (the sale was invisible on today's
+        // dashboard otherwise).
+        $sale_time = $sale_time ?? ($original_sale_status == COMPLETED ? $original_sale_time : date('Y-m-d H:i:s'));
 
         if (count($items) == 0) {    // TODO: ===
             return -1;    // TODO: Replace -1 with a constant

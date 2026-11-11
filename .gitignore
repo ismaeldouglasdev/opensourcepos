@@ -63,6 +63,7 @@ docs
 .omo/
 translations
 /.buildpath
+/build/
 /.project
 /.settings/*
 *.patch
