@@ -133,37 +133,31 @@ class Items extends Secure_Controller
         $sort = $this->sanitizeSortColumn(channel_headers(), $this->request->getGet('sort', FILTER_SANITIZE_FULL_SPECIAL_CHARS), 'item_id');
         $order = $this->request->getGet('order', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
-        $this->item_lib->set_item_location($this->request->getGet('stock_location'));
-
-        $filters = [
-            'search'            => $search,
-            'start_date'        => $this->request->getGet('start_date'),
-            'end_date'          => $this->request->getGet('end_date'),
-            'stock_location_id' => $this->item_lib->get_item_location(),
-            'only_ml'           => false,
-            'only_loja'         => false,
-            'needs_sync'        => false,
-            'out_of_sync'       => false,
-            'ml_paused'         => false,
-            'ml_under_review'   => false,
-        ];
-
         $request_filters = array_fill_keys($this->request->getGet('filters', FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?? [], true);
+        $filters = implode(',', array_keys(array_intersect_key($request_filters, array_flip([
+            'only_ml', 'only_loja', 'needs_sync', 'out_of_sync', 'ml_paused', 'ml_under_review',
+        ]))));
 
-        foreach ($request_filters as $filter => $val) {
-            if (isset($filters[$filter])) {
-                $filters[$filter] = true;
-            }
-        }
-
-        $rows = $this->item->get_channels_data($filters, $limit, $offset, $sort, $order);
-        $total_rows = $this->item->get_channels_count($filters);
+        // Os dados de canal (anúncios ML, produtos da loja) vivem no
+        // inventory-service (SQLite) — o OSPOS não tem essas tabelas, então a
+        // busca é um proxy do endpoint /v1/channels/grid.
+        $result = $this->inventoryRequest('GET', '/channels/grid', [
+            'search'  => (string) ($search ?? ''),
+            'limit'   => (int) ($limit ?: 25),
+            'offset'  => (int) ($offset ?: 0),
+            'sort'    => $sort,
+            'order'   => $order === 'desc' ? 'desc' : 'asc',
+            'filters' => $filters,
+        ]);
 
         $this->response->setContentType('application/json');
-        echo json_encode([
-            'total' => $total_rows,
-            'rows'  => $rows
-        ]);
+        if ($result['status'] === 0) {
+            log_message('error', 'Items: proxy /channels/grid falhou: ' . $result['error']);
+            echo json_encode(['total' => 0, 'rows' => [], 'error' => lang('Items.inventory_unavailable')]);
+            return;
+        }
+
+        echo $result['body'];
     }
 
     /**
@@ -278,85 +272,57 @@ class Items extends Secure_Controller
     }
 
     /**
-     * Publish item to Mercado Livre
+     * Publish item to Mercado Livre (via inventory-service)
      */
     private function publishToML(object $item): array
     {
-        // Call ML publish endpoint via inventory-service
-        $client = new \GuzzleHttp\Client(['timeout' => 30]);
-        $resp = $client->post('http://localhost:8000/v1/mercadolivre/publish', [
-            'json' => [
-                'ospos_item_id' => $item->item_id,
-                'dry_run' => false
-            ],
-            'headers' => [
-                'X-API-Key' => config(OSPOS::class)->settings['inventory_api_key'] ?? ''
-            ]
+        $result = $this->inventoryRequest('POST', '/mercadolivre/publish', [], [
+            'ospos_item_id' => (int) $item->item_id,
+            'dry_run' => false,
         ]);
-        return json_decode($resp->getBody(), true) ?: ['success' => false, 'message' => 'ML: resposta inválida'];
+        return $this->decode_inventory_response($result, 'ML: resposta inválida');
     }
 
     /**
-     * Pause item on Mercado Livre
+     * Pause item on Mercado Livre (via inventory-service)
      */
     private function pauseOnML(object $item): array
     {
         if (empty($item->item_number)) {
             return ['success' => false, 'message' => 'Item sem SKU para ML'];
         }
-        // Call ML pause via inventory-service
-        $client = new \GuzzleHttp\Client(['timeout' => 30]);
-        $resp = $client->post('http://localhost:8000/v1/mercadolivre/pause', [
-            'json' => ['seller_custom_field' => $item->item_number],
-            'headers' => [
-                'X-API-Key' => config(OSPOS::class)->settings['inventory_api_key'] ?? ''
-            ]
+        $result = $this->inventoryRequest('POST', '/mercadolivre/pause', [], [
+            'sku' => (string) $item->item_number,
         ]);
-        return json_decode($resp->getBody(), true) ?: ['success' => false, 'message' => 'ML pause: resposta inválida'];
+        return $this->decode_inventory_response($result, 'ML pause: resposta inválida');
     }
 
     /**
-     * Sync item to Mercado Livre
+     * Trigger the store delta sync (both ML stock and Loja refresh from it)
      */
     private function syncToML(object $item): array
     {
-        // Trigger delta sync for this item
-        $client = new \GuzzleHttp\Client(['timeout' => 30]);
-        $resp = $client->post('http://localhost:8000/v1/store/sync', [
-            'query' => ['mode' => 'delta'],
-            'headers' => [
-                'X-API-Key' => config(OSPOS::class)->settings['inventory_api_key'] ?? ''
-            ]
-        ]);
-        return json_decode($resp->getBody(), true) ?: ['success' => false, 'message' => 'ML sync: resposta inválida'];
+        return $this->syncToLoja($item);
     }
 
     /**
-     * Publish item to Loja Online
+     * Publish item to Loja Online (delta sync picks it up)
      */
     private function publishToLoja(object $item): array
     {
-        // Trigger sync which updates store_products (loja)
-        $client = new \GuzzleHttp\Client(['timeout' => 30]);
-        $resp = $client->post('http://localhost:8000/v1/store/sync', [
-            'query' => ['mode' => 'delta'],
-            'headers' => [
-                'X-API-Key' => config(OSPOS::class)->settings['inventory_api_key'] ?? ''
-            ]
-        ]);
-        return ['success' => true, 'message' => 'Loja: sincronização disparada'];
+        return $this->syncToLoja($item);
     }
 
     /**
-     * Hide item on Loja Online
+     * Hide item on Loja Online (visibility endpoint, sets visibility_manual)
      */
     private function hideOnLoja(object $item): array
     {
-        // Set store_visible = 0 in store_products
-        $this->db->table('store_products')
-            ->where('ospos_id', $item->item_id)
-            ->update(['store_visible' => 0]);
-        return ['success' => true, 'message' => 'Loja: produto ocultado'];
+        $result = $this->inventoryRequest('POST', '/channels/loja/visibility', [], [
+            'ospos_id' => (int) $item->item_id,
+            'visible' => false,
+        ]);
+        return $this->decode_inventory_response($result, 'Loja: resposta inválida');
     }
 
     /**
@@ -364,41 +330,100 @@ class Items extends Secure_Controller
      */
     private function syncToLoja(object $item): array
     {
-        return $this->publishToLoja($item);
+        $result = $this->inventoryRequest('POST', '/store/sync', ['mode' => 'delta']);
+        if ($result['status'] === 0) {
+            log_message('error', 'Items: store/sync falhou: ' . $result['error']);
+            return ['success' => false, 'message' => 'Loja: ' . ($result['error'] ?: 'resposta inválida')];
+        }
+        $data = json_decode($result['body'], true);
+        if (!is_array($data)) {
+            return ['success' => false, 'message' => 'Loja: resposta inválida'];
+        }
+        return [
+            'success' => true,
+            'message' => sprintf(
+                'Loja: sync concluído (%d criados, %d atualizados, %d erros)',
+                $data['created'] ?? 0,
+                $data['updated'] ?? 0,
+                $data['errors'] ?? 0
+            ),
+        ];
     }
 
     /**
-     * Publish item to Shopee
+     * Publish item to Shopee — no publish endpoint until the integration has
+     * credentials (adapter prepared, section 69).
      */
     private function publishToShopee(object $item): array
     {
-        // Shopee publish via inventory-service
-        $client = new \GuzzleHttp\Client(['timeout' => 30]);
-        $resp = $client->post('http://localhost:8000/v1/shopee/publish', [
-            'json' => ['ospos_item_id' => $item->item_id, 'dry_run' => false],
-            'headers' => [
-                'X-API-Key' => config(OSPOS::class)->settings['inventory_api_key'] ?? ''
-            ]
-        ]);
-        return json_decode($resp->getBody(), true) ?: ['success' => false, 'message' => 'Shopee: resposta inválida'];
+        return ['success' => false, 'message' => 'Shopee: publicação indisponível (integração aguarda credencial)'];
     }
 
     /**
-     * Pause item on Shopee
+     * Pause item on Shopee — same limitation as publishToShopee.
      */
     private function pauseOnShopee(object $item): array
     {
-        if (empty($item->item_number)) {
-            return ['success' => false, 'message' => 'Item sem SKU para Shopee'];
+        return ['success' => false, 'message' => 'Shopee: pausa indisponível (integração aguarda credencial)'];
+    }
+
+    /**
+     * Calls the inventory-service with the .env credentials (same pattern as
+     * MercadoLivre::inventoryCall). Returns ['status' => int, 'body' => string, 'error' => string].
+     */
+    private function inventoryRequest(string $method, string $path, array $query = [], ?array $payload = null): array
+    {
+        $baseUrl = rtrim((string) env('inventory.baseURL', ''), '/');
+        $apiKey = (string) env('inventory.apiKey', '');
+        if ($baseUrl === '' || $apiKey === '') {
+            return ['status' => 0, 'body' => '', 'error' => 'integração não configurada no .env (inventory.baseURL / inventory.apiKey)'];
         }
-        $client = new \GuzzleHttp\Client(['timeout' => 30]);
-        $resp = $client->post('http://localhost:8000/v1/shopee/pause', [
-            'json' => ['sku' => $item->item_number],
-            'headers' => [
-                'X-API-Key' => config(OSPOS::class)->settings['inventory_api_key'] ?? ''
-            ]
+
+        $url = $baseUrl . $path;
+        if ($query !== []) {
+            $url .= '?' . http_build_query($query);
+        }
+
+        $headers = ['X-API-Key: ' . $apiKey, 'Accept: application/json'];
+        if ($payload !== null) {
+            $headers[] = 'Content-Type: application/json';
+        }
+
+        $handle = curl_init($url);
+        curl_setopt_array($handle, [
+            CURLOPT_CUSTOMREQUEST  => $method,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_HTTPHEADER     => $headers,
         ]);
-        return json_decode($resp->getBody(), true) ?: ['success' => false, 'message' => 'Shopee pause: resposta inválida'];
+        if ($payload !== null) {
+            curl_setopt($handle, CURLOPT_POSTFIELDS, json_encode($payload, JSON_UNESCAPED_UNICODE));
+        }
+
+        $body = curl_exec($handle);
+        $status = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
+        $error = curl_error($handle);
+        curl_close($handle);
+
+        if ($body === false) {
+            return ['status' => 0, 'body' => '', 'error' => $error];
+        }
+
+        return ['status' => $status, 'body' => (string) $body, 'error' => ''];
+    }
+
+    /**
+     * Decodes an inventoryRequest result into the standard action response.
+     */
+    private function decode_inventory_response(array $result, string $fallbackMessage): array
+    {
+        if ($result['status'] === 0) {
+            log_message('error', 'Items: chamada ao inventory-service falhou: ' . $result['error']);
+            return ['success' => false, 'message' => $fallbackMessage];
+        }
+        $data = json_decode($result['body'], true);
+        return is_array($data) ? $data : ['success' => false, 'message' => $fallbackMessage];
     }
 
     /**

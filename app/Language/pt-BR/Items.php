@@ -173,6 +173,12 @@ return [
     "publish_all"                      => "Publicar em Todos",
     "pause_all"                        => "Pausar em Todos",
     "sync_selected"                    => "Sincronizar Selecionados",
+    "search_placeholder"               => "Buscar por nome, código ou código de barras...",
+    "date_range"                       => "Período",
+    "filters"                          => "Filtros",
+    "stock_location"                   => "Localização do estoque",
+    "search"                           => "Buscar",
+    "inventory_unavailable"            => "Serviço de inventário indisponível. Tente novamente em instantes.",
 
     // Channel actions
     "select_products"                => "Selecione ao menos um produto",

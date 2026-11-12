@@ -173,6 +173,12 @@ return [
     "publish_all"                      => "Publish All",
     "pause_all"                        => "Pause All",
     "sync_selected"                    => "Sync Selected",
+    "search_placeholder"               => "Search by name, code or barcode...",
+    "date_range"                       => "Date Range",
+    "filters"                          => "Filters",
+    "stock_location"                   => "Stock Location",
+    "search"                           => "Search",
+    "inventory_unavailable"            => "Inventory service unavailable. Please try again shortly.",
 
     // Channel actions
     "select_products"                => "Select at least one product",
