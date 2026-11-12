@@ -127,6 +127,11 @@ footer a:not(:hover) {
 }
 
 /* Specific Styling */
+.form-control.is-autofilled,
+.form-control.is-autofilled:focus {
+    background-color: #FFFBC9;
+}
+
 @media (max-width: 359.98px) {
     .g-recaptcha {
         overflow-x: auto; /* Makes sure reCAPTCHA is usable on the smallest screens */

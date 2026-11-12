@@ -8,9 +8,9 @@ return [
     "invalid_username_and_password" => "Usuário ou senha inválido.",
     "login"                         => "Autenticação",
     "logout"                        => "",
-    "migration_needed"              => "",
+    "migration_needed"              => "Uma migração do banco de dados para {0} começará após o login.",
     "password"                      => "Senha",
     "required_username"             => "",
     "username"                      => "Usuário",
-    "welcome"                       => "",
+    "welcome"                       => "Bem-vindo ao {0}!",
 ];

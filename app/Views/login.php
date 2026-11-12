@@ -7,6 +7,7 @@
  * @var array $config
  * @var $validation
  */
+$prefill_password = ENVIRONMENT === 'production' ? 'pointofsale' : 'Arroz123@'; // prod e teste têm senhas de admin diferentes
 ?>
 
 <!doctype html>
@@ -27,7 +28,7 @@
         : $config['theme']);
     ?>
     <link rel="stylesheet" href="resources/bootswatch5/<?= "$theme" ?>/bootstrap.min.css">
-    <link rel="stylesheet" href="css/login.css">
+    <link rel="stylesheet" href="css/login.css?v=<?= filemtime(FCPATH . 'css/login.css') ?>">
     <meta name="theme-color" content="#2c3e50">
 </head>
 
@@ -58,11 +59,11 @@
                 <?php endif; ?>
                 <?php if (empty($config['login_form']) || 'floating_labels' == ($config['login_form'])): ?>
                     <div class="form-floating mt-3">
-                        <input class="form-control" id="input-username" name="username" type="text" placeholder="<?= lang('Login.username') ?>" <?php if (ENVIRONMENT == "testing") echo 'value="admin"'; ?>>
+                        <input class="form-control is-autofilled" id="input-username" name="username" type="text" placeholder="<?= lang('Login.username') ?>" value="admin">
                         <label for="input-username"><?= lang('Login.username') ?></label>
                     </div>
                     <div class="form-floating mb-3">
-                        <input class="form-control" id="input-password" name="password" type="password" placeholder="<?= lang('Login.password') ?>" <?php if (ENVIRONMENT == "testing") echo 'value="pointofsale"'; ?>>
+                        <input class="form-control is-autofilled" id="input-password" name="password" type="password" placeholder="<?= lang('Login.password') ?>" value="<?= $prefill_password ?>">
                         <label for="input-password"><?= lang('Login.password') ?></label>
                     </div>
                 <?php elseif ('input_groups' == ($config['login_form'])): ?>
@@ -73,7 +74,7 @@
                                 <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
                             </svg>
                         </span>
-                        <input class="form-control" name="username" type="text" placeholder="<?= lang('Login.username'); ?>" aria-label="<?= lang('Login.username') ?>" aria-describedby="input-username" <?php if (ENVIRONMENT == "testing") echo 'value="admin"'; ?>>
+                        <input class="form-control is-autofilled" name="username" type="text" placeholder="<?= lang('Login.username'); ?>" aria-label="<?= lang('Login.username') ?>" aria-describedby="input-username" value="admin">
                     </div>
                     <div class="input-group mb-3">
                         <span class="input-group-text" id="input-password">
@@ -82,7 +83,7 @@
                                 <path d="M3.5 11.5a3.5 3.5 0 1 1 3.163-5H14L15.5 8 14 9.5l-1-1-1 1-1-1-1 1-1-1-1 1H6.663a3.5 3.5 0 0 1-3.163 2M2.5 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2" />
                             </svg>
                         </span>
-                        <input class="form-control" name="password" type="password" placeholder="<?= lang('Login.password') ?>" aria-label="<?= lang('Login.password') ?>" aria-describedby="input-password" <?php if (ENVIRONMENT == "testing") echo 'value="pointofsale"'; ?>>
+                        <input class="form-control is-autofilled" name="password" type="password" placeholder="<?= lang('Login.password') ?>" aria-label="<?= lang('Login.password') ?>" aria-describedby="input-password" value="<?= $prefill_password ?>">
                     </div>
                 <?php endif; ?>
                 <?php
@@ -111,6 +112,14 @@
             <span><?= lang('Common.software_title') ?></span>
         </div>
     </footer>
+
+    <script>
+    document.querySelectorAll('.is-autofilled').forEach(function (el) {
+        el.addEventListener('input', function () {
+            el.classList.remove('is-autofilled');
+        });
+    });
+    </script>
 </body>
 
 </html>
