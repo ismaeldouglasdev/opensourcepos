@@ -133,7 +133,12 @@ class Items extends Secure_Controller
         $sort = $this->sanitizeSortColumn(channel_headers(), $this->request->getGet('sort', FILTER_SANITIZE_FULL_SPECIAL_CHARS), 'item_id');
         $order = $this->request->getGet('order', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
-        $request_filters = array_fill_keys($this->request->getGet('filters', FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?? [], true);
+        // getGet() com filtro scalar quebra em PHP 8: com filters[] (array)
+        // devolve false e com filters=only_ml (scalar) devolve string —
+        // ambos dão TypeError no array_fill_keys. Normaliza sempre para
+        // lista de strings antes do whitelist (interseção descarta lixo).
+        $raw_filters = (array) ($this->request->getGet('filters') ?? []);
+        $request_filters = array_fill_keys(array_map('strval', $raw_filters), true);
         $filters = implode(',', array_keys(array_intersect_key($request_filters, array_flip([
             'only_ml', 'only_loja', 'needs_sync', 'out_of_sync', 'ml_paused', 'ml_under_review',
         ]))));
