@@ -148,7 +148,7 @@ window._tutorialSteps = [
                         <div class="col-md-6">
                             <div class="form-group form-group-sm">
                                 <label class="control-label" for="filters"><?= lang('Items.filters') ?></label>
-                                <?= form_multiselect('filters[]', $filters, [''], [
+                                <?= form_multiselect('filters[]', $filters, ['only_active'], [
                                     'id'                        => 'filters',
                                     'class'                     => 'selectpicker show-menu-arrow',
                                     'data-none-selected-text'   => lang('Common.none_selected_text'),

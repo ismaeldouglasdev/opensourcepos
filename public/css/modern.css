@@ -3225,6 +3225,18 @@ body {
     margin-right: 6px !important;
 }
 
+/* Cadastrar rápido (sugestão de criação no autocomplete de produtos) */
+.pos-ac-create {
+    padding: 8px 10px !important;
+    font-weight: 600 !important;
+    color: var(--os-primary) !important;
+    font-size: 14px !important;
+}
+
+.pos-ac-create .glyphicon {
+    margin-right: 6px !important;
+}
+
 /* ============================================
    MODAL WIDE — item novo/editar (items/view)
    O loader do manage_tables.js reconhece classes `modal-dlg-XXX`

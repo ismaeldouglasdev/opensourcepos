@@ -158,6 +158,7 @@ return [
     // Canais de Venda
     "channels"                         => "Canais de Venda",
     "channel_management"               => "Gerenciar Canais",
+    "only_active"                      => "Somente ativos",
     "only_ml"                          => "Apenas Mercado Livre",
     "only_loja"                        => "Apenas Loja Online",
     "needs_sync"                       => "Precisa Sincronizar",

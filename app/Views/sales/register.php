@@ -1124,6 +1124,21 @@ if (isset($success)) {
             }, 120);
         }
 
+        function openNewItemWithName(name) {
+            $.notify({ message: 'Produto não cadastrado. Abrindo cadastro rápido...' }, { type: 'info', timer: 2500 });
+            var $link = $('<a>').addClass('modal-dlg modal-dlg-1000 modal-dlg-quick').attr({
+                'data-href': '<?= esc("items/view") ?>?quick=1&name=' + encodeURIComponent(name),
+                'data-btn-new': 'Novo',
+                'data-btn-submit': 'Enviar',
+                'title': 'Novo produto'
+            }).hide().appendTo('body');
+            // dialog_support.init usa binding direto — o link criado aqui
+            // dinamicamente não teria handler; liga no elemento novo
+            dialog_support.init($link);
+            $link[0].click();
+            setTimeout(function() { $link.remove(); }, 1500);
+        }
+
         function fillItemFromLookup(code) {
             $.getJSON('<?= esc("items/barcodeLookup") ?>/' + code, function(res) {
                 if (!res || !res.found || !res.name) {
@@ -1286,6 +1301,9 @@ if (isset($success)) {
                         if (term === '1' || term === 'diversos') {
                             data.unshift({ type: 'diversos', label: 'DIVERSOS', value: '1' });
                         }
+                        if (data.length === 0 && term !== '') {
+                            data.push({ type: 'create', label: request.term.trim(), value: request.term.trim() });
+                        }
                         response(data);
                     },
                     error: function() {
@@ -1311,6 +1329,11 @@ if (isset($success)) {
             select: function(e, ui) {
                 if (ui.item.type === 'diversos') {
                     showDiversosModal();
+                    $(this).val('');
+                    return false;
+                }
+                if (ui.item.type === 'create') {
+                    openNewItemWithName(ui.item.label);
                     $(this).val('');
                     return false;
                 }
@@ -1364,6 +1387,10 @@ if (isset($success)) {
         $('#item').autocomplete('instance')._renderItem = function(ul, item) {
             if (item.type === 'diversos') {
                 return $('<li class="pos-ac-diversos"><div><span class="glyphicon glyphicon-plus-sign"></span> DIVERSOS — Preço avulso</div></li>')
+                    .appendTo(ul);
+            }
+            if (item.type === 'create') {
+                return $('<li class="pos-ac-create"><div><span class="glyphicon glyphicon-plus-sign"></span> Cadastrar &quot;' + posEscapeHtml(item.label) + '&quot;? <span class="pos-ac-hint">cadastro rápido</span></div></li>')
                     .appendTo(ul);
             }
             if (item.type === 'category') {

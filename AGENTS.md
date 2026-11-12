@@ -236,3 +236,52 @@ Verificação Playwright (`/tmp/opencode/verify_login_prefill.py`, penv): 10/10 
 — prefill correto por ambiente, bg `rgb(255, 251, 201)`, welcome visível, cache-buster no link,
 classe limpa ao digitar, Entrar → `/sales/add`, 0 pageerror. Backups em
 `/home/ismael/pos-backups/login-prefill-20261112/`.
+
+### Canais: filtro default "Somente ativos" + Cadastro rápido no caixa (12/nov/2026)
+
+**Pedido do dono:** "no channels só deixar os ativos como padrão" e "quando digita um nome que
+não existe no sales/add, oferecer 'Cadastrar <nome>?' direto no autocomplete — o botão
+Novo Item foi removido, faltou tratar isso".
+
+**Filtro `only_active` (Canais de Venda):** item ativo = vendendo em ≥1 canal
+(ML `status=="active"` OU `store.store_visible` OU Shopee `status=="active"`).
+- `inventory-service/app/api/v1/channels.py`: condição nova + whitelist
+  (`only_active,only_ml,only_loja,needs_sync,out_of_sync,ml_paused,ml_under_review` via set
+  intersection; o array_flip fica no lado OSPOS). py_compile OK; reiniciado o serviço.
+- `app/Controllers/Items.php`: `'only_active'` PRIMEIRO no array `$filters` (default em
+  destaque) + whitelist `array_flip` no `getChannelsSearch()` (mesma defesa do bug do
+  `array_fill_keys` corrigido antes).
+- `app/Views/items/channels.php`: multiselect inicia com `['only_active']`.
+- Lang pt-BR/en `Items.php`: `only_active` => "Somente ativos"/"Active only".
+- Sem filtro: 10437; com `only_active`: 209.
+
+**Cadastro rápido no autocomplete (sales/add):** quando a busca não retorna NADA
+(`data.length === 0 && term !== ''`), a suggestion list ganha um item
+`type: 'create'` — `Cadastrar "<termo>"? cadastro rápido` (`.pos-ac-create`, verde, glyphicon
+plus, embaixo do divisor `pos-ac-diversos`). Ao selecionar → `openNewItemWithName(term)` espelha
+`openNewItemWithBarcode`: link temporário `modal-dlg` → `items/view?quick=1&name=<termo>` →
+`dialog_support.init($link)` → click → remove após 1,5s + notify. O form de item novo chega com
+o **nome preenchido** (`Items::getView`: `strip_tags(trim(getGet('name')))` → `mb_substr(0,100)`
+→ `$item_info->name`, espelhando o prefill de barcode) e **categoria UTILIDADES** (ramo quick).
+
+- `register.php`: branch no `select` do autocomplete ANTES dos calls de categoria/fornecedor
+  (limpa o campo + `return false`); branch no `_renderItem` para `type: 'create'`.
+- `modern.css`: `.pos-ac-create` + `.pos-ac-create .glyphicon` (~l.3228).
+- Quick mode (`?quick=1`) pula o restore de draft — sem conflito com prefill.
+
+**Armadilha do modal quick:** NÃO é o form completo — é o modal simplificado com
+`category` como **input hidden** (não `select[name='category']`). O seletor correto para
+verificar é `input[name='category']`. Inputs do modal: `item_number, category(hidden), name,
+cost_price(hidden), unit_price, honeypot`.
+
+**Verificação (Playwright, `/tmp/opencode/verify_onlyactive_cadastro.py`, penv, TEST+PROD):**
+4/4 PASS — channels: `#filters` selecionado `['only_active']`, botão "Somente ativos",
+209 filtrado vs 10437 após reset (`#channel_reset_btn` limpa o select); cadastro: sugestão
+exata, modal abre com `name` = termo digitado e `categoria='UTILIDADES'`, fechado via
+`.bootstrap-dialog-close-button button.close` (botão do footer SUBMETE). 0 pageerror nos dois.
+
+**Deploy:** 6 arquivos (Items.php, channels.php, register.php, lang pt-BR/en, modern.css) —
+md5 ×3 idênticos, backups em `/home/ismael/pos-backups/onlyactive-cadastro-20261112/`,
+dono `www-data:www-data` 664, Apache reiniciado. `inventory.service` reiniciado e ativo.
+Evidência: `/tmp/opencode/verify_onlyactive_cadastro.py` + `debug_quick_modal.py` (é tmpfs —
+a lógica está descrita aqui).

@@ -110,6 +110,7 @@ class Items extends Secure_Controller
 
         // Filters for channels
         $data['filters'] = [
+            'only_active'    => lang('Items.only_active'),
             'only_ml'        => lang('Items.only_ml'),
             'only_loja'      => lang('Items.only_loja'),
             'needs_sync'     => lang('Items.needs_sync'),
@@ -140,7 +141,7 @@ class Items extends Secure_Controller
         $raw_filters = (array) ($this->request->getGet('filters') ?? []);
         $request_filters = array_fill_keys(array_map('strval', $raw_filters), true);
         $filters = implode(',', array_keys(array_intersect_key($request_filters, array_flip([
-            'only_ml', 'only_loja', 'needs_sync', 'out_of_sync', 'ml_paused', 'ml_under_review',
+            'only_active', 'only_ml', 'only_loja', 'needs_sync', 'out_of_sync', 'ml_paused', 'ml_under_review',
         ]))));
 
         // Os dados de canal (anúncios ML, produtos da loja) vivem no
@@ -702,6 +703,13 @@ class Items extends Secure_Controller
             $barcode = trim((string) ($this->request->getGet('item_number') ?? ''));
             if (preg_match('/^[0-9A-Za-z]{4,32}$/', $barcode)) {
                 $item_info->item_number = $barcode;
+            }
+
+            // Prefill the name when the dialog is opened from a typed product
+            // name that does not exist (sales register autocomplete suggestion).
+            $prefill_name = trim(strip_tags((string) ($this->request->getGet('name') ?? '')));
+            if ($prefill_name !== '') {
+                $item_info->name = mb_substr($prefill_name, 0, 100);
             }
 
             if ($use_destination_based_tax) {

@@ -158,6 +158,7 @@ return [
     // Sales Channels
     "channels"                         => "Sales Channels",
     "channel_management"               => "Manage Channels",
+    "only_active"                      => "Active only",
     "only_ml"                          => "Only Mercado Livre",
     "only_loja"                        => "Only Online Store",
     "needs_sync"                       => "Needs Sync",
