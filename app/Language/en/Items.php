@@ -178,6 +178,7 @@ return [
     "filters"                          => "Filters",
     "stock_location"                   => "Stock Location",
     "search"                           => "Search",
+    "items"                            => "Items",
     "inventory_unavailable"            => "Inventory service unavailable. Please try again shortly.",
 
     // Channel actions

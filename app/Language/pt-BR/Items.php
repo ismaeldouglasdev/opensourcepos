@@ -178,6 +178,7 @@ return [
     "filters"                          => "Filtros",
     "stock_location"                   => "Localização do estoque",
     "search"                           => "Buscar",
+    "items"                            => "Itens",
     "inventory_unavailable"            => "Serviço de inventário indisponível. Tente novamente em instantes.",
 
     // Channel actions
