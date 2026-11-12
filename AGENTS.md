@@ -188,3 +188,51 @@ de clique para `save_supplier_panel()` e o associa aos três campos do painel co
 Ver §Seção 2026-10-20 item 1: a migration `ospos_item_codes` **primeiro**, o código depois. O
 funil de resolução (`get_info_by_id_or_number`) compila subquery contra essa tabela; subir o
 código antes faz toda venda/scan quebrar no caixa.
+
+## Session Context (2026-11-12)
+
+### Página /channels (Canais de Venda) funcionando via inventory-service
+
+Commits `7949e4140` (proxy curl + view `app/Views/items/channels.php` + lang keys), `12afdd740`
+(correção de prefixo `/v1`), `f540c7445` (normalização de filters), `e3d9256d8` (lang `Items.items`).
+Fonte dos dados: `GET /v1/channels/summary` no inventory-service (não é o MySQL direto); o
+controller faz proxy curl com `X-API-Key` lida de `env('inventory.api_key')`. Grid bootstrap-table
+com badges de estoque, filtro de localização e filtros rápidos (todos/não publicados etc.).
+
+**Bug que derrubou a página:** `Items::getChannelsSearch()` passava `filters` cru do query string
+para `array_fill_keys()` — `?filters=` vazio (string) virava `TypeError: Argument #1 must be of
+type array, string given` (CRITICAL 2x no log de 12/nov, 10:51/10:52). Fix:
+`$raw_filters = (array) ($this->request->getGet('filters') ?? []);` antes do
+`array_fill_keys(array_map('strval', $raw_filters), true)`. O formulário envia `filters[]=...`
+(array) e funciona; a forma escalar também é aceita agora. Há uma linha idêntica em outro método
+do mesmo arquivo (~L460) — mesma classe de bug latente, NÃO mexida fora do escopo.
+
+Verificado (curl + Playwright): prod base 10430 itens, `only_ml` 136, `only_ml∩ml_paused` 44;
+teste base 10431; logs limpos depois do fix; `/tmp/opencode/channels_visual_prod.py` PASS
+(0 pageerror, 25 linhas, 75 badges).
+
+### Login: prefill por ambiente + highlight amarelo + welcome pt-BR
+
+Commit `b339e6a84`. Pedidos do dono: prefill `admin`/senha na tela de login (só apertar Entrar),
+grifado em amarelo, mensagem de boas-vindas em pt-BR.
+
+**Por que o prefill antigo nunca apareceu:** ele vivia sob `ENVIRONMENT == "testing"`, mas
+prod `.env` = `CI_ENVIRONMENT = production` e teste = `development` — a condição nunca casava em
+nenhum ambiente. Agora é incondicional, com a senha por ambiente:
+`ENVIRONMENT === 'production' ? 'pointofsale' : 'Arroz123@'` (prod e teste têm senhas de admin
+diferentes — ponto de atenção ao copiar a view).
+
+- `login.css`: `.form-control.is-autofilled` (e `:focus`) com `background-color: #FFFBC9`.
+- `login.php`: classe `is-autofilled` nos 4 inputs (2 branches de form) + JS no fim do body que
+  remove a classe quando o usuário digita (highlight some ao editar).
+- `login.css` link ganhou cache-buster `?v=<?= filemtime(...) ?>` — CSS mudado por deploy sem
+  cache-buster fica preso no cache do browser (mesma lição do nav-cache, fix #88).
+- pt-BR `Login.php`: `welcome` => "Bem-vindo ao {0}!" e `migration_needed` preenchidos (estavam
+  vazios; en já tinha os dois).
+
+**Armadilhas de verificação do login:** o form usa `username`/`password` como `name` (os
+`#input-username` etc. são só id); o login redireciona para `/sales/add` (caixa), não `/home`.
+Verificação Playwright (`/tmp/opencode/verify_login_prefill.py`, penv): 10/10 nos dois ambientes
+— prefill correto por ambiente, bg `rgb(255, 251, 201)`, welcome visível, cache-buster no link,
+classe limpa ao digitar, Entrar → `/sales/add`, 0 pageerror. Backups em
+`/home/ismael/pos-backups/login-prefill-20261112/`.
