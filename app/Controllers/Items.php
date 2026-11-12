@@ -141,7 +141,7 @@ class Items extends Secure_Controller
         // Os dados de canal (anúncios ML, produtos da loja) vivem no
         // inventory-service (SQLite) — o OSPOS não tem essas tabelas, então a
         // busca é um proxy do endpoint /v1/channels/grid.
-        $result = $this->inventoryRequest('GET', '/channels/grid', [
+        $result = $this->inventoryRequest('GET', '/v1/channels/grid', [
             'search'  => (string) ($search ?? ''),
             'limit'   => (int) ($limit ?: 25),
             'offset'  => (int) ($offset ?: 0),
@@ -276,7 +276,7 @@ class Items extends Secure_Controller
      */
     private function publishToML(object $item): array
     {
-        $result = $this->inventoryRequest('POST', '/mercadolivre/publish', [], [
+        $result = $this->inventoryRequest('POST', '/v1/mercadolivre/publish', [], [
             'ospos_item_id' => (int) $item->item_id,
             'dry_run' => false,
         ]);
@@ -291,7 +291,7 @@ class Items extends Secure_Controller
         if (empty($item->item_number)) {
             return ['success' => false, 'message' => 'Item sem SKU para ML'];
         }
-        $result = $this->inventoryRequest('POST', '/mercadolivre/pause', [], [
+        $result = $this->inventoryRequest('POST', '/v1/mercadolivre/pause', [], [
             'sku' => (string) $item->item_number,
         ]);
         return $this->decode_inventory_response($result, 'ML pause: resposta inválida');
@@ -318,7 +318,7 @@ class Items extends Secure_Controller
      */
     private function hideOnLoja(object $item): array
     {
-        $result = $this->inventoryRequest('POST', '/channels/loja/visibility', [], [
+        $result = $this->inventoryRequest('POST', '/v1/channels/loja/visibility', [], [
             'ospos_id' => (int) $item->item_id,
             'visible' => false,
         ]);
@@ -330,7 +330,7 @@ class Items extends Secure_Controller
      */
     private function syncToLoja(object $item): array
     {
-        $result = $this->inventoryRequest('POST', '/store/sync', ['mode' => 'delta']);
+        $result = $this->inventoryRequest('POST', '/v1/store/sync', ['mode' => 'delta']);
         if ($result['status'] === 0) {
             log_message('error', 'Items: store/sync falhou: ' . $result['error']);
             return ['success' => false, 'message' => 'Loja: ' . ($result['error'] ?: 'resposta inválida')];
