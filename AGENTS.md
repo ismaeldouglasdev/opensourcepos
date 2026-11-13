@@ -285,3 +285,61 @@ md5 ×3 idênticos, backups em `/home/ismael/pos-backups/onlyactive-cadastro-202
 dono `www-data:www-data` 664, Apache reiniciado. `inventory.service` reiniciado e ativo.
 Evidência: `/tmp/opencode/verify_onlyactive_cadastro.py` + `debug_quick_modal.py` (é tmpfs —
 a lógica está descrita aqui).
+
+## 92. Publicação de itens novos (Loja + Mercado Livre) — 12/nov/2026
+
+**Pergunta do dono:** criou 6 itens com foto + 1 sem foto hoje; "já são publicados
+automaticamente na loja? E no ML? Se não, pode publicar todos em ambos".
+
+### Itens do dia (12/nov/2026)
+
+| item | sku | nome | preço | estoque | foto |
+|---|---|---|---|---|---|
+| 10611 | 7891112319998 | JOGO DE FACAS TRAMONTINA 7PÇS | 75,00 | 3 | **SEM** |
+| 10612 | DDDCT | DECORAÇÃO FELIZ NATAL VERMELHO ESCURO | 30,00 | 2 | ok |
+| 10613 | XHBPZ | DECORAÇÃO FELIZ NATAL VERMELHO CLARO | 30,00 | 4 | ok |
+| 10614 | GG8TE | CASA NATAL BRANCO PEROLA | 32,00 | 1 | ok |
+| 10615 | VM5NG | ARVORE ESTRELA DOURADA | 25,00 | 4 | ok |
+| 10616 | YS5CV | ARVORE ESTRELA VERDE | 25,00 | 2 | ok |
+| 10617 | G6NBQ | MINI ARVORE MOLA NATAL VERDE | 20,00 | 4 | ok |
+
+### Loja — SIM, automática (nada a fazer)
+O `catalog.json` no `origin/sync/prod-data` (que o Render consome) JÁ continha os 6 itens
+com foto (`image_url=/v1/store/ospos-item-images/106XX.png`) — o cron de 30min pegou antes.
+**2 bugs corrigidos no SQLite local (`store_products`):**
+- 10614/10615 estavam `store_visible=0` sem `image_url` — gap do `_pic_covers()`
+  (`store_sync.py`): OSPOS `pic_filename=10614.png` mas o arquivo local é
+  `product_10614.png` → "coberta" → o delta NUNCA corrige. Fix: UPDATE direto
+  (`image_url=/v1/store/images/product_106XX.png`, `store_visible=1`) — estável porque
+  `_pic_covers` trata nome `product_*` como coberto.
+- 10611 estava visível com foto ERRADA (stale `product_10590.png` de outro produto) —
+  escondido (`image_url=NULL`, `store_visible=0`). Entra na loja quando tiver foto.
+
+### ML — NÃO é automático; 5 publicados via POST /v1/mercadolivre/publish
+| sku | anúncio | título ML | preço ML |
+|---|---|---|---|
+| XHBPZ | MLB7984758382 | Decoração de Natal Feliz Natal Vermelho Claro | 42,99 |
+| DDDCT | MLB7984794674 | Decoração de Natal Feliz Natal Vermelho Escuro | 42,99 |
+| VM5NG | MLB7984828696 | Decoração de Natal Árvore de Mesa Estrela Dourada | 35,99 |
+| YS5CV | MLB7984831556 | Decoração de Natal Árvore de Mesa Estrela Verde | 35,99 |
+| G6NBQ | MLB7984819488 | Decoração de Natal Mini Árvore Mola Verde | 28,99 |
+- **GG8TE (10614, 1un) NÃO publicado** — decisão do dono: "publica todos com exceção do
+  que tem apenas 1 no estoque". Publicar quando repor estoque (publish é manual).
+- **Preço ML = preço PDV × ~1,43 arredondado .99** (markup de out/2026, `compute_ml_price`).
+- **ARMADILHA de categoria:** "Árvore de Natal ..." resolve para MLB117806, que EXIGE o
+  atributo HEIGHT (400: "The attributes [HEIGHT] are required") — e não temos altura
+  cadastrada. Título com prefixo "Decoração de Natal ..." resolve para MLB117801/MLB438504
+  sem exigências. Sempre `dry_run` antes do publish real para ver categoria/bloqueios.
+- **ARMADILHA de auth:** `.env` tem `API_KEY="..."` COM aspas — o grep captura as aspas e
+  dá 401. Usar `KEY="$(sudo -n grep -oP '^API_KEY=\K.*' .env | tr -d '"')"`.
+- **Anúncios criados SEM descrição** (body `description=""`; o flow só envia descrição
+  para `POST /items/{id}/description` se não-vazia, e não há endpoint exposto pós-criação).
+  Funcionais sem descrição; passar `description` no body em publishes futuros.
+
+### Gates alterados com autorização do dono
+Os gates `ml_min_publish_stock=4` / `ml_min_publish_price=25` eram pedido explícito do
+dono (02/out, comentário no `config.py:65-70`). Nesta sessão o dono autorizou baixar:
+`.env` linhas 58-59 → `ML_MIN_PUBLISH_STOCK=2` / `ML_MIN_PUBLISH_PRICE=20` (com
+comentário datado). Com isso 10614 (1un) permanece bloqueado — sem precisar reverter.
+`inventory.service` reiniciado e ativo; 0 ERRORs novos no journal (os 2 do dia eram o
+400 do VM5NG antes do re-título). Mapeamentos `channel_product_mapping` 5/5 `active`.
