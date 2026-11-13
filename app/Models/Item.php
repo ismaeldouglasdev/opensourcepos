@@ -180,6 +180,7 @@ class Item extends Model
             $builder->select('MAX(items.description) AS description');
             $builder->select('MAX(items.cost_price) AS cost_price');
             $builder->select('MAX(items.unit_price) AS unit_price');
+            $builder->select('MAX(items.compare_at_price) AS compare_at_price');
             $builder->select('MAX(items.reorder_level) AS reorder_level');
             $builder->select('MAX(items.receiving_quantity) AS receiving_quantity');
             $builder->select('MAX(items.pic_filename) AS pic_filename');

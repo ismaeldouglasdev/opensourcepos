@@ -453,10 +453,10 @@ function item_headers(): array
         ['category'      => lang('Items.category'), 'class' => 'items-col-wrap items-col-cat'],
         ['company_name'  => lang('Suppliers.company_name'), 'visible' => false],
         ['cost_price'    => lang('Items.cost_price'), 'class' => 'items-col-num items-col-cost'],
-        ['unit_price'    => lang('Items.unit_price'), 'class' => 'items-col-num items-col-price'],
+        ['unit_price'    => lang('Items.unit_price'), 'escape' => false, 'class' => 'items-col-num items-col-price'],
         // Lucro por unidade + margem %: deixa preço de venda abaixo do custo
         // (prejuízo silencioso) visível de relance na gestão de itens.
-        ['profit'        => lang('Items.profit'), 'sortable' => false, 'class' => 'items-col-num items-col-mono items-col-profit'],
+        ['profit'        => lang('Items.profit'), 'sortable' => false, 'escape' => false, 'class' => 'items-col-num items-col-mono items-col-profit'],
         ['last_modified' => lang('Items.last_modified'), 'visible' => true, 'escape' => false, 'class' => 'items-col-dt']
     ];
 }
@@ -641,7 +641,9 @@ function get_item_data_row(object $item, ?array $ctx = null): array
         'category'      => $item->category,
         'company_name'  => $item->company_name,    // TODO: This isn't in the items table. Should this be here?
         'cost_price'    => to_currency($item->cost_price),
-        'unit_price'    => to_currency($item->unit_price),
+        'unit_price'    => to_currency($item->unit_price) . (!empty($item->compare_at_price) && $item->compare_at_price > $item->unit_price
+            ? '<br><s class="text-muted" style="font-size:10px;font-weight:normal;">' . to_currency($item->compare_at_price) . '</s>'
+            : ''),
         'profit'        => format_item_profit($item),
         'quantity'      => to_quantity_decimals($item->quantity),
         'tax_percents'  => !$tax_percents ? '-' : $tax_percents,

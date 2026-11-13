@@ -1,0 +1,1 @@
+ALTER TABLE ospos_items ADD COLUMN IF NOT EXISTS compare_at_price DECIMAL(15,2) NULL DEFAULT NULL AFTER unit_price;

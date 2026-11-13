@@ -151,6 +151,75 @@ $quick_mode = $quick_mode ?? false;
         </div>
 
         <?php if (!$quick_mode): ?>
+        <div class="row form-group form-group-sm" id="compare_at_row">
+            <div class="col-xs-6">
+                <?= form_label(lang('Items.compare_at_price'), 'compare_at_price', ['class' => 'control-label']) ?>
+                <div class="input-group input-group-sm">
+                    <?php if (!is_right_side_currency_symbol()): ?>
+                        <span class="input-group-addon input-sm"><b><?= esc($config['currency_symbol']) ?></b></span>
+                    <?php endif; ?>
+                    <?= form_input([
+                        'name'    => 'compare_at_price',
+                        'id'      => 'compare_at_price',
+                        'class'   => 'form-control input-sm',
+                        'onClick' => 'this.select();',
+                        'value'   => (isset($item_info->compare_at_price) && $item_info->compare_at_price > 0) ? to_currency_no_money($item_info->compare_at_price) : ''
+                    ]) ?>
+                    <?php if (is_right_side_currency_symbol()): ?>
+                        <span class="input-group-addon input-sm"><b><?= esc($config['currency_symbol']) ?></b></span>
+                    <?php endif; ?>
+                </div>
+                <p class="text-muted" style="font-size: 11px; margin: 4px 0 0;"><?= lang('Items.compare_at_hint') ?></p>
+            </div>
+            <div class="col-xs-6" id="compare_at_preview" style="display:none;">
+                <label class="control-label">&nbsp;</label>
+                <div style="padding-top: 6px;">
+                    <span class="label label-danger" style="font-size: 11px;"><?= lang('Items.on_promotion') ?></span>
+                    <div style="margin-top: 6px; font-size: 12px;">
+                        <s class="text-muted" id="compare_at_old"></s>
+                        <span id="compare_at_new" style="font-weight: bold; color: #c0392b; margin-left: 6px;"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script type="text/javascript">
+        (function() {
+            function parseMoneyBR(v) {
+                var s = String(v || '').trim();
+                if (!s) { return 0; }
+                var lastSep = Math.max(s.lastIndexOf('.'), s.lastIndexOf(','));
+                if (lastSep >= 0) {
+                    var frac = s.length - lastSep - 1;
+                    if (frac > 0 && frac <= 2) {
+                        s = s.replace(/[.,]/g, '');
+                        s = s.slice(0, s.length - frac) + '.' + s.slice(s.length - frac);
+                    } else {
+                        s = s.replace(/[.,]/g, '');
+                    }
+                }
+                var n = parseFloat(s);
+                return isNaN(n) ? 0 : n;
+            }
+            function refresh() {
+                var $prev = $('#compare_at_preview');
+                if (!$prev.length) { return; }
+                var oldPrice = parseMoneyBR($('#compare_at_price').val());
+                var newPrice = parseMoneyBR($('#unit_price').val());
+                if (oldPrice > newPrice && newPrice > 0) {
+                    $prev.show();
+                    $('#compare_at_old').text('De R$ ' + oldPrice.toFixed(2).replace('.', ','));
+                    $('#compare_at_new').text('Por R$ ' + newPrice.toFixed(2).replace('.', ','));
+                } else {
+                    $prev.hide();
+                }
+            }
+            $('#compare_at_price, #unit_price').off('input.compareAt').on('input.compareAt', refresh);
+            refresh();
+        })();
+        </script>
+        <?php endif; ?>
+
+        <?php if (!$quick_mode): ?>
         <div class="row form-group form-group-sm">
             <?php foreach ($stock_locations as $key => $location_detail) { ?>
                 <div class="col-xs-6">
@@ -233,24 +302,57 @@ $quick_mode = $quick_mode ?? false;
         </div>
         <?php endif; ?>
 
-        <?php if ($item_info->item_id > 0 && !$quick_mode): ?>
-        <div class="form-group form-group-sm clearfix" id="item_variations_fg">
+        <?php $can_manage_variations = $item_info->item_id > 0 && !$quick_mode; ?>
+        <div class="form-group form-group-sm clearfix" id="item_variations_fg"<?php if ($quick_mode): ?> style="display:none"<?php endif; ?>>
             <label class="control-label" for="variation_code_input">Agrupamento (guarda-chuva)</label>
             <p class="text-muted" style="font-size: 12px; margin-bottom: 4px;">
                 Agrupe produtos que têm códigos de barras diferentes mas são o mesmo item (ex.: garrafas).
-                Ao vender, o sistema pergunta qual deles está saindo. Cada produto mantém o próprio estoque.
+                Ao vender, o sistema pergunta qual deles está saindo. Cada variação tem o próprio estoque e a própria foto.
             </p>
-            <div class="input-group input-group-sm" style="margin-bottom: 4px;">
-                <input type="text" id="variation_code_input" class="form-control input-sm" placeholder="Código do produto a agrupar">
-                <span class="input-group-btn">
-                    <button type="button" id="variation_add" class="btn btn-primary btn-sm">Agrupar</button>
-                </span>
+            <?php if (!$can_manage_variations): ?>
+            <p class="text-muted" id="variation_locked_hint" style="font-size: 12px; color: #a94442;">
+                <span class="glyphicon glyphicon-lock"></span>
+                Salve o produto para liberar a criação de variações.
+            </p>
+            <?php endif; ?>
+            <div id="variation_fields"<?php if (!$can_manage_variations): ?> style="opacity: .55; pointer-events: none;"<?php endif; ?>>
+                <div class="input-group input-group-sm" style="margin-bottom: 4px;">
+                    <input type="text" id="variation_code_input" class="form-control input-sm" placeholder="Código de um produto já cadastrado para agrupar">
+                    <span class="input-group-btn">
+                        <button type="button" id="variation_add" class="btn btn-primary btn-sm">Agrupar</button>
+                    </span>
+                </div>
+
+                <div style="border-top: 1px dashed #ddd; margin: 8px 0 6px; padding-top: 6px;">
+                    <div style="font-size: 12px; font-weight: bold; margin-bottom: 4px;">Ou crie uma variação nova (nasce agrupada)</div>
+                    <div class="row" style="margin: 0;">
+                        <div class="col-xs-4" style="padding: 0 3px;">
+                            <input type="text" id="variation_label" class="form-control input-sm" placeholder="Ex.: 38, azul, P">
+                        </div>
+                        <div class="col-xs-4" style="padding: 0 3px;">
+                            <input type="text" id="variation_new_code" class="form-control input-sm" placeholder="Código (opcional)">
+                        </div>
+                        <div class="col-xs-4" style="padding: 0 3px;">
+                            <input type="text" id="variation_new_price" class="form-control input-sm" placeholder="Preço (opcional)">
+                        </div>
+                    </div>
+                    <div class="row" style="margin: 4px 0 0;">
+                        <div class="col-xs-4" style="padding: 0 3px;">
+                            <input type="text" id="variation_new_stock" class="form-control input-sm" placeholder="Estoque (opcional)">
+                        </div>
+                        <div class="col-xs-8" style="padding: 0 3px;">
+                            <input type="file" id="variation_image" accept="image/png,image/jpeg,image/gif,image/webp" class="form-control input-sm">
+                        </div>
+                    </div>
+                    <button type="button" id="variation_create" class="btn btn-success btn-sm" style="margin-top: 6px;">
+                        <span class="glyphicon glyphicon-plus"></span> Criar variação
+                    </button>
+                </div>
             </div>
             <div id="item_variations_list"></div>
             <span id="item_variations_msg" style="font-size: 12px;"></span>
             <span id="item_variations_total" class="text-muted" style="display:none; font-size: 12px; margin-left: 6px;"></span>
         </div>
-        <?php endif; ?>
 
         <div class="form-group form-group-sm">
             <?= form_label(lang('Items.image'), 'items_image', ['class' => 'control-label']) ?>
@@ -729,6 +831,7 @@ $quick_mode = $quick_mode ?? false;
         // ── Galeria multi-foto ───────────────────────────────────────────
         var GALLERY_MAX = 10;
         var gallery_item_id = parseInt($('#item_gallery').data('item-id'), 10) || 0;
+        var isNewItemForm = <?= (int) $item_info->item_id <= 0 ? 'true' : 'false' ?>;
 
         var gallery_count = function() {
             return $('#item_gallery .item-gallery-item').length;
@@ -854,6 +957,20 @@ $quick_mode = $quick_mode ?? false;
                             // Rascunho salvo com sucesso: limpa o localStorage deste item
                             if (typeof response !== 'undefined' && response !== null && response.success) {
                                 window.POSItemDraft && POSItemDraft.successSaved();
+                            }
+                            // Novo produto: recarrega em modo edicao para liberar as variacoes.
+                            if (response && response.success && response.id > 0 && isNewItemForm) {
+                                var newId = response.id;
+                                $.get('<?= site_url('items/view/') ?>' + newId, function(data) {
+                                    var $body = $('.modal.in .modal-body');
+                                    $body[0].innerHTML = data;
+                                    $body.find('script').each(function() {
+                                        $.globalEval(this.textContent || this.text);
+                                    });
+                                    $.notify({ message: 'Produto salvo. Agora voce pode criar as variacoes.' }, { type: 'success', timer: 4000 });
+                                });
+                                table_support.handle_submit('<?= 'items' ?>', response, false);
+                                return;
                             }
                             if (stay_open) {
                                 // Set action of item_form to url without item id, so a new one can be created
@@ -1437,6 +1554,67 @@ $quick_mode = $quick_mode ?? false;
                 }
             });
         }
+
+        function tryCreate() {
+            var label = String($('#variation_label').val() || '').trim();
+            if (label === '') {
+                setMsg('Informe o nome da variacao (ex.: 38, azul, P).', '#a94442');
+                return;
+            }
+
+            var fd = new FormData();
+            fd.append(csrfName, csrfHash);
+            fd.append('parent_id', parentId);
+            fd.append('label', label);
+            fd.append('item_number', String($('#variation_new_code').val() || '').trim());
+            fd.append('unit_price', String($('#variation_new_price').val() || '').trim());
+            fd.append('quantity', String($('#variation_new_stock').val() || '0').trim());
+
+            var fileInput = document.getElementById('variation_image');
+            if (fileInput && fileInput.files && fileInput.files.length) {
+                fd.append('variation_image', fileInput.files[0]);
+            }
+
+            $('#variation_create').prop('disabled', true);
+            $.ajax({
+                url: '<?= site_url('items/') ?>createVariation',
+                type: 'POST',
+                data: fd,
+                processData: false,
+                contentType: false,
+                dataType: 'json'
+            }).done(function(res) {
+                if (res && res.success) {
+                    render(res.children || []);
+                    $('#variation_label').val('');
+                    $('#variation_new_code').val('');
+                    $('#variation_new_price').val('');
+                    $('#variation_new_stock').val('');
+                    if (fileInput) { fileInput.value = ''; }
+                }
+                setMsg((res && res.message) || 'Falha.', (res && res.success) ? '#3c763d' : '#a94442');
+            }).fail(function() {
+                setMsg('Falha de comunicacao com o servidor.', '#a94442');
+            }).always(function() {
+                $('#variation_create').prop('disabled', false);
+            });
+        }
+
+        $('#variation_create').off('click.itemVariations').on('click.itemVariations', tryCreate);
+
+        // Enter nos campos da nova variacao nao pode submeter o produto.
+        $('#variation_label, #variation_new_code, #variation_new_price, #variation_new_stock')
+            .off('keydown.itemVariations').on('keydown.itemVariations', function(e) {
+                if (e.which === 13) {
+                    e.preventDefault();
+                    tryCreate();
+                }
+            })
+            .off('keyup.itemVariations').on('keyup.itemVariations', function(e) {
+                if (e.which === 13) {
+                    e.stopPropagation();
+                }
+            });
 
         $('#variation_add').off('click.itemVariations').on('click.itemVariations', tryAdd);
 

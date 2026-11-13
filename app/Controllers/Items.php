@@ -1257,6 +1257,10 @@ class Items extends Secure_Controller
         $unit_price = parse_decimals($this->request->getPost('unit_price'));
         $reorder_level = parse_quantity($this->request->getPost('reorder_level') ?? '');
         $qty_per_pack = parse_quantity($this->request->getPost('qty_per_pack') ?? '');
+        // Preço "de" (compare-at): só vira promoção quando é maior que o preço de
+        // venda. Vazio (quick mode não envia o campo) não toca na coluna, para
+        // um save rápido não apagar a promoção já cadastrada.
+        $raw_compare_at = $this->request->getPost('compare_at_price');
 
         // Save item data
         $item_data = [
@@ -1279,6 +1283,11 @@ class Items extends Secure_Controller
             'deleted'               => $this->request->getPost('is_deleted') != null,
             'hsn_code'              => $this->request->getPost('hsn_code') === null ? '' : $this->request->getPost('hsn_code')
         ];
+
+        if ($raw_compare_at !== null) {
+            $compare_at_price = parse_decimals((string) $raw_compare_at);
+            $item_data['compare_at_price'] = ($compare_at_price > 0 && $compare_at_price > $unit_price) ? $compare_at_price : null;
+        }
 
         if ($item_data['item_type'] == ITEM_TEMP) {
             $item_data['stock_type'] = HAS_NO_STOCK;
@@ -1394,7 +1403,7 @@ class Items extends Secure_Controller
             foreach ($stock_locations as $location) {
                 $updated_quantity = parse_quantity($this->request->getPost('quantity_' . $location['location_id']) ?? '');
 
-                if ($item_data['item_type'] == ITEM_TEMP) {
+if ($item_data['item_type'] == ITEM_TEMP) {
                     $updated_quantity = 0;
                 }
 
@@ -1448,30 +1457,30 @@ class Items extends Secure_Controller
      * Let files be uploaded with their original name
      * @return array
      */
-    private function upload_image(): array
+    private function upload_image(string $field = 'items_image'): array
     {
-        $file = $this->request->getFile('items_image');
+        $file = $this->request->getFile($field);
         if (!$file) {
             return [];
         }
 
         helper(['form']);
         $validation_rule = [
-            'items_image' => [
+            $field => [
                 'label' => 'Item Image',
                 'rules' => [
-                    'uploaded[items_image]',
-                    'is_image[items_image]',
-                    'max_size[items_image,' . $this->config['image_max_size'] . ']',
-                    'mime_in[items_image,image/png,image/jpg,image/jpeg,image/gif]',
-                    'ext_in[items_image,' . $this->config['image_allowed_types'] . ']',
-                    'max_dims[items_image,' . $this->config['image_max_width'] . ',' . $this->config['image_max_height'] . ']'
+                    'uploaded[' . $field . ']',
+                    'is_image[' . $field . ']',
+                    'max_size[' . $field . ',' . $this->config['image_max_size'] . ']',
+                    'mime_in[' . $field . ',image/png,image/jpg,image/jpeg,image/gif]',
+                    'ext_in[' . $field . ',' . $this->config['image_allowed_types'] . ']',
+                    'max_dims[' . $field . ',' . $this->config['image_max_width'] . ',' . $this->config['image_max_height'] . ']'
                 ]
             ]
         ];
 
         if (!$this->validate($validation_rule)) {
-            return (['error' => $this->validator->getError('items_image')]);
+            return (['error' => $this->validator->getError($field)]);
         }
 
         $filename = $file->getClientName();
@@ -2441,6 +2450,206 @@ class Items extends Secure_Controller
             'variation_id' => $variation_id,
             'children'  => $this->item_variation->get_children_for_parent($parent_id),
         ]);
+    }
+
+    /**
+     * Creates a variation inline (name + optional code/price/stock/photo) and
+     * links it as a child of the item being edited.
+     * POST items/createVariation
+     *
+     * The alternative is to register the child elsewhere and only then type its
+     * code in the "Agrupar" field. Here the child is born attached to the
+     * umbrella, which is what the operator actually does at the counter.
+     */
+    public function postCreateVariation(): void
+    {
+        $this->response->setContentType('application/json');
+
+        $parent_id = (int) $this->request->getPost('parent_id');
+        $label     = trim((string) $this->request->getPost('label'));
+
+        if ($parent_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Salve o produto antes de criar variações.']);
+            return;
+        }
+
+        if ($label === '') {
+            echo json_encode(['success' => false, 'message' => 'Informe o nome da variação (ex.: 38, azul, P).']);
+            return;
+        }
+
+        $parent = $this->item->get_info($parent_id);
+        if ((int) $parent->item_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Produto inválido.']);
+            return;
+        }
+
+        // The variation carries its own name, but it has to stay recognizable as
+        // the same product: the label is appended to the umbrella name.
+        $name = trim((string) $parent->name) . ' ' . $label;
+        if (mb_strlen($name) > 255) {
+            $name = mb_substr($name, 0, 255);
+        }
+
+        // Code: typed one wins (and must be free); empty generates a 5-char SKU
+        // in the same charset as the "Gerar código" button, checked server-side.
+        $item_number = trim((string) $this->request->getPost('item_number'));
+        if ($item_number === '') {
+            $item_number = $this->generate_unique_item_number();
+        } elseif ($this->item->item_number_exists($item_number)) {
+            echo json_encode(['success' => false, 'message' => 'Já existe um produto com esse código.']);
+            return;
+        }
+
+        $unit_price = ($this->request->getPost('unit_price') === null || trim((string) $this->request->getPost('unit_price')) === '')
+            ? $parent->unit_price
+            : parse_decimals((string) $this->request->getPost('unit_price'));
+
+        $cost_price = ($this->request->getPost('cost_price') === null || trim((string) $this->request->getPost('cost_price')) === '')
+            ? $parent->cost_price
+            : parse_decimals((string) $this->request->getPost('cost_price'));
+
+        $quantity = parse_quantity((string) ($this->request->getPost('quantity') ?? '0'));
+
+        $upload_data = $this->upload_variation_image();
+        $upload_error = $upload_data['error'] ?? '';
+
+        $item_data = [
+            'name'               => $name,
+            'description'        => '',
+            'category'           => $parent->category,
+            'item_type'          => ITEM,
+            'stock_type'         => HAS_STOCK,
+            'supplier_id'        => empty($parent->supplier_id) ? null : (int) $parent->supplier_id,
+            'item_number'        => $item_number,
+            'cost_price'         => $cost_price,
+            'unit_price'         => $unit_price,
+            'reorder_level'      => 0,
+            'receiving_quantity' => $quantity,
+            'deleted'            => false,
+            'hsn_code'           => ''
+        ];
+
+        if (!empty($upload_data['raw_name'])) {
+            $item_data['pic_filename'] = $upload_data['raw_name'] . '.' . $upload_data['file_ext'];
+        } elseif (!empty($parent->pic_filename)) {
+            // Sem foto própria a variação herda a do guarda-chuva: é melhor o
+            // operador ver a foto do produto do que uma miniatura vazia.
+            $item_data['pic_filename'] = $parent->pic_filename;
+        }
+
+        $employee_id = $this->employee->get_logged_in_employee_info()->person_id;
+        $db = \Config\Database::connect();
+        $db->query("SET @ospos_price_change_source = 'variacao', @ospos_price_change_by = ?", [$employee_id]);
+
+        if (!$this->item->save_value($item_data, NEW_ENTRY)) {
+            echo json_encode(['success' => false, 'message' => 'Não foi possível criar a variação.']);
+            return;
+        }
+
+        $child_id = (int) $item_data['item_id'];
+
+        // Stock is written for every location so the sale path can decrement it
+        // like any other item.
+        $new_status = $quantity > 0 ? Item_quantity::STOCK_OK : Item_quantity::STOCK_ZERADO;
+        foreach ($this->stock_location->get_undeleted_all()->getResultArray() as $location) {
+            $this->item_quantity->save_value([
+                'item_id'      => $child_id,
+                'location_id'  => $location['location_id'],
+                'quantity'     => $quantity,
+                'stock_status' => $new_status,
+            ], $child_id, $location['location_id']);
+
+            $this->inventory->insert([
+                'trans_date'      => date('Y-m-d H:i:s'),
+                'trans_items'     => $child_id,
+                'trans_user'      => $employee_id,
+                'trans_location'  => $location['location_id'],
+                'trans_comment'   => 'Criação de variação',
+                'trans_inventory' => (int) $quantity,
+            ], false);
+        }
+
+        $variation_id = $this->item_variation->add_variation($parent_id, $child_id, 'PRODUTO', $label);
+        if ($variation_id === false) {
+            echo json_encode(['success' => false, 'message' => 'A variação foi criada, mas não foi possível agrupá-la.']);
+            return;
+        }
+
+        $message = 'Variação criada.';
+        if ($upload_error !== '') {
+            $message .= ' (foto não salva: ' . $upload_error . ')';
+        }
+
+        echo json_encode([
+            'success'      => true,
+            'message'      => $message,
+            'variation_id' => $variation_id,
+            'children'     => $this->item_variation->get_children_for_parent($parent_id),
+        ]);
+    }
+
+    /**
+     * Photo of a variation. The legacy main-image rules (128 KB / max_dims)
+     * would reject the very photos the operator just took with the phone, so
+     * this follows the gallery rules instead: mime/ext check and 5 MB ceiling.
+     */
+    private function upload_variation_image(): array
+    {
+        $file = $this->request->getFile('variation_image');
+        if ($file === null || !$file->isValid()) {
+            return [];
+        }
+
+        $allowed_ext = array_map('trim', explode(',', strtolower((string) $this->config['image_allowed_types'])));
+        $ext = strtolower((string) $file->guessExtension());
+        $max_bytes = 5 * 1024 * 1024;
+
+        if (!in_array($ext, $allowed_ext, true)
+            || strpos((string) $file->getMimeType(), 'image/') !== 0
+            || $file->getSize() > $max_bytes
+        ) {
+            return ['error' => 'use PNG, JPG, GIF ou WEBP de ate 5 MB.'];
+        }
+
+        $name = 'var_' . $file->getRandomName();
+        if (!$file->move(FCPATH . 'uploads/item_pics/', $name)) {
+            return ['error' => 'nao foi possivel gravar o arquivo.'];
+        }
+
+        $path = FCPATH . 'uploads/item_pics/' . $name;
+        @chmod($path, 0664);
+        @chgrp($path, 'www-data');
+
+        return [
+            'orig_name' => $file->getClientName(),
+            'raw_name'  => pathinfo($name, PATHINFO_FILENAME),
+            'file_ext'  => $ext,
+        ];
+    }
+
+    /**
+     * 5-char SKU in the same alphabet the "Gerar código" button uses (no
+     * ambiguous chars). Regenerates on collision, which is why the caller never
+     * has to tell the operator "click again".
+     */
+    private function generate_unique_item_number(): string
+    {
+        $charset = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+        $max = strlen($charset) - 1;
+
+        for ($attempt = 0; $attempt < 50; $attempt++) {
+            $code = '';
+            for ($i = 0; $i < 5; $i++) {
+                $code .= $charset[random_int(0, $max)];
+            }
+
+            if (!$this->item->item_number_exists($code)) {
+                return $code;
+            }
+        }
+
+        return 'V' . strtoupper(bin2hex(random_bytes(2)));
     }
 
     /**

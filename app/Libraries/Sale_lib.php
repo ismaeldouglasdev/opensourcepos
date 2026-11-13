@@ -1128,6 +1128,7 @@ class Sale_lib
                     'stock_status'          => $item_qty_info->stock_status ?? 0,
                     'price'                 => $price,
                     'cost_price'            => $cost_price,
+                    'compare_at_price'      => $item_info->compare_at_price ?? null,
                     'total'                 => $total,
                     'discounted_total'      => $discounted_total,
                     'print_option'          => $print_option_selected,

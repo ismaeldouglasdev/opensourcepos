@@ -434,6 +434,10 @@ if (isset($success)) {
                                     echo to_currency($item['price']);
                                     echo form_hidden('price', to_currency_no_money($item['price']));
                                 }
+                                if (!empty($item['compare_at_price']) && $item['compare_at_price'] > $item['price']) {
+                                    echo '<div><s class="text-muted" style="font-size:10px;">' . to_currency($item['compare_at_price']) . '</s>'
+                                        . ' <span class="label label-danger" style="font-size:9px;">PROMO</span></div>';
+                                }
                                 ?>
                             </td>
 
