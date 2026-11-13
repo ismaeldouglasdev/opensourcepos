@@ -90,7 +90,9 @@ class Items extends Secure_Controller
             'no_description' => lang('Items.no_description_items'),
             'search_custom'  => lang('Items.search_attributes'),
             'is_deleted'     => lang('Items.is_deleted'),
-            'temporary'      => lang('Items.temp')
+            'temporary'      => lang('Items.temp'),
+            'below_cost'     => lang('Items.below_cost_items'),
+            'no_movement'    => lang('Items.no_movement_items')
         ];
 
         echo view('items/manage', $data);
@@ -459,6 +461,8 @@ class Items extends Secure_Controller
             'search_custom'     => false,
             'is_deleted'        => false,
             'temporary'         => false,
+            'below_cost'        => false,
+            'no_movement'       => false,
             'definition_ids'    => array_keys($definition_names)
         ];
 
@@ -633,6 +637,26 @@ class Items extends Secure_Controller
         }
 
         $item_info = $this->item->get_info($item_id);
+
+        // Duplicar produto: items/view?copy_from={id} abre o form de item NOVO
+        // pré-preenchido com os dados do item fonte. item_id null = modo
+        // criação (form_open fica items/save/); código em branco (novo código
+        // vem do gerador); foto não copiada (arquivo é compartilhado com o
+        // item original); quantidade fica 0 (estoque do produto novo é
+        // contado de verdade, não herdado). Atributos ficam vazios por
+        // enquanto — a linkagem attribute_values só existe para item salvo.
+        $copy_from = $this->request->getGet('copy_from');
+        if ($item_id === NEW_ENTRY && is_numeric($copy_from) && (int)$copy_from > 0) {
+            $source = $this->item->get_info((int)$copy_from);
+            if (!empty($source->item_id) && (int)$source->item_id > 0) {
+                $source->item_id = null;
+                $source->item_number = '';
+                $source->name = $source->name . ' (cópia)';
+                $source->pic_filename = '';
+                $item_info = $source;
+                $data['item_tax_info'] = $this->item_taxes->get_info((int)$copy_from);
+            }
+        }
 
         // Histórico de alterações de preço para a aba do modal:
         $data['price_history'] = [];
@@ -1730,13 +1754,31 @@ class Items extends Secure_Controller
             // This field is nullable, so treat it differently
             if ($key === 'supplier_id' && $value !== '') {
                 $item_data[$key] = $value;
-            } elseif ($value !== '' && !(in_array($key, ['item_ids', 'tax_names', 'tax_percents']))) {
+            } elseif ($value !== '' && !(in_array($key, ['item_ids', 'tax_names', 'tax_percents', 'price_pct']))) {
                 $item_data[$key] = $value;
             }
         }
 
-        // Item data could be empty if tax information is being updated
-        if (empty($item_data) || $this->item->update_multiple($item_data, $items_to_update)) {
+        $bulk_ok = empty($item_data) || $this->item->update_multiple($item_data, $items_to_update);
+
+        // Ajuste percentual de preço (campo price_pct do form_bulk): cada item
+        // recebe preço atual × fator — um único UPDATE com ROUND no SQL, não um
+        // valor fixo igual para todos. Se o Preço também foi preenchido, o %
+        // é aplicado sobre ele (update_multiple já rodou antes). O trigger
+        // ospos_items_price_history_au registra a mudança no histórico.
+        $price_pct = $this->request->getPost('price_pct');
+        if ($bulk_ok && $price_pct !== null && $price_pct !== '') {
+            $pct_num = str_replace(',', '.', (string) $price_pct);
+            if (is_numeric($pct_num)) {
+                $factor = number_format(1 + ((float) $pct_num) / 100, 6, '.', '');
+                db_connect()->table('items')
+                    ->set('unit_price', "ROUND(unit_price * {$factor}, 2)", false)
+                    ->whereIn('item_id', array_map('intval', (array) $items_to_update))
+                    ->update();
+            }
+        }
+
+        if ($bulk_ok) {
             $items_taxes_data = [];
             $tax_names = $this->request->getPost('tax_names');
             $tax_percents = $this->request->getPost('tax_percents');

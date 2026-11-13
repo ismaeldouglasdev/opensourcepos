@@ -273,6 +273,21 @@ class Item extends Model
         if ($filters['no_description']) {
             $builder->where('items.description', '');
         }
+        // Preço de venda abaixo do custo: prejuízo em cada venda.
+        if (!empty($filters['below_cost'])) {
+            $builder->where('items.cost_price >', 0);
+            $builder->where('items.unit_price >', 0);
+            $builder->where('items.unit_price < items.cost_price', null, false);
+        }
+        // Sem giro: com estoque e nenhuma venda COMPLETED nos últimos 90 dias.
+        if (!empty($filters['no_movement'])) {
+            $builder->where('EXISTS (SELECT 1 FROM ' . $this->db->prefixTable('item_quantities') . ' iq2'
+                . ' WHERE iq2.item_id = items.item_id AND iq2.quantity > 0)', null, false);
+            $builder->where('NOT EXISTS (SELECT 1 FROM ' . $this->db->prefixTable('sales_items') . ' si'
+                . ' JOIN ' . $this->db->prefixTable('sales') . ' s ON s.sale_id = si.sale_id'
+                . ' WHERE si.item_id = items.item_id AND s.sale_status = ' . COMPLETED
+                . ' AND s.sale_time >= DATE_SUB(NOW(), INTERVAL 90 DAY))', null, false);
+        }
         if ($filters['temporary']) {
             $builder->where('items.item_type', ITEM_TEMP);
         } else {

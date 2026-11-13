@@ -80,6 +80,37 @@ if (isset($error_message)) {
 </div>
 
 <div class="print_hide" id="control_buttons" style="text-align: center; margin-bottom:14px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+    <?php
+    // Mensagem do cupom pronta para WhatsApp: resumo da venda montado no
+    // servidor (wa.me sem número deixa o operador escolher o contato —
+    // não há telefone confiável do cliente no cadastro para abrir direto).
+    $wa_lines = [];
+    foreach ($cart as $wa_item) {
+        if (empty($wa_item['print_option']) || $wa_item['print_option'] != PRINT_YES) {
+            continue;
+        }
+        $wa_qty_val = (float) $wa_item['quantity'];
+        $wa_qty = ($wa_qty_val == (int) $wa_qty_val) ? (string)(int) $wa_qty_val : (string) $wa_qty_val;
+        $wa_lines[] = '• ' . $wa_qty . 'x ' . $wa_item['name'];
+    }
+    $wa_text = "🧾 Compra confirmada!\n"
+        . (!empty($customer) ? "Cliente: {$customer}\n" : '')
+        . 'Data: ' . $transaction_date . "\n"
+        . implode("\n", $wa_lines) . "\n"
+        . 'Total: ' . to_currency($total) . "\n"
+        . 'Obrigado pela preferência!';
+    ?>
+    <a href="javascript:void(0);" id="send_whatsapp_button">
+        <button class="btn btn-success btn-sm print_hide"><span class="glyphicon glyphicon-phone">&nbsp;</span> Enviar cupom por WhatsApp</button>
+    </a>
+    <script>
+        $(document).ready(function() {
+            $('#send_whatsapp_button').click(function() {
+                var msg = <?= json_encode($wa_text, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+                window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+            });
+        });
+    </script>
     <a href="javascript:void(0);" id="print-receipt-btn">
         <button class="btn btn-primary btn-sm print_hide"><span class="glyphicon glyphicon-print">&nbsp;</span> Imprimir Nota</button>
     </a>

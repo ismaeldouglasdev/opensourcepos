@@ -142,6 +142,12 @@ $quick_mode = $quick_mode ?? false;
                 </div>
                 <?php endif; ?>
             </div>
+            <?php if (!$quick_mode): ?>
+            <div id="below_cost_warning" class="col-xs-12" style="display:none;margin-top:6px;">
+                <span class="label label-danger"><span class="glyphicon glyphicon-warning-sign"></span>
+                    <?= lang('Items.below_cost_items') ?></span>
+            </div>
+            <?php endif; ?>
         </div>
 
         <?php if (!$quick_mode): ?>
@@ -213,6 +219,19 @@ $quick_mode = $quick_mode ?? false;
             <div id="extra_codes_list"></div>
             <span id="extra_code_msg" style="font-size: 12px;"></span>
         </div>
+
+        <?php if ($item_info->item_id > 0 && !$quick_mode): ?>
+        <div class="form-group form-group-sm" id="duplicate_item_fg">
+            <a href="<?= site_url('items/view?copy_from=' . (int)$item_info->item_id) ?>"
+               id="duplicate_item_button"
+               class="modal-dlg modal-dlg-1000"
+               data-btn-submit="<?= lang('Common.submit') ?>"
+               title="<?= lang('Items.duplicate') ?>"
+               style="font-size: 12px; color: #337ab7;">
+                <span class="glyphicon glyphicon-duplicate"></span> <?= lang('Items.duplicate') ?>
+            </a>
+        </div>
+        <?php endif; ?>
 
         <?php if ($item_info->item_id > 0 && !$quick_mode): ?>
         <div class="form-group form-group-sm clearfix" id="item_variations_fg">
@@ -643,6 +662,13 @@ $quick_mode = $quick_mode ?? false;
             let stay_open = false;
         });
 
+        // O dialog_support liga modal-dlg de forma não-delegada; este form é
+        // carregado por ajax dentro de um dialog, então o anchor Duplicar
+        // precisa de init próprio.
+        if ($('#duplicate_item_button').length) {
+            dialog_support.init('#duplicate_item_button');
+        }
+
         // Rotate the caret when the "Mais opções" section opens/closes
         $('#item_extra_fields').on('show.bs.collapse', function() {
             $('#item_extra_caret').removeClass('glyphicon-chevron-down').addClass('glyphicon-chevron-up');
@@ -1067,6 +1093,20 @@ $quick_mode = $quick_mode ?? false;
                 .on('change', function() { recalculate_price('percent'); });
             $cost_price.on('input', function() { recalculate_price('cost'); });
             $unit_price.on('input', function() { recalculate('price'); });
+
+            // Aviso de venda no prejuízo: preço de venda abaixo do custo.
+            // NÃO bloqueia (a decisão de precificar é do dono), só alerta.
+            var check_below_cost = function() {
+                var cost = parseFloat(($('#cost_price').val() || '0').replace(',', '.'));
+                var price = parseFloat(($('#unit_price').val() || '0').replace(',', '.'));
+                var warn = !isNaN(cost) && !isNaN(price) && cost > 0 && price > 0 && price < cost;
+                var $warn = $('#below_cost_warning');
+                if ($warn.length) {
+                    warn ? $warn.show() : $warn.hide();
+                }
+            };
+            $('#cost_price, #unit_price').on('input change', check_below_cost);
+            check_below_cost();
 
             recalculate('init');
         })();

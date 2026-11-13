@@ -414,6 +414,31 @@ function get_supplier_data_row(object $supplier): array
     ];
 }
 
+/**
+ * Lucro por unidade + margem %, com badge vermelho quando o preço de venda
+ * está abaixo do custo. Sem custo cadastrado (0) mostra "-" para não
+ * insinuar margem infinita.
+ */
+function format_item_profit(object $item): string
+{
+    $cost = (float) $item->cost_price;
+    $price = (float) $item->unit_price;
+
+    if ($price <= 0 || $cost <= 0) {
+        return '-';
+    }
+
+    $profit = $price - $cost;
+
+    if ($profit < 0) {
+        return '<span class="label label-danger">' . to_currency($profit) . '</span>';
+    }
+
+    $margin = $profit / $price * 100;
+
+    return to_currency($profit) . ' <span class="text-muted">(' . number_format($margin, 0) . '%)</span>';
+}
+
 function item_headers(): array
 {
     return [
@@ -429,6 +454,9 @@ function item_headers(): array
         ['company_name'  => lang('Suppliers.company_name'), 'visible' => false],
         ['cost_price'    => lang('Items.cost_price'), 'class' => 'items-col-num items-col-cost'],
         ['unit_price'    => lang('Items.unit_price'), 'class' => 'items-col-num items-col-price'],
+        // Lucro por unidade + margem %: deixa preço de venda abaixo do custo
+        // (prejuízo silencioso) visível de relance na gestão de itens.
+        ['profit'        => lang('Items.profit'), 'sortable' => false, 'class' => 'items-col-num items-col-mono items-col-profit'],
         ['last_modified' => lang('Items.last_modified'), 'visible' => true, 'escape' => false, 'class' => 'items-col-dt']
     ];
 }
@@ -614,6 +642,7 @@ function get_item_data_row(object $item, ?array $ctx = null): array
         'company_name'  => $item->company_name,    // TODO: This isn't in the items table. Should this be here?
         'cost_price'    => to_currency($item->cost_price),
         'unit_price'    => to_currency($item->unit_price),
+        'profit'        => format_item_profit($item),
         'quantity'      => to_quantity_decimals($item->quantity),
         'tax_percents'  => !$tax_percents ? '-' : $tax_percents,
         'item_pic'      => $image,

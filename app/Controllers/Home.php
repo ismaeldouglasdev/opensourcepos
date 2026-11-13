@@ -110,6 +110,19 @@ class Home extends Secure_Controller
         $row = $builder->get()->getRow();
         $data['items_sold_today'] = (int)($row->count ?? 0);
 
+        // 5b. Lucro estimado do dia: receita por item (mesma expressão do top
+        // items, que respeita discount_type) menos o custo SNAPSHOT gravado na
+        // venda (sales_items.item_cost_price). Base por item, não por
+        // pagamento: devoluções (pagamentos negativos) NÃO são descontadas
+        // aqui — por isso o card se rotula "estimado".
+        $builder = $this->db->table('sales_items');
+        $builder->select("ROUND(SUM($sale_price) - SUM({$p}sales_items.quantity_purchased * {$p}sales_items.item_cost_price), $decimals) AS profit");
+        $builder->join('sales', 'sales.sale_id = sales_items.sale_id');
+        $builder->where('sales.sale_status', COMPLETED);
+        $builder->where("DATE({$p}sales.sale_time)", date('Y-m-d'));
+        $row = $builder->get()->getRow();
+        $data['today_profit'] = (float)($row->profit ?? 0);
+
         // 6. Top 5 items this week
         $builder = $this->db->table('sales_items');
         $builder->select("{$p}items.item_id, {$p}items.name, SUM({$p}sales_items.quantity_purchased) AS qty, ROUND(SUM($sale_price), $decimals) AS revenue");
@@ -143,6 +156,42 @@ class Home extends Secure_Controller
         // Stock alert count for badge in header
         $item_quantity = model(Item_quantity::class);
         $data['stock_alert_count'] = $item_quantity->get_stock_alert_count();
+
+        // 8b. Inventory value at cost — how much money is sitting on the shelves.
+        $builder = $this->db->table('item_quantities');
+        $builder->select("ROUND(SUM({$p}item_quantities.quantity * {$p}items.cost_price), 2) AS total");
+        $builder->join('items', 'items.item_id = item_quantities.item_id');
+        $builder->where('items.deleted', 0);
+        $builder->where('items.stock_type', HAS_STOCK);
+        $row = $builder->get()->getRow();
+        $data['stock_value'] = (float)($row->total ?? 0);
+
+        // 8c. Items priced below cost — every sale of these is a loss until repriced.
+        // Same conditions as the below_cost filter in Item::search().
+        $builder = $this->db->table('items');
+        $builder->select("COUNT({$p}items.item_id) AS count");
+        $builder->where('items.deleted', 0);
+        $builder->whereIn('items.item_type', [ITEM, ITEM_KIT, ITEM_AMOUNT_ENTRY]);
+        $builder->where('items.cost_price >', 0);
+        $builder->where('items.unit_price >', 0);
+        $builder->where("{$p}items.unit_price < {$p}items.cost_price", null, false);
+        $row = $builder->get()->getRow();
+        $data['below_cost_count'] = (int)($row->count ?? 0);
+
+        // 8d. No turnover: stock on the shelf and no COMPLETED sale in the last
+        // 90 days. Same conditions as the no_movement filter in Item::search().
+        $builder = $this->db->table('items');
+        $builder->select("COUNT({$p}items.item_id) AS count");
+        $builder->where('items.deleted', 0);
+        $builder->whereIn('items.item_type', [ITEM, ITEM_KIT, ITEM_AMOUNT_ENTRY]);
+        $builder->where('EXISTS (SELECT 1 FROM ' . $this->db->prefixTable('item_quantities') . ' iq2'
+            . " WHERE iq2.item_id = {$p}items.item_id AND iq2.quantity > 0)", null, false);
+        $builder->where('NOT EXISTS (SELECT 1 FROM ' . $this->db->prefixTable('sales_items') . ' si'
+            . ' JOIN ' . $this->db->prefixTable('sales') . ' s ON s.sale_id = si.sale_id'
+            . " WHERE si.item_id = {$p}items.item_id AND s.sale_status = " . COMPLETED
+            . ' AND s.sale_time >= DATE_SUB(NOW(), INTERVAL 90 DAY))', null, false);
+        $row = $builder->get()->getRow();
+        $data['no_movement_count'] = (int)($row->count ?? 0);
 
         // 9. Daily sales target (meta diária)
         $config = config(OSPOS::class)->settings;

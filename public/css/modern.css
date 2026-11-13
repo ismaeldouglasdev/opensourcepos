@@ -41,7 +41,7 @@ html {
     --os-border-light: #eef1f4;
     --os-text: #1a1d21;
     --os-text-muted: #6b7280;
-    --os-text-light: #9ca3af;
+    --os-text-light: #6b7280; /* WCAG AA 4.83:1 vs --os-surface (era #9ca3af = 2.54:1) */
 
     /* Topbar */
     --os-topbar-bg: #0f1923;
@@ -52,6 +52,22 @@ html {
     --os-danger: #dc2626;
     --os-warning: #d97706;
     --os-info: #2563eb;
+    --os-success-dark: #15803d;
+    --os-success-text: #166534;
+    --os-success-bg: #f0fdf4;
+    --os-danger-dark: #b91c1c;
+    --os-danger-text: #991b1b;
+    --os-danger-bg: #fef2f2;
+    --os-warning-dark: #b45309;
+    --os-warning-text: #92400e;
+    --os-warning-bg: #fffbeb;
+    --os-info-dark: #1e40af;
+    --os-info-bg: #eff6ff;
+    --os-info: #3d7bc4;
+    --os-info-light: #248a52;
+    --os-table-stripe: #fafbfc;
+    --os-table-border: #e2e8f0;
+    --os-table-border-strong: #cbd5e1;
 
     /* Payment colors — pastel, professional (Phase 4) */
     --pay-cash: #2d9a5f;
@@ -291,8 +307,8 @@ code, .font-monospace, pre {
 }
 
 .btn-success:hover {
-    background: #15803d !important;
-    border-color: #15803d !important;
+    background: var(--os-success-dark) !important;
+    border-color: var(--os-success-dark) !important;
     box-shadow: var(--os-shadow-md) !important;
 }
 
@@ -302,8 +318,8 @@ code, .font-monospace, pre {
 }
 
 .btn-danger:hover {
-    background: #b91c1c !important;
-    border-color: #b91c1c !important;
+    background: var(--os-danger-dark) !important;
+    border-color: var(--os-danger-dark) !important;
     box-shadow: var(--os-shadow-md) !important;
 }
 
@@ -314,8 +330,8 @@ code, .font-monospace, pre {
 }
 
 .btn-warning:hover {
-    background: #b45309 !important;
-    border-color: #b45309 !important;
+    background: var(--os-warning-dark) !important;
+    border-color: var(--os-warning-dark) !important;
 }
 
 .btn-default {
@@ -394,8 +410,8 @@ code, .font-monospace, pre {
 }
 
 .table > tbody > tr > td {
-    border-top: 1px solid #e2e8f0 !important;
-    border-right: 1px solid #e2e8f0 !important;
+    border-top: 1px solid var(--os-table-border) !important;
+    border-right: 1px solid var(--os-table-border) !important;
     padding: 5px 10px !important;
     vertical-align: middle !important;
     font-size: 13px !important;
@@ -410,12 +426,12 @@ code, .font-monospace, pre {
 }
 
 .table-striped > tbody > tr:nth-of-type(odd) {
-    background: #fafbfc !important;
+    background: var(--os-table-stripe) !important;
 }
 
 /* Clear column separation — every cell gets a right border */
 .bootstrap-table .fixed-table-container .table td {
-    border-right: 1px solid #cbd5e1 !important;
+    border-right: 1px solid var(--os-table-border-strong) !important;
 }
 .bootstrap-table .fixed-table-container .table td:last-child {
     border-right: none !important;
@@ -531,26 +547,26 @@ code, .font-monospace, pre {
 }
 
 .alert-success {
-    background: #f0fdf4 !important;
-    color: #166534 !important;
+    background: var(--os-success-bg) !important;
+    color: var(--os-success-text) !important;
     border-left: 4px solid var(--os-success) !important;
 }
 
 .alert-danger {
-    background: #fef2f2 !important;
-    color: #991b1b !important;
+    background: var(--os-danger-bg) !important;
+    color: var(--os-danger-text) !important;
     border-left: 4px solid var(--os-danger) !important;
 }
 
 .alert-warning {
-    background: #fffbeb !important;
-    color: #92400e !important;
+    background: var(--os-warning-bg) !important;
+    color: var(--os-warning-text) !important;
     border-left: 4px solid var(--os-warning) !important;
 }
 
 .alert-info {
-    background: #eff6ff !important;
-    color: #1e40af !important;
+    background: var(--os-info-bg) !important;
+    color: var(--os-info-dark) !important;
     border-left: 4px solid var(--os-info) !important;
 }
 
@@ -936,8 +952,8 @@ code, .font-monospace, pre {
 }
 
 .checkout-restante {
-    background: #fef2f2 !important;
-    color: #991b1b !important;
+    background: var(--os-danger-bg) !important;
+    color: var(--os-danger-text) !important;
     border-radius: var(--os-radius-lg) !important;
     padding: 10px 12px !important;
     text-align: center !important;
@@ -982,7 +998,7 @@ code, .font-monospace, pre {
 }
 
 .payment-btn.cash:hover {
-    background: #248a52 !important;
+    background: var(--os-info-light) !important;
     box-shadow: 0 2px 8px rgba(45, 154, 95, 0.25) !important;
 }
 
@@ -993,7 +1009,7 @@ code, .font-monospace, pre {
 }
 
 .payment-btn.debit:hover {
-    background: #3d7bc4 !important;
+    background: var(--os-info) !important;
     box-shadow: 0 2px 8px rgba(74, 138, 212, 0.25) !important;
 }
 
@@ -1078,22 +1094,22 @@ code, .font-monospace, pre {
 
 /* Payment type colors */
 .kpi-item[data-type="dinheiro"] {
-    background: #f0fdf4 !important;
+    background: var(--os-success-bg) !important;
     border-bottom: 3px solid #16a34a !important;
 }
 .kpi-item[data-type="dinheiro"] .kpi-value {
-    color: #15803d !important;
+    color: var(--os-success-dark) !important;
 }
 .kpi-item[data-type="dinheiro"] .kpi-label::before {
     content: "💰 ";
 }
 
 .kpi-item[data-type="debito"] {
-    background: #eff6ff !important;
+    background: var(--os-info-bg) !important;
     border-bottom: 3px solid #2563eb !important;
 }
 .kpi-item[data-type="debito"] .kpi-value {
-    color: #1e40af !important;
+    color: var(--os-info-dark) !important;
 }
 .kpi-item[data-type="debito"] .kpi-label::before {
     content: "💳 ";
@@ -1161,15 +1177,15 @@ code, .font-monospace, pre {
 }
 
 .kpi-total {
-    background: #f0fdf4 !important;
+    background: var(--os-success-bg) !important;
     border-bottom: 3px solid #16a34a !important;
 }
 .kpi-total .kpi-value {
-    color: #15803d !important;
+    color: var(--os-success-dark) !important;
     font-size: 17px !important;
 }
 .kpi-total .kpi-label {
-    color: #15803d !important;
+    color: var(--os-success-dark) !important;
     font-weight: 700 !important;
 }
 .kpi-total .kpi-label::before {
@@ -1866,7 +1882,7 @@ button,
 
 /* Danger = destructive only (red) */
 .btn-danger { background: var(--os-danger) !important; border-color: var(--os-danger) !important; color: #fff !important; }
-.btn-danger:hover, .btn-danger:focus { background: #b91c1c !important; border-color: #b91c1c !important; }
+.btn-danger:hover, .btn-danger:focus { background: var(--os-danger-dark) !important; border-color: var(--os-danger-dark) !important; }
 
 /* ============================================
     52. ACTION BARS — #title_bar + #toolbar (consistent across all CRUD pages)
@@ -1986,7 +2002,7 @@ button,
 /* Zebra-striping — subtle */
 .table > tbody > tr:nth-of-type(odd),
 .fixed-table-container tbody tr:nth-child(odd) {
-    background: #fafbfc !important;
+    background: var(--os-table-stripe) !important;
 }
 
 .table > tbody > tr:nth-of-type(even),
@@ -3122,7 +3138,7 @@ body {
 .pos-autocomplete .pos-ac-top {
     font-size: 11px !important;
     font-weight: 700 !important;
-    color: #92400e !important;
+    color: var(--os-warning-text) !important;
     background: #fef3c7 !important;
     padding: 2px 6px !important;
     border-radius: 4px !important;
@@ -3145,7 +3161,7 @@ body {
 /* Barcode chip — high-contrast blue so the code stands out from the name */
 .pos-autocomplete .pos-ac-code {
     font-family: var(--os-font-mono) !important;
-    color: #1e40af !important;
+    color: var(--os-info-dark) !important;
     background: #dbeafe !important;
     font-size: 13px !important;
     font-weight: 700 !important;
@@ -3160,7 +3176,7 @@ body {
     font-family: var(--os-font-mono) !important;
     font-weight: 800 !important;
     font-size: 18px !important;
-    color: #166534 !important;
+    color: var(--os-success-text) !important;
     background: #dcfce7 !important;
     padding: 4px 10px !important;
     border-radius: 6px !important;
@@ -3177,18 +3193,18 @@ body {
 }
 
 .pos-autocomplete .pos-stock-ok {
-    background: #f0fdf4 !important;
-    color: #166534 !important;
+    background: var(--os-success-bg) !important;
+    color: var(--os-success-text) !important;
 }
 
 .pos-autocomplete .pos-stock-zero {
     background: #fef3c7 !important;
-    color: #92400e !important;
+    color: var(--os-warning-text) !important;
 }
 
 .pos-autocomplete .pos-stock-neg {
-    background: #fef2f2 !important;
-    color: #991b1b !important;
+    background: var(--os-danger-bg) !important;
+    color: var(--os-danger-text) !important;
 }
 
 /* Category/Supplier items */

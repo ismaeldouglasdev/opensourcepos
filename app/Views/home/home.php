@@ -60,6 +60,16 @@ $date_str = $day_name . ', ' . date('d/m/Y');
     box-shadow: var(--os-shadow);
 }
 
+a.dash-kpi {
+    text-decoration: none;
+    color: inherit;
+}
+
+a.dash-kpi:hover {
+    text-decoration: none;
+    color: inherit;
+}
+
 .dash-kpi-icon {
     width: 36px;
     height: 36px;
@@ -520,6 +530,13 @@ $date_str = $day_name . ', ' . date('d/m/Y');
             <div class="dash-kpi-label">Nº de Vendas Hoje</div>
         </div>
 
+        <div class="dash-kpi">
+            <div class="dash-kpi-icon <?= (($today_profit ?? 0) >= 0) ? 'bg-success' : 'bg-danger' ?>"><span class="glyphicon glyphicon-stats"></span></div>
+            <div class="dash-kpi-value" <?= (($today_profit ?? 0) < 0) ? 'style="color:#c62828;"' : '' ?>><?= to_currency($today_profit ?? 0) ?></div>
+            <div class="dash-kpi-label">Lucro Hoje (estimado)</div>
+            <div class="dash-badge dash-badge-neutral">preço − custo dos itens vendidos</div>
+        </div>
+
         <?php if (!empty($today_returns) && $today_returns > 0): ?>
         <div class="dash-kpi">
             <div class="dash-kpi-icon bg-danger"><span class="glyphicon glyphicon-refresh"></span></div>
@@ -546,6 +563,25 @@ $date_str = $day_name . ', ' . date('d/m/Y');
             <div class="dash-kpi-value"><?= esc((string)$items_sold_today) ?></div>
             <div class="dash-kpi-label">Itens Vendidos Hoje</div>
         </div>
+
+        <div class="dash-kpi">
+            <div class="dash-kpi-icon bg-info"><span class="glyphicon glyphicon-briefcase"></span></div>
+            <div class="dash-kpi-value"><?= to_currency($stock_value ?? 0) ?></div>
+            <div class="dash-kpi-label">Valor do Estoque (custo)</div>
+            <div class="dash-badge dash-badge-neutral">dinheiro parado nas prateleiras</div>
+        </div>
+
+        <a class="dash-kpi" href="items" <?= ($below_cost_count ?? 0) > 0 ? 'title="Abra a lista e filtre por Abaixo do custo"' : '' ?>>
+            <div class="dash-kpi-icon bg-warning"><span class="glyphicon glyphicon-alert"></span></div>
+            <div class="dash-kpi-value" <?= ($below_cost_count ?? 0) > 0 ? 'style="color:#c62828;"' : '' ?>><?= esc((string)($below_cost_count ?? 0)) ?></div>
+            <div class="dash-kpi-label">Preço Abaixo do Custo</div>
+        </a>
+
+        <a class="dash-kpi" href="items" title="Abra a lista e filtre por Sem giro">
+            <div class="dash-kpi-icon bg-warning"><span class="glyphicon glyphicon-time"></span></div>
+            <div class="dash-kpi-value"><?= esc((string)($no_movement_count ?? 0)) ?></div>
+            <div class="dash-kpi-label">Sem Giro (90 dias)</div>
+        </a>
     </div>
 
     <!-- Meta Diária -->

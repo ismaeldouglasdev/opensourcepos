@@ -48,6 +48,13 @@
                     <td style="text-align:center;"><?= (int)$debtor->sale_count ?></td>
                     <td style="text-align:right;font-weight:700;color:var(--os-danger);"><?= to_currency($debtor->total_devido) ?></td>
                     <td style="text-align:center;">
+                        <button type="button" class="btn btn-xs btn-default fiado-copy"
+                                data-name="<?= esc($debtor->customer_name, 'attr') ?>"
+                                data-total="<?= esc((string)$debtor->total_devido, 'attr') ?>"
+                                data-count="<?= (int)$debtor->sale_count ?>"
+                                title="Copiar mensagem de cobrança para colar no WhatsApp">
+                            <span class="glyphicon glyphicon-comment"></span>
+                        </button>
                         <button type="button" class="btn btn-xs btn-success fiado-quit-open"
                                 data-customer="<?= (int)$debtor->customer_id ?>"
                                 data-name="<?= esc($debtor->customer_name, 'attr') ?>">
@@ -148,6 +155,43 @@
         var $panel = $('#history-panel');
         $panel.toggle();
         if ($panel.is(':visible')) { loadHistory(); }
+    });
+
+    // Copia mensagem de cobrança fiado pronta para colar no WhatsApp.
+    function legacyCopy(text) {
+        var $ta = $('<textarea/>').css({position: 'fixed', left: '-9999px'}).val(text).appendTo('body');
+        $ta[0].select();
+        var ok = false;
+        try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+        $ta.remove();
+        return ok;
+    }
+
+    function flashIcon($btn, ok) {
+        var $icon = $btn.find('.glyphicon');
+        $icon.removeClass('glyphicon-comment glyphicon-ok glyphicon-remove');
+        $icon.addClass(ok ? 'glyphicon-ok' : 'glyphicon-remove');
+        setTimeout(function() {
+            $icon.removeClass('glyphicon-ok glyphicon-remove').addClass('glyphicon-comment');
+        }, 1500);
+    }
+
+    $('.fiado-copy').on('click', function() {
+        var $btn = $(this);
+        var name = String($btn.data('name') || '').trim();
+        var total = moneyFmt($btn.data('total'));
+        var count = parseInt($btn.data('count'), 10) || 0;
+        var msg = 'Olá ' + name + '! Passando para lembrar que há um saldo em aberto de ' + total +
+            ' (' + count + (count === 1 ? ' venda' : ' vendas') + ' fiado) aqui na loja. ' +
+            'Quando puder, passe para quitar. Obrigado!';
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(msg).then(
+                function() { flashIcon($btn, true); },
+                function() { flashIcon($btn, legacyCopy(msg)); }
+            );
+        } else {
+            flashIcon($btn, legacyCopy(msg));
+        }
     });
 })(window.jQuery);
 </script>

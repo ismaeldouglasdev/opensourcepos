@@ -85,6 +85,21 @@
         </div>
 
         <div class="form-group form-group-sm">
+            <?= form_label(lang('Items.price_pct'), 'price_pct', ['class' => 'control-label col-xs-3']) ?>
+            <div class="col-xs-8">
+                <div class="input-group input-group-sm">
+                    <?= form_input([
+                        'name'  => 'price_pct',
+                        'id'    => 'price_pct',
+                        'class' => 'form-control input-sm'
+                    ]) ?>
+                    <span class="input-group-addon input-sm"><b>%</b></span>
+                </div>
+                <p class="help-block" style="font-size: 12px; margin-bottom: 0;"><?= lang('Items.price_pct_hint') ?></p>
+            </div>
+        </div>
+
+        <div class="form-group form-group-sm">
             <?= form_label(lang('Items.tax_1'), 'tax_percent_1', ['class' => 'control-label col-xs-3']) ?>
             <div class="col-xs-4">
                 <?= form_input([
@@ -219,6 +234,9 @@
                 },
                 reorder_level: {
                     number: true
+                },
+                price_pct: {
+                    number: true
                 }
             },
 
@@ -234,6 +252,9 @@
                 },
                 reorder_level: {
                     number: "<?= lang('Items.reorder_level_number') ?>"
+                },
+                price_pct: {
+                    number: "<?= lang('Items.price_pct_number') ?>"
                 }
             }
         }, form_support.error));

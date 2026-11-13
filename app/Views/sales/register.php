@@ -787,9 +787,10 @@ if (isset($success)) {
         // direct .click()/.change() bindings would die after the first add.
         // NOTE: delete item/payment trash icons stay NATIVE anchors — they
         // navigate to deleteItem/deletePayment which redirect back.
-        $("#remove_customer_button").click(function() {
-            $.post("<?= site_url('sales/removeCustomer'); ?>", redirect);
-        });
+
+        // #remove_customer_button: sem handler aqui de propósito — o anchor
+        // navega via GET (rota sales/removeCustomer). O $.post antigo era 404
+        // (só existe rota GET) e duplicava a navegação.
 
         $(document).on('click', '.qty-plus', function() {
             const $group = $(this).closest('.qty-stepper');
