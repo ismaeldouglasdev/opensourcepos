@@ -2420,30 +2420,88 @@ class Sales extends Secure_Controller
         $quantity = ($mode == 'return') ? -$quantity : $quantity;
         $item_location = $this->sale_lib->get_sale_location();
 
-        // A size-variation parent keeps the barcode and is what gets scanned, but
-        // is never sold on its own: hand the client the size list so the operator
+        // A variation umbrella keeps the barcode and is what gets scanned, but
+        // is never sold on its own: hand the client the list so the operator
         // picks one, and let the follow-up addAjax carry the child's item_id.
-        if ($mode != 'return' && is_numeric($item_id)) {
+        //
+        // This must run for ANY scanned code, not only numeric ones: the item
+        // number can be a 5-char internal SKU, and an umbrella's barcode may be
+        // registered as an extra code. Gating on is_numeric() made those codes
+        // skip the picker and add the stock-less parent silently.
+        if ($mode != 'return') {
             // A scanned barcode is numeric but is not an item_id, so the parent's
             // id must be resolved before looking up its variations. Without this
-            // the parent (stock 0) is silently added instead of opening the size
+            // the parent (stock 0) is silently added instead of opening the
             // picker. A real numeric item_id resolves to itself and is left as-is,
             // so scanning a plain item keeps behaving exactly as before.
-            $parent_id = (int) $item_id;
-            if ((int) $this->item->get_info($parent_id)->item_id !== $parent_id) {
+            //
+            // (int) on a non-numeric code yields 0, and get_info(0) does not
+            // match, so the cast alone already routes the lookup to the right
+            // place. The explicit is_numeric() keeps the intent readable.
+            $parent_id = is_numeric($item_id) ? (int) $item_id : 0;
+            if ($parent_id <= 0 || (int) $this->item->get_info($parent_id)->item_id !== $parent_id) {
                 $resolved = $this->item->get_info_by_id_or_number($item_id);
                 if ($resolved !== '') {
                     $parent_id = (int) $resolved->item_id;
                 }
             }
 
-            $variants = $this->item_variation->get_variations_for_parent($parent_id, (int) $item_location);
+            // The family barcode can live on a deactivated umbrella row, which
+            // get_info_by_id_or_number() skips. resolve_umbrella() looks past
+            // the deleted flag so the code still opens the picker instead of
+            // being reported as an unknown product.
+            $variants = $this->item_variation->get_variation_groups($parent_id, (int) $item_location);
+            if (empty($variants)) {
+                $umbrella = $this->item_variation->resolve_umbrella($item_id);
+                if ($umbrella !== []) {
+                    $parent_id = (int) $umbrella['item_id'];
+                    $variants  = $this->item_variation->get_variation_groups($parent_id, (int) $item_location);
+                }
+            }
+
             if (! empty($variants)) {
                 $parent_info = $this->item->get_info($parent_id);
+
+                // group_id -> group name, so the picker can title each colour
+                // section. In a single-level tree there is one group and the
+                // client keeps the old headerless look.
+                $group_names = [];
+                foreach ($variants as $v) {
+                    $gid = (int) ($v['group_id'] ?? 0);
+                    if ($gid > 0 && ! isset($group_names[$gid])) {
+                        $group_names[$gid] = (string) ($v['group_name'] ?? '');
+                    }
+                }
+
+                // Photo inheritance: the size rows are often saved without a
+                // picture of their own (only the colour has one). Without this
+                // the picker shows nameless white boxes even though the colour
+                // row carries the photo. Inheritance is per group, so a family
+                // scan shows each colour with its own photo instead of the
+                // umbrella's.
+                $group_pics = [];
+                foreach ($variants as $v) {
+                    $gid = (int) ($v['group_id'] ?? 0);
+                    if ($gid > 0 && ! isset($group_pics[$gid]) && ! empty($v['group_pic'])) {
+                        $group_pics[$gid] = $v['group_pic'];
+                    }
+                }
+                foreach ($variants as $i => $v) {
+                    if (empty($v['pic_filename'])) {
+                        $gid = (int) ($v['group_id'] ?? 0);
+                        if ($gid > 0 && ! empty($group_pics[$gid])) {
+                            $variants[$i]['pic_filename'] = $group_pics[$gid];
+                        } elseif (! empty($parent_info->pic_filename)) {
+                            $variants[$i]['pic_filename'] = $parent_info->pic_filename;
+                        }
+                    }
+                }
+
                 $data['needs_variation'] = true;
                 $data['parent_id'] = $parent_id;
                 $data['parent_name'] = $parent_info->name ?? '';
                 $data['variants'] = $variants;
+                $data['group_names'] = $group_names;
 
                 echo json_encode($data);
 

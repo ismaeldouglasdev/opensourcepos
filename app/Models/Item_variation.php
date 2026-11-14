@@ -20,6 +20,141 @@ class Item_variation extends Model
     protected $allowedFields = ['item_id', 'variation_item_id', 'attribute_name', 'attribute_value', 'position'];
 
     /**
+     * Resolve a barcode to the umbrella that owns it, dead or alive.
+     *
+     * A family barcode may live on a deactivated placeholder row (the old
+     * "[SEM COR]" umbrella): the code must still open the picker, otherwise
+     * scanning it adds a zero-stock item or falls through to "unknown code".
+     * Resolution order: live item_number, live extra code, then the same two
+     * sources ignoring the deleted flag. Lowest id wins, matching the keeper
+     * convention used elsewhere.
+     *
+     * @return array<int, array<string, mixed>> umbrella info, or []
+     */
+    public function resolve_umbrella(string $code): array
+    {
+        $code = trim($code);
+
+        if ($code === '') {
+            return [];
+        }
+
+        $items = $this->db->DBPrefix . 'items';
+
+        // item_number first (primary barcode), then the extra codes table.
+        $builder = $this->db->table($items);
+        $builder->select('item_id, name, item_number, pic_filename, deleted');
+        $builder->where('item_number', $code);
+        $builder->orderBy('item_id', 'ASC');
+        $builder->limit(1);
+        $row = $builder->get()->getRowArray();
+
+        if ($row === null) {
+            $codes = $this->db->DBPrefix . 'item_codes';
+            $builder = $this->db->table($items . ' AS i');
+            $builder->select('i.item_id, i.name, i.item_number, i.pic_filename, i.deleted');
+            $builder->join($codes . ' AS c', 'c.item_id = i.item_id');
+            $builder->where('c.code', $code);
+            $builder->orderBy('i.item_id', 'ASC');
+            $builder->limit(1);
+            $row = $builder->get()->getRowArray();
+        }
+
+        // A plain numeric barcode can be the umbrella's own id (the operator
+        // typing it), which is how the existing funnel treats it. Applies to
+        // both live and dead rows: a dead umbrella is still a valid pick target.
+        if ($row === null && ctype_digit($code) && !str_starts_with($code, '0')) {
+            $builder = $this->db->table($items);
+            $builder->select('item_id, name, item_number, pic_filename, deleted');
+            $builder->where('item_id', (int) $code);
+            $row = $builder->get()->getRowArray();
+        }
+
+        if ($row === null) {
+            return [];
+        }
+
+        return [
+            'item_id'     => (int) $row['item_id'],
+            'name'        => (string) $row['name'],
+            'item_number' => $row['item_number'],
+            'deleted'     => (bool) $row['deleted'],
+        ];
+    }
+
+    /**
+     * Every variation under an umbrella, tagged with its group.
+     *
+     * Serves both shapes the catalogue has today with one query:
+     *   - one level (color -> size): every row carries the same group_id;
+     *   - two levels (family -> color -> size): group_id tells which color
+     *     each size belongs to, so the client can nest without guessing.
+     *
+     * The walk is recursive because a two-level tree is exactly the case that
+     * matters for the family barcode: stopping after one level would show the
+     * four colors — all with zero stock, since the color row is only a label —
+     * and no sellable size at all.
+     *
+     * Only leaves come back: an umbrella has no stock of its own, so a picker
+     * that lists it would offer a product that can never be sold. group_id is
+     * the immediate parent (the color), which is what the client groups on.
+     *
+     * $parent_id may be any node: a leaf groups its own children, a root
+     * returns the whole tree. A node with no children returns [] — the caller
+     * then treats it as a plain item instead of opening an empty picker.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function get_variation_groups(int $parent_id, int $location_id): array
+    {
+        $items    = $this->db->DBPrefix . 'items';
+        $quantity = $this->db->DBPrefix . 'item_quantities';
+
+        $sql = "
+            WITH RECURSIVE tree AS (
+                SELECT variation_item_id AS leaf_id, item_id AS parent_id, 1 AS depth
+                FROM {$this->db->DBPrefix}item_variations
+                WHERE item_id = {$parent_id}
+                UNION ALL
+                SELECT v.variation_item_id, v.item_id, t.depth + 1
+                FROM {$this->db->DBPrefix}item_variations v
+                JOIN tree t ON v.item_id = t.leaf_id
+                WHERE t.depth < 5
+            )
+            SELECT t.parent_id AS group_id, t.leaf_id AS item_id, t.depth,
+                   v.attribute_name, v.attribute_value, v.position,
+                   i.name, i.item_number, i.unit_price, i.pic_filename,
+                   g.name AS group_name,
+                   g.pic_filename AS group_pic,
+                   COALESCE(q.quantity, 0) AS stock_qty
+            FROM tree t
+            JOIN {$this->db->DBPrefix}item_variations v
+              ON v.item_id = t.parent_id AND v.variation_item_id = t.leaf_id
+            JOIN {$items} i ON i.item_id = t.leaf_id
+            LEFT JOIN {$items} g ON g.item_id = t.parent_id
+            LEFT JOIN {$quantity} q
+              ON q.item_id = t.leaf_id AND q.location_id = {$location_id}
+            WHERE i.deleted = 0
+              AND NOT EXISTS (
+                  SELECT 1 FROM {$this->db->DBPrefix}item_variations c
+                  WHERE c.item_id = t.leaf_id
+              )
+            ORDER BY t.depth ASC, t.parent_id ASC, v.position ASC, v.item_variation_id ASC
+        ";
+
+        $rows = $this->db->query($sql)->getResultArray();
+
+        // The recursive CTE needs MySQL 8+/MariaDB 10.2+. A query error would
+        // otherwise bubble into the sale screen, so it degrades to "no
+        // variations" (the caller then sells the item as a plain product).
+        if ($this->db->error()['code'] ?? 0) {
+            return [];
+        }
+
+        return $rows;
+    }
+
+    /**
      * Variations of a parent, with each child's stock at the given location.
      *
      * @return array<int, array<string, mixed>>

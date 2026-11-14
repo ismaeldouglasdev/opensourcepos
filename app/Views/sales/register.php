@@ -1245,13 +1245,39 @@ if (isset($success)) {
         // Size picker shown when a variation parent is scanned or clicked. The
         // parent is never sold: each option re-posts the child item_id, which is
         // the row that actually owns the stock.
+        //
+        // Two shapes exist: one group (color umbrella -> sizes) and many groups
+        // (family umbrella -> color umbrella -> sizes). A flat grid of 20 buttons
+        // is unreadable when the scan lands on the family barcode, so the colors
+        // become sections and only the sizes are buttons.
         function posShowVariationModal(res) {
             $('#item').autocomplete('close');
             $('#item').val('');
             if (typeof posResetScanState === 'function') posResetScanState();
 
             var variants = res.variants || [];
-            var rows = variants.map(function(v) {
+
+            // Group by immediate parent. group_id is absent on single-level
+            // responses, where every option belongs to one implicit group.
+            var groups = [];
+            var byGroup = {};
+            variants.forEach(function(v) {
+                var key = (v.group_id == null ? '' : String(v.group_id));
+                if (!byGroup.hasOwnProperty(key)) {
+                    byGroup[key] = { id: key, label: '', items: [] };
+                    groups.push(byGroup[key]);
+                }
+                byGroup[key].items.push(v);
+            });
+
+            // Name the group after the parent it hangs from. The family umbrella
+            // is the scanned product itself; a color umbrella is the parent row.
+            var parentNames = res.group_names || {};
+            groups.forEach(function(g) {
+                g.label = parentNames[g.id] || '';
+            });
+
+            var optionHtml = function(v) {
                 var stock = parseFloat(v.stock_qty) || 0;
                 var out = stock <= 0;
                 var imgTag = '';
@@ -1266,6 +1292,17 @@ if (isset($success)) {
                     + '<span class="pos-var-stock">' + (out ? 'esgotado' : (Math.round(stock) + ' em estoque')) + '</span>'
                     + '<span class="pos-var-price">' + posFmtMoney(v.unit_price) + '</span>'
                     + '</button>';
+            };
+
+            // One group is the common case (a single color): the header already
+            // names that color, so repeating it as a section title is noise.
+            var showTitles = groups.length > 1;
+            var body = groups.map(function(g) {
+                var head = (showTitles && g.label)
+                    ? '<div class="pos-var-group-title">' + posEscapeHtml(g.label) + '</div>'
+                    : '';
+                return '<section class="pos-var-group">' + head
+                    + '<div class="pos-var-grid">' + g.items.map(optionHtml).join('') + '</div></section>';
             }).join('');
 
             var $old = $('#posVariationModal');
@@ -1278,7 +1315,7 @@ if (isset($success)) {
                 + '      <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">&times;</button>'
                 + '      <h4 class="modal-title">Escolha o produto <small>' + posEscapeHtml(res.parent_name || '') + '</small></h4>'
                 + '    </div>'
-                + '    <div class="modal-body"><div class="pos-var-grid">' + rows + '</div></div>'
+                + '    <div class="modal-body">' + body + '</div>'
                 + '  </div></div>'
                 + '</div>';
 
@@ -1910,6 +1947,17 @@ if (isset($success)) {
 #posVariationModal .modal-title small { color: #bdc3c7; font-weight: 400; }
 #posVariationModal .modal-content { border-radius: 8px; }
 .pos-var-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+/* Secoes de cor: uma familia (guarda-chuva -> cores -> tamanhos) mostra 4
+   blocos em vez de 20 botoes soltos. O rotulo vem do proprio pai de cada
+   cor, entao nao ha texto inventado. */
+.pos-var-group + .pos-var-group {
+    margin-top: 14px; padding-top: 12px; border-top: 1px solid #e0e4e8;
+}
+.pos-var-group-title {
+    font-size: 13px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .3px; color: #2c3e50; margin: 0 0 8px; padding: 0 2px;
+}
+#posVariationModal .modal-body { max-height: 68vh; overflow-y: auto; }
 .pos-var-item {
     display: flex; flex-direction: column; align-items: center; gap: 2px;
     padding: 12px 8px; border: 2px solid #cfd8dc; border-radius: 8px;
