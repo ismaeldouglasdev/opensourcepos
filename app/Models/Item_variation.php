@@ -184,21 +184,32 @@ class Item_variation extends Model
     /**
      * Children already linked to a parent, each with its own stock.
      *
-     * Same shape as get_variations_for_parent(), but without requiring a
-     * location id: the admin panel shows the child's own row (name, barcode,
-     * price) while the sale modal is the one that needs the per-location stock.
-     * Stock here is the sum over every location, which is what the umbrella
-     * total shows — the umbrella itself is a derived view, never edited.
+     * The catalogue has two shapes and both must read correctly here:
+     *   - one level (color -> size): each row owns its own stock;
+     *   - two levels (family -> color -> size): the colour row holds NO stock
+     *     of its own, so showing its own quantity would print 0 and hide the
+     *     division the operator entered on the phone.
+     *
+     * So every row carries both numbers: `own_qty` (this row's own stock) and
+     * `stock_qty` (own + every descendant). A leaf has them equal; an umbrella
+     * shows the real total of what hangs from it. `children` is the nested
+     * branch, so the panel can render the tree without a second request.
      *
      * @return array<int, array<string, mixed>>
      */
-    public function get_children_for_parent(int $parent_id): array
+    public function get_children_for_parent(int $parent_id, int $depth = 0): array
     {
+        // A cycle in the table would otherwise recurse until PHP exhausts the
+        // stack. Five levels is far beyond any real grouping.
+        if ($parent_id <= 0 || $depth > 4) {
+            return [];
+        }
+
         $item_quantities = $this->db->DBPrefix . 'item_quantities';
         $builder         = $this->db->table('ospos_item_variations AS v');
         $builder->select('v.item_variation_id, v.variation_item_id, v.attribute_name, v.attribute_value, v.position');
-        $builder->select('i.name, i.item_number, i.unit_price, i.pic_filename');
-        $builder->select('COALESCE((SELECT SUM(q.quantity) FROM ' . $item_quantities . ' AS q WHERE q.item_id = v.variation_item_id), 0) AS stock_qty');
+        $builder->select('i.name, i.item_number, i.unit_price, i.cost_price, i.pic_filename');
+        $builder->select('COALESCE((SELECT SUM(q.quantity) FROM ' . $item_quantities . ' AS q WHERE q.item_id = v.variation_item_id), 0) AS own_qty');
         $builder->join('ospos_items AS i', 'i.item_id = v.variation_item_id');
         $builder->where('v.item_id', $parent_id);
         $builder->where('i.deleted', 0);
@@ -210,7 +221,25 @@ class Item_variation extends Model
             return [];
         }
 
-        return $result->getResultArray();
+        $rows = $result->getResultArray();
+
+        foreach ($rows as $index => $row) {
+            $child_id = (int) $row['variation_item_id'];
+            $children = $this->get_children_for_parent($child_id, $depth + 1);
+
+            $descendants = 0.0;
+            foreach ($children as $child) {
+                $descendants += (float) $child['stock_qty'];
+            }
+
+            $rows[$index]['own_qty']    = (float) $row['own_qty'];
+            $rows[$index]['stock_qty']  = (float) $row['own_qty'] + $descendants;
+            $rows[$index]['descendant_qty'] = $descendants;
+            $rows[$index]['children']   = $children;
+            $rows[$index]['has_children'] = $children !== [];
+        }
+
+        return $rows;
     }
 
     /**

@@ -1478,15 +1478,28 @@ $quick_mode = $quick_mode ?? false;
             $list.empty();
             var total = 0;
 
-            for (var i = 0; i < children.length; i++) {
-                var c = children[i];
+            // Conta só as folhas: uma cor sem estoque próprio não é uma
+            // unidade a mais, senão a árvore soma duas vezes.
+            function sumLeaves(nodes) {
+                var sum = 0;
+                for (var i = 0; i < nodes.length; i++) {
+                    var kids = nodes[i].children || [];
+                    sum += kids.length ? sumLeaves(kids) : (parseFloat(nodes[i].stock_qty) || 0);
+                }
+                return sum;
+            }
+
+            function nodeRow(c, level) {
                 var qty = parseFloat(c.stock_qty) || 0;
-                total += qty;
+                var own = parseFloat(c.own_qty) || 0;
+                var kids = c.children || [];
 
                 var $row = $('<div class="js-variation-row"></div>').css({
                     display: 'flex', alignItems: 'center', gap: '6px',
                     padding: '4px 6px', marginBottom: '4px',
-                    background: '#f7f7f7', border: '1px solid #e3e3e3', borderRadius: '3px'
+                    marginLeft: (level * 14) + 'px',
+                    background: level ? '#fbfbfb' : '#f7f7f7',
+                    border: '1px solid #e3e3e3', borderRadius: '3px'
                 });
 
                 // Foto do filho quando existir: é o que o operador reconhece na
@@ -1499,10 +1512,29 @@ $quick_mode = $quick_mode ?? false;
 
                 var $info = $('<div></div>').css({ flex: '1 1 auto', minWidth: '0' });
                 $('<div></div>').css({ fontSize: '12px', fontWeight: 'bold' }).text(c.name || '').appendTo($info);
+
+                // Uma cor não tem estoque próprio: o dela é a soma dos tamanhos.
+                // Mostrar o próprio (0) é o que fazia a divisão feita no celular
+                // parecer que tinha sumido.
+                var stockText;
+                if (kids.length) {
+                    stockText = qty + ' no total';
+                } else {
+                    stockText = qty + (qty === 1 ? ' unidade' : ' unidades');
+                }
                 $('<div></div>').css({ fontSize: '11px', color: '#777' })
-                    .text((c.item_number || 'sem código') + ' · estoque: ' + qty + ' · ' + fmtMoney(c.unit_price))
+                    .text((c.item_number || 'sem código') + ' · estoque: ' + stockText + ' · ' + fmtMoney(c.unit_price))
                     .appendTo($info);
                 $info.appendTo($row);
+
+                // Clicar na linha abre o cadastro completo daquela variação
+                // (estoque por local, preço, foto). O × continua sendo a única
+                // ação destrutiva e não dispara junto.
+                $('<button type="button" class="btn btn-default btn-xs js-variation-edit"></button>')
+                    .attr('data-child-id', c.variation_item_id)
+                    .attr('title', 'Editar esta variação')
+                    .html('<span class="glyphicon glyphicon-pencil"></span>')
+                    .appendTo($row);
 
                 $('<button type="button" class="btn btn-danger btn-xs js-variation-remove"></button>')
                     .attr('data-child-id', c.variation_item_id)
@@ -1510,8 +1542,19 @@ $quick_mode = $quick_mode ?? false;
                     .html('&times;')
                     .appendTo($row);
 
-                $list.append($row);
+                var $holder = $('<div></div>').appendTo($list);
+                $holder.append($row);
+
+                for (var k = 0; k < kids.length; k++) {
+                    nodeRow(kids[k], level + 1);
+                }
             }
+
+            for (var i = 0; i < children.length; i++) {
+                nodeRow(children[i], 0);
+            }
+
+            total = sumLeaves(children);
 
             if (children.length === 0) {
                 $total.hide();
@@ -1637,6 +1680,101 @@ $quick_mode = $quick_mode ?? false;
             var childId = $(this).attr('data-child-id');
             post('removeVariation', { parent_id: parentId, child_item_id: childId }, function(res) {
                 setMsg(res.message, res.success ? '#3c763d' : '#a94442');
+            });
+        });
+
+        // Editar a variação abre o cadastro completo dela, no mesmo modal padrão
+        // da grid (dialog_support). O painel de variações vive dentro do modal do
+        // produto-pai, então um BootstrapDialog aninhado resolveria para o pai e
+        // a edição apareceria atrás; por isso a janela nova é construída à mão e
+        // empilhada acima.
+        $list.off('click.itemVariations').on('click.itemVariations', '.js-variation-edit', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            var childId = parseInt($(this).attr('data-child-id'), 10);
+            if (!childId || childId <= 0) {
+                return;
+            }
+
+            var $existing = $('#jsVarEditModal');
+            if ($existing.length) {
+                $existing.remove();
+            }
+
+            $.get('<?= site_url('items/view/') ?>' + childId, function(html) {
+                var $m = $(
+                    '<div class="modal fade" id="jsVarEditModal" tabindex="-1" role="dialog" aria-hidden="true">' +
+                    '  <div class="modal-dialog modal-dlg-1000" style="width: 1000px; max-width: 96vw;">' +
+                    '    <div class="modal-content">' +
+                    '      <div class="modal-body"></div>' +
+                    '      <div class="modal-footer">' +
+                    '        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>' +
+                    '        <button type="button" class="btn btn-primary js-var-save">Salvar</button>' +
+                    '      </div>' +
+                    '    </div>' +
+                    '  </div>' +
+                    '</div>'
+                );
+                // innerHTML deixa os <script> inertes; o globalEval roda uma vez.
+                $m.find('.modal-body')[0].innerHTML = html;
+                $m.find('script').each(function() {
+                    $.globalEval(this.textContent || this.text);
+                });
+                $('body').append($m);
+
+                // Bootstrap 3 não empilha modais por padrão: sem o z-index maior
+                // o backdrop do modal-pai cobre a janela nova.
+                $m.css('z-index', 1700);
+                $m.next('.modal-backdrop').css('z-index', 1690);
+
+                // O submit do form passa por dialog_support, que é global e aponta
+                // para o modal-pai: reutilizá-lo aqui salvaria o produto errado.
+                // Por isso o botão deste modal chama o ajaxSubmit direto, com o
+                // action do form (items/save/{child_id}).
+                $m.on('click', '.js-var-save', function() {
+                    var $form = $m.find('#item_form').first();
+                    if (!$form.length) {
+                        return;
+                    }
+                    var $btn = $(this);
+                    $btn.prop('disabled', true).text('Salvando...');
+
+                    $form.ajaxSubmit({
+                        success: function(res) {
+                            if (res && res.success) {
+                                $m.modal('hide');
+                                if (typeof table_support !== 'undefined') {
+                                    table_support.handle_submit('<?= 'items' ?>', res, false);
+                                }
+                                $.notify({ message: 'Variação salva.' }, { type: 'success', timer: 2500 });
+                            } else {
+                                $.notify({ message: (res && res.message) || 'Não foi possível salvar.' }, { type: 'danger', timer: 4000 });
+                            }
+                            $btn.prop('disabled', false).text('Salvar');
+                        },
+                        error: function() {
+                            $.notify({ message: 'Falha ao salvar a variação.' }, { type: 'danger', timer: 4000 });
+                            $btn.prop('disabled', false).text('Salvar');
+                        }
+                    });
+                });
+
+                $m.on('hidden.bs.modal', function() {
+                    $m.remove();
+                    // A lista pode ter mudado (estoque, foto, desagrupar): o
+                    // endpoint é GET, então vai por $.get e não pelo helper
+                    // post(), que só fala POST.
+                    $.get('<?= site_url('items/variations/') ?>' + parentId, function(res) {
+                        if (res && res.success) {
+                            render(res.children || []);
+                        }
+                    });
+                });
+
+                $m.modal('show');
+            }).fail(function() {
+                setMsg('Não foi possível abrir a variação.', '#a94442');
             });
         });
 
