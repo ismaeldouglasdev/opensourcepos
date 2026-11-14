@@ -24,7 +24,7 @@
     // because '.nav.navbar-nav a[href]' matches every nav link.
     var excludedPatterns = [
         '/items', '/customers', '/suppliers', '/sales', '/receivings', '/reports',
-        '/config', '/giftcards', '/expenses', '/employees', '/cash', '/debtors'
+        '/config', '/giftcards', '/expenses', '/employees', '/cash', '/debtors', '/channels'
     ];
 
     function isExcluded(href) {
