@@ -343,3 +343,51 @@ dono (02/out, comentário no `config.py:65-70`). Nesta sessão o dono autorizou 
 comentário datado). Com isso 10614 (1un) permanece bloqueado — sem precisar reverter.
 `inventory.service` reiniciado e ativo; 0 ERRORs novos no journal (os 2 do dia eram o
 400 do VM5NG antes do re-título). Mapeamentos `channel_product_mapping` 5/5 `active`.
+
+---
+
+## Session Context (2026-11-14)
+
+### Conta GitHub — `ismaeldouglasdev` é a principal
+
+- **Conta principal e única:** `ismaeldouglasdev` (https://github.com/ismaeldouglasdev),
+  e-mail `y2kgif@gmail.com`. O `gh` CLI está autenticado nela.
+- `ismaeldouglas1202` é conta secundária — **nunca** commitar/fazer push/PR por ela.
+- Auditoria feita: os 6 repos locais (`inventory-service`, `loja-online`,
+  `opensourcepos-fork`, `ospos-dashboard-app`, `ospos-estoque-app`, `ouroboros-repo`)
+  já tinham remote e `user.email` apontando para a conta certa. `user.name`/`user.email`
+  foram configurados em `ouroboros-repo` e `pos-backups` (estavam vazios).
+- Regra replicada nos AGENTS.md globais dos agentes: `~/.config/kilo/AGENTS.md` (§4)
+  e `~/.config/opencode/AGENTS.md` (Regra 2).
+
+### Relatório geral de vendas 2026 (OSPOS prod)
+
+Pedido do dono: relatório do ano inteiro até o momento — dinheiro, débito, crédito,
+PIX, fiado e demais transações — em CSV para importar no sistema de finanças dele,
+enviado ao celular via ADB.
+
+**Fatores do schema (verificados em prod `ospos`):**
+- Venda completada = `ospos_sales.sale_status = 0` (`COMPLETED`); `1` = suspensa,
+  `2` = retornada/cancelada. `sale_type=3` = cotação.
+- Pagamentos em `ospos_sales_payments`, filtrados por `payment_time` (base caixa —
+  data em que o dinheiro entrou, não `sale_time`).
+- Fiado: `payment_type='Fiado'`; quitação (`settle_fiado_payment` em `Sale.php`)
+  reduz/apaga a linha Fiado e insere linha com o método real + `reference_code='FIADO'`.
+  Saldo devedor = `SUM(payment_amount)` das linhas Fiado restantes por venda.
+- `ospos_expenses`, `ospos_receivings` e `ospos_cash_flow` estavam **zerados em 2026**
+  — o relatório é 100% receita de vendas.
+- Dados de vendas só existem a partir de **2026-03-21** (não há registros jan–mar).
+
+**Arquivos gerados** em `/home/ismael/relatorio-vendas-2026/` (CSVs `;`-separados,
+abrem direto no Excel BR):
+- `lancamentos.csv` — 1 linha por pagamento (data;tipo;forma_pagamento;descricao;valor;referencia)
+- `resumo_por_forma_pagamento.csv`, `resumo_mensal.csv` — agregados
+- `fiado_aberto.csv` — devedores por venda (sem dados bancários/de clientes no repo)
+
+**Totais e valores detalhados:** dados financeiros privados — **não registrar
+valores, totais ou dados de clientes neste repo público**. Os números ficam só
+nos CSVs locais (`/home/ismael/relatorio-vendas-2026/`) e no celular do dono.
+
+**Envio ao celular:** `adb connect` no IP Tailscale do aparelho (porta de
+wireless debugging) + `adb push` dos 4 CSVs para `/sdcard/Download/`. Funciona com
+o celular na mesma tailnet.
