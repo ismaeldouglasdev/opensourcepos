@@ -142,6 +142,16 @@ class Items extends Secure_Controller
         // lista de strings antes do whitelist (interseção descarta lixo).
         $raw_filters = (array) ($this->request->getGet('filters') ?? []);
         $request_filters = array_fill_keys(array_map('strval', $raw_filters), true);
+
+        // A busca é intenção explícita de achar UM produto (nome ou código) e
+        // não pode ser escondida pelo filtro pré-selecionado "Somente ativos":
+        // um item não publicado em nenhum canal ficaria inachável pela busca
+        // (ex.: EAN 7909937975753, Oculto na loja, Inativo ML/Shopee). Os
+        // demais filtros são escolha explícita e continuam valendo com a busca.
+        if ((string) ($search ?? '') !== '') {
+            unset($request_filters['only_active']);
+        }
+
         $filters = implode(',', array_keys(array_intersect_key($request_filters, array_flip([
             'only_active', 'only_ml', 'only_loja', 'needs_sync', 'out_of_sync', 'ml_paused', 'ml_under_review',
         ]))));
