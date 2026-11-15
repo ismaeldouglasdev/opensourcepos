@@ -97,8 +97,11 @@ window._tutorialSteps = [
             sortName: 'name',
             sortOrder: 'asc',
             queryParams: function() {
-                return $.extend(arguments[0], {
-                    "search": $("#search").val(),
+                var params = arguments[0];
+                var custom = $("#search").val() || '';
+                // built-in table search term passes through when custom field is empty
+                return $.extend(params, {
+                    "search": custom || params.search || '',
                     "filters": $("#filters").val()
                 });
             }
