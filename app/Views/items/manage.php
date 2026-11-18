@@ -626,9 +626,18 @@ window._tutorialSteps = [
                 + '<dt>Estoque</dt><dd>' + (body.available_quantity !== undefined && body.available_quantity !== null ? body.available_quantity : '-') + '</dd>'
                 + '<dt>Título</dt><dd>' + mlEscape(body.family_name || '') + '</dd>'
                 + '</dl>';
-            if (attributes.length) {
+            var brand = '';
+            $.each(attributes, function(index, attribute) {
+                if (attribute.id === 'BRAND') { brand = attribute.value_name || ''; }
+            });
+            html += '<div class="form-group form-group-sm">'
+                + '<label style="display:block; font-weight:normal;">Marca</label>'
+                + '<input type="text" class="form-control input-sm ml-attr-input" data-attr-id="BRAND" value="' + mlEscape(brand).replace(/"/g, '&quot;') + '">'
+                + '</div>';
+            var otherAttributes = $.grep(attributes, function(attribute) { return attribute.id !== 'BRAND'; });
+            if (otherAttributes.length) {
                 html += '<p><strong>Atributos:</strong></p><ul style="margin:0 0 10px 18px;">';
-                $.each(attributes, function(index, attribute) {
+                $.each(otherAttributes, function(index, attribute) {
                     html += '<li>' + mlEscape(attribute.id) + ': ' + mlEscape(attribute.value_name) + '</li>';
                 });
                 html += '</ul>';
@@ -705,6 +714,47 @@ window._tutorialSteps = [
                 mlLoadMappings();
             }).fail(function(xhr) {
                 mlNotify(mlErrorMessage(xhr, 'Falha ao alterar o anúncio.'), 'danger');
+                $button.prop('disabled', false);
+            });
+        });
+
+        $(document).on('click', '.loja-publish-btn', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            var $button = $(this).prop('disabled', true);
+            var itemId = $button.attr('data-loja-item');
+            var itemName = $button.attr('data-loja-name') || '';
+            $.getJSON('items/lojaStatus/' + itemId).done(function(status) {
+                if (!status || status.exists === false) {
+                    mlNotify((status && status.message) || 'Produto ainda não está na base da loja (sincroniza a cada 5 min). Tente de novo em instantes.', 'warning');
+                    $button.prop('disabled', false);
+                    return;
+                }
+                var visible = !!status.store_visible;
+                var question;
+                if (visible) {
+                    question = 'Ocultar "' + itemName + '" da loja online?';
+                } else {
+                    question = 'Publicar "' + itemName + '" na loja online?';
+                    if (Number(status.stock || 0) <= 0) { question += '\n\nAtenção: estoque zerado.'; }
+                    if (!status.has_image) { question += '\n\nAtenção: sem foto (usa a imagem genérica da loja).'; }
+                }
+                if (!window.confirm(question)) { $button.prop('disabled', false); return; }
+                $.post('items/channelSingleAction', {
+                    item_id: itemId,
+                    channel: 'loja',
+                    action: visible ? 'pause' : 'publish'
+                }).done(function(response) {
+                    if (response && response.success) {
+                        mlNotify(visible ? 'Produto ocultado da loja online.' : 'Produto publicado na loja online. O site atualiza em até 30 min.', 'success');
+                    } else {
+                        mlNotify((response && response.message) || 'Falha ao alterar a loja online.', 'danger');
+                    }
+                }).fail(function(xhr) {
+                    mlNotify(mlErrorMessage(xhr, 'Falha ao alterar a loja online.'), 'danger');
+                }).always(function() { $button.prop('disabled', false); });
+            }).fail(function(xhr) {
+                mlNotify(mlErrorMessage(xhr, 'Falha ao consultar a loja online.'), 'danger');
                 $button.prop('disabled', false);
             });
         });

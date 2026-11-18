@@ -257,6 +257,8 @@ class Items extends Secure_Controller
             echo json_encode(['success' => false, 'message' => lang('Items.item_not_found')]);
             return;
         }
+        // Model::find() devolve array; os handlers de canal esperam object.
+        $item = (object) $item;
 
         $result = ['success' => false, 'message' => 'Ação não reconhecida'];
 
@@ -324,11 +326,18 @@ class Items extends Secure_Controller
     }
 
     /**
-     * Publish item to Loja Online (delta sync picks it up)
+     * Publish item to Loja Online (visibility endpoint, sets visibility_manual)
      */
     private function publishToLoja(object $item): array
     {
-        return $this->syncToLoja($item);
+        $result = $this->inventoryRequest('POST', '/v1/channels/loja/visibility', [], [
+            'ospos_id' => (int) $item->item_id,
+            'visible' => true,
+        ]);
+        if ($result['status'] === 404) {
+            return ['success' => false, 'message' => 'Produto ainda não está na base da loja (sincroniza a cada 5 min). Tente de novo em instantes.'];
+        }
+        return $this->decode_inventory_response($result, 'Loja: resposta inválida');
     }
 
     /**
@@ -340,7 +349,26 @@ class Items extends Secure_Controller
             'ospos_id' => (int) $item->item_id,
             'visible' => false,
         ]);
+        if ($result['status'] === 404) {
+            return ['success' => false, 'message' => 'Produto ainda não está na base da loja (sincroniza a cada 5 min). Tente de novo em instantes.'];
+        }
         return $this->decode_inventory_response($result, 'Loja: resposta inválida');
+    }
+
+    /**
+     * Store visibility state for one item (grid button).
+     */
+    public function getLojaStatus($item_id = null): void
+    {
+        $result = $this->inventoryRequest('GET', '/v1/channels/loja/status/' . (int) $item_id);
+        $this->response->setContentType('application/json');
+        if ($result['status'] === 0) {
+            log_message('error', 'Items: loja/status falhou: ' . $result['error']);
+            echo json_encode(['exists' => false, 'message' => 'Loja online indisponível.']);
+            return;
+        }
+        $data = json_decode($result['body'], true);
+        echo json_encode(is_array($data) ? $data : ['exists' => false, 'message' => 'Loja: resposta inválida']);
     }
 
     /**

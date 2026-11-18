@@ -634,6 +634,12 @@ function get_item_data_row(object $item, ?array $ctx = null): array
         . ' title="' . lang('Items.ml_publish') . '">'
         . '<span class="glyphicon glyphicon-send"></span></button>';
 
+    $loja_publish_button = '<button type="button" class="btn btn-default btn-xs loja-publish-btn"'
+        . ' data-loja-item="' . $item->item_id . '"'
+        . ' data-loja-name="' . esc($item->name, 'attr') . '"'
+        . ' title="' . lang('Items.loja_publish') . '">'
+        . '<span class="glyphicon glyphicon-globe"></span></button>';
+
     $columns = [
         'items.item_id' => $item->item_id,
         'item_number'   => $item->item_number,
@@ -648,7 +654,7 @@ function get_item_data_row(object $item, ?array $ctx = null): array
         'quantity'      => to_quantity_decimals($item->quantity),
         'tax_percents'  => !$tax_percents ? '-' : $tax_percents,
         'item_pic'      => $image,
-        'last_modified' => $ml_publish_button . ' ' . $last_modified
+        'last_modified' => $ml_publish_button . ' ' . $loja_publish_button . ' ' . $last_modified
     ];
 
     $icons = [

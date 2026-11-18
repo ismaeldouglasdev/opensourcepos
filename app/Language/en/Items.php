@@ -157,6 +157,7 @@ return [
     "view_image"                         => "View image",
     "ml_manage"                          => "Mercado Livre",
     "ml_publish"                         => "Publish to Mercado Livre",
+    "loja_publish"                       => "Publish to the online store",
     "ml_listings_title"                  => "Products published on Mercado Livre",
     "ml_no_listings"                     => "No product is published.",
     "ml_loading"                         => "Querying Mercado Livre...",
