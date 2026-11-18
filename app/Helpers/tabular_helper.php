@@ -512,7 +512,8 @@ function get_items_manage_table_headers(): string
     // Action columns stay at the front (after the checkbox) so the edit button
     // is always visible without scrolling the wide table horizontally.
     $actions = [
-        ['edit' => '', 'escape' => false, 'class' => 'items-col-edit']
+        ['edit' => '', 'escape' => false, 'class' => 'items-col-edit'],
+        ['publish' => '', 'escape' => false, 'class' => 'items-col-publish', 'sortable' => false]
     ];
 
     return transform_headers(array_merge($actions, $headers), false, false);
@@ -654,10 +655,11 @@ function get_item_data_row(object $item, ?array $ctx = null): array
         'quantity'      => to_quantity_decimals($item->quantity),
         'tax_percents'  => !$tax_percents ? '-' : $tax_percents,
         'item_pic'      => $image,
-        'last_modified' => $ml_publish_button . ' ' . $loja_publish_button . ' ' . $last_modified
+        'last_modified' => $last_modified
     ];
 
     $icons = [
+        'publish'   => $ml_publish_button . ' ' . $loja_publish_button,
         'edit'      => anchor(
             "$controller/view/$item->item_id",
             '<span class="glyphicon glyphicon-edit"></span>',

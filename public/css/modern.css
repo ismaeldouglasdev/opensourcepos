@@ -2914,14 +2914,25 @@ body {
     white-space: nowrap !important;
 }
 
-/* Mercado Livre button inside the last-modified column: icon only, status by colour */
-#table_holder.items-manage td.items-col-dt .ml-publish-btn {
+/* Channel publish column: narrow, centered, fixed */
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table th.items-col-publish,
+#table_holder.items-manage .bootstrap-table .fixed-table-container .table td.items-col-publish {
+    width: 64px !important;
+    min-width: 0 !important;
+    max-width: 64px !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+}
+
+/* Channel publish buttons: icon only, status by colour */
+#table_holder.items-manage td.items-col-publish .ml-publish-btn,
+#table_holder.items-manage td.items-col-publish .loja-publish-btn {
     width: 22px !important;
     height: 22px !important;
     min-width: 0 !important;
     min-height: 0 !important;
     padding: 0 !important;
-    margin: 0 6px 0 0 !important;
+    margin: 0 3px 0 0 !important;
     font-size: 11px !important;
     line-height: 22px !important;
     vertical-align: middle !important;
@@ -2929,17 +2940,18 @@ body {
     display: inline-block !important;
 }
 
-#table_holder.items-manage td.items-col-dt .ml-publish-btn .glyphicon {
+#table_holder.items-manage td.items-col-publish .ml-publish-btn .glyphicon,
+#table_holder.items-manage td.items-col-publish .loja-publish-btn .glyphicon {
     font-size: 11px !important;
     top: 0 !important;
 }
 
-#table_holder.items-manage td.items-col-dt .ml-publish-btn.ml-status-active {
+#table_holder.items-manage td.items-col-publish .ml-publish-btn.ml-status-active {
     border-color: var(--os-primary, #1a9c6a);
     color: var(--os-primary-dark, #14805a);
 }
 
-#table_holder.items-manage td.items-col-dt .ml-publish-btn.ml-status-paused {
+#table_holder.items-manage td.items-col-publish .ml-publish-btn.ml-status-paused {
     border-color: #d79b00;
     color: #8a6400;
 }
@@ -3886,6 +3898,142 @@ body#receipt #barcode img {
 @media print {
     body#receipt {
         zoom: 1 !important;
+    }
+}
+
+/* ===== Receipt page - visual de "cupom" na tela (so screen; print intacto) ===== */
+@media screen {
+    /* O wrapper vira um "papel" centralizado em vez de esticar na tela toda. */
+    body#receipt #receipt_wrapper {
+        max-width: 620px;
+        margin: 8px auto 24px;
+        padding: 26px 30px 30px;
+        background: #fff;
+        border: 1px solid #e2e5ea;
+        border-radius: 6px;
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.10), 0 12px 32px rgba(15, 23, 42, 0.08);
+        font-family: "Courier New", Courier, monospace;
+    }
+    /* Barra do topo: banner em linha propria, botoes todos lado a lado
+       na linha de baixo — nada espremido, tudo na largura do cupom. */
+    body#receipt #receipt_topbar {
+        max-width: 620px;
+        margin: 8px auto 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    body#receipt .receipt-success-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+        padding: 7px 14px !important;
+        margin: 0 !important;
+        background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
+        border: 1px solid #a5d6a7;
+        border-radius: 10px;
+    }
+    body#receipt .receipt-success-banner .rsb-title {
+        font-size: 14px;
+        color: #2e7d32;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+    body#receipt .receipt-success-banner .rsb-sub {
+        font-size: 12px;
+        color: #558b2f;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    body#receipt .receipt-success-banner .rsb-sub .btn {
+        padding: 1px 8px;
+        font-size: 11px;
+        line-height: 1.6;
+    }
+    body#receipt #control_buttons {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin: 0 !important;
+    }
+    body#receipt #control_buttons > script {
+        display: none;
+    }
+    body#receipt #control_buttons > a {
+        display: flex;
+    }
+    body#receipt #control_buttons .btn {
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 12px;
+        padding: 5px 12px;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    /* Cabecalho do cupom */
+    body#receipt #receipt_header {
+        border-bottom: 2px dashed #cbd5e1;
+        padding-bottom: 10px;
+        margin-bottom: 4px;
+    }
+    body#receipt #company_name {
+        font-size: 130% !important;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+    body#receipt #sale_receipt {
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #334155;
+    }
+    body#receipt #receipt_general_info {
+        border-bottom: 1px dashed #cbd5e1;
+        padding-bottom: 6px;
+        margin-bottom: 4px;
+        font-size: 0.92em;
+        color: #475569;
+    }
+    /* Tabela de itens: cabecalho marcado, numeros a direita */
+    body#receipt #receipt_items th {
+        border-bottom: 1px solid #94a3b8 !important;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.85em;
+        letter-spacing: 0.05em;
+        color: #334155;
+    }
+    /* Preco/qtd/total a direita apenas em linhas completas de item (4 celulas) */
+    body#receipt #receipt_items tr:has(> td:nth-child(4)) > td:nth-child(2),
+    body#receipt #receipt_items tr:has(> td:nth-child(4)) > td:nth-child(3),
+    body#receipt #receipt_items tr:has(> td:nth-child(4)) > td:nth-child(4) {
+        text-align: right;
+        white-space: nowrap;
+    }
+    /* Linha do total em destaque */
+    body#receipt #receipt_items tr.receipt-total-row > td {
+        font-weight: 700;
+        font-size: 1.15em;
+        border-top: 2px solid #0f172a !important;
+        padding-top: 6px !important;
+    }
+    /* Separador visual antes dos pagamentos */
+    body#receipt #sale_return_policy {
+        border-top: 1px dashed #cbd5e1;
+        padding-top: 8px;
+        margin-top: 8px;
+        font-size: 0.85em;
+        color: #64748b;
+    }
+    body#receipt #barcode {
+        margin-top: 12px;
     }
 }
 
