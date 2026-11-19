@@ -238,6 +238,7 @@ class Home extends Secure_Controller
 
         $data['items_created_today'] = $this->item->get_created_today_count();
         $data['items_updated_today'] = $this->item->get_updated_today_count();
+        [$data['ml_posted_today'], $data['store_posted_today']] = $this->fetchChannelTodayCounts();
 
         echo view('home/home', $data);
     }
@@ -334,5 +335,36 @@ class Home extends Secure_Controller
                 'id'      => -1
             ]);
         }
+    }
+
+    /**
+     * Produtos postados hoje nos canais (ML / loja online) — proxy do
+     * /v1/channels/today-counts do inventory-service. Retorna [ml, loja].
+     */
+    private function fetchChannelTodayCounts(): array
+    {
+        $baseUrl = rtrim((string) env('inventory.baseURL', ''), '/');
+        $apiKey = (string) env('inventory.apiKey', '');
+        if ($baseUrl === '' || $apiKey === '') {
+            return [0, 0];
+        }
+
+        $handle = curl_init($baseUrl . '/v1/channels/today-counts');
+        curl_setopt_array($handle, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_HTTPHEADER     => ['X-API-Key: ' . $apiKey, 'Accept: application/json'],
+        ]);
+        $body = curl_exec($handle);
+        $status = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
+        curl_close($handle);
+
+        $data = $status === 200 && $body !== false ? json_decode((string) $body, true) : null;
+        if (!is_array($data)) {
+            log_message('error', 'Home: proxy /channels/today-counts falhou (HTTP ' . $status . ')');
+            return [0, 0];
+        }
+        return [(int) ($data['ml_posted_today'] ?? 0), (int) ($data['store_posted_today'] ?? 0)];
     }
 }

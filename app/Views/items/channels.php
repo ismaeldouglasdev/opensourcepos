@@ -4,6 +4,8 @@
  * @var string $table_headers
  * @var array $filters
  * @var array $config
+ * @var int $ml_posted_today
+ * @var int $store_posted_today
  */
 
 use App\Models\Employee;
@@ -163,6 +165,27 @@ window._tutorialSteps = [
                         </div>
                     </div>
                 <?= form_close() ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row" style="margin-bottom:10px;">
+    <div class="col-md-6">
+        <div class="panel panel-default" style="margin-bottom:0;">
+            <div class="panel-body" style="padding:10px 15px;">
+                <span class="glyphicon glyphicon-send" style="font-size:22px; color:#f0ad4e;"></span>
+                <strong style="font-size:22px; margin-left:8px;"><?= (int) ($ml_posted_today ?? 0) ?></strong>
+                <span style="color:#777;"> Postados no Mercado Livre Hoje</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="panel panel-default" style="margin-bottom:0;">
+            <div class="panel-body" style="padding:10px 15px;">
+                <span class="glyphicon glyphicon-globe" style="font-size:22px; color:#337ab7;"></span>
+                <strong style="font-size:22px; margin-left:8px;"><?= (int) ($store_posted_today ?? 0) ?></strong>
+                <span style="color:#777;"> Postados na Loja Online Hoje</span>
             </div>
         </div>
     </div>

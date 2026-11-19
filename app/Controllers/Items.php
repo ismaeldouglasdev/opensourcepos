@@ -82,6 +82,10 @@ class Items extends Secure_Controller
         $data['items_created_today'] = $this->item->get_created_today_count();
         $data['items_updated_today'] = $this->item->get_updated_today_count();
 
+        // Contadores de canais (postados hoje no ML / na loja) vivem no
+        // inventory-service — proxy do /v1/channels/today-counts.
+        [$data['ml_posted_today'], $data['store_posted_today']] = $this->fetchChannelTodayCounts();
+
         // Filters that will be loaded in the multiselect dropdown
         $data['filters'] = [
             'empty_upc'      => lang('Items.empty_upc_items'),
@@ -109,6 +113,7 @@ class Items extends Secure_Controller
         $data['table_headers'] = get_channels_manage_table_headers();
         $data['stock_location'] = $this->item_lib->get_item_location();
         $data['stock_locations'] = $this->stock_location->get_allowed_locations();
+        [$data['ml_posted_today'], $data['store_posted_today']] = $this->fetchChannelTodayCounts();
 
         // Filters for channels
         $data['filters'] = [
@@ -411,6 +416,21 @@ class Items extends Secure_Controller
     private function pauseOnShopee(object $item): array
     {
         return ['success' => false, 'message' => 'Shopee: pausa indisponível (integração aguarda credencial)'];
+    }
+
+    /**
+     * Produtos postados hoje nos canais (ML / loja online) — proxy do
+     * /v1/channels/today-counts do inventory-service. Retorna [ml, loja].
+     */
+    private function fetchChannelTodayCounts(): array
+    {
+        $result = $this->inventoryRequest('GET', '/v1/channels/today-counts');
+        $data = $result['status'] === 200 ? json_decode($result['body'], true) : null;
+        if (!is_array($data)) {
+            log_message('error', 'Items: proxy /channels/today-counts falhou (HTTP ' . $result['status'] . ')');
+            return [0, 0];
+        }
+        return [(int) ($data['ml_posted_today'] ?? 0), (int) ($data['store_posted_today'] ?? 0)];
     }
 
     /**

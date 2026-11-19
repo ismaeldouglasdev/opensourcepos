@@ -515,6 +515,18 @@ a.dash-kpi:hover {
             <div class="dash-kpi-value"><?= (int) ($items_updated_today ?? 0) ?></div>
             <div class="dash-kpi-label">Produtos Atualizados Hoje</div>
         </div>
+
+        <div class="dash-kpi">
+            <div class="dash-kpi-icon bg-warning"><span class="glyphicon glyphicon-send"></span></div>
+            <div class="dash-kpi-value"><?= (int) ($ml_posted_today ?? 0) ?></div>
+            <div class="dash-kpi-label">Postados no Mercado Livre Hoje</div>
+        </div>
+
+        <div class="dash-kpi">
+            <div class="dash-kpi-icon bg-primary"><span class="glyphicon glyphicon-globe"></span></div>
+            <div class="dash-kpi-value"><?= (int) ($store_posted_today ?? 0) ?></div>
+            <div class="dash-kpi-label">Postados na Loja Online Hoje</div>
+        </div>
         <div class="dash-kpi">
             <div class="dash-kpi-icon bg-success"><span class="glyphicon glyphicon-usd"></span></div>
             <div class="dash-kpi-value"><?= to_currency($today_sales) ?></div>

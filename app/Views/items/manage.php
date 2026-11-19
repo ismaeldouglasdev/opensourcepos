@@ -460,6 +460,11 @@ window._tutorialSteps = [
         }
         ?>
     </div>
+    <div class="items-today-counters print_hide" style="clear:both; margin-top:4px; font-size:13px; color:var(--os-text-muted);">
+        Postados no Mercado Livre Hoje: <strong><?= (int) ($ml_posted_today ?? 0) ?></strong>
+        &nbsp;|&nbsp;
+        Postados na Loja Online Hoje: <strong><?= (int) ($store_posted_today ?? 0) ?></strong>
+    </div>
 </div>
 
 <div id="table_holder" class="items-manage">
