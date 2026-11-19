@@ -153,23 +153,28 @@ $quick_mode = $quick_mode ?? false;
         <?php if (!$quick_mode): ?>
         <div class="row form-group form-group-sm" id="compare_at_row">
             <div class="col-xs-6">
-                <?= form_label(lang('Items.compare_at_price'), 'compare_at_price', ['class' => 'control-label']) ?>
+                <?= form_label(lang('Items.promo_price'), 'promo_price', ['class' => 'control-label']) ?>
                 <div class="input-group input-group-sm">
                     <?php if (!is_right_side_currency_symbol()): ?>
                         <span class="input-group-addon input-sm"><b><?= esc($config['currency_symbol']) ?></b></span>
                     <?php endif; ?>
                     <?= form_input([
-                        'name'    => 'compare_at_price',
-                        'id'      => 'compare_at_price',
+                        'id'      => 'promo_price',
                         'class'   => 'form-control input-sm',
                         'onClick' => 'this.select();',
-                        'value'   => (isset($item_info->compare_at_price) && $item_info->compare_at_price > 0) ? to_currency_no_money($item_info->compare_at_price) : ''
+                        'value'   => (isset($item_info->compare_at_price) && $item_info->compare_at_price > 0) ? to_currency_no_money($item_info->unit_price) : ''
                     ]) ?>
                     <?php if (is_right_side_currency_symbol()): ?>
                         <span class="input-group-addon input-sm"><b><?= esc($config['currency_symbol']) ?></b></span>
                     <?php endif; ?>
                 </div>
-                <p class="text-muted" style="font-size: 11px; margin: 4px 0 0;"><?= lang('Items.compare_at_hint') ?></p>
+                <p class="text-muted" style="font-size: 11px; margin: 4px 0 0;"><?= lang('Items.promo_price_hint') ?></p>
+                <?= form_input([
+                    'type'  => 'hidden',
+                    'name'  => 'compare_at_price',
+                    'id'    => 'compare_at_price_hidden',
+                    'value' => (isset($item_info->compare_at_price) && $item_info->compare_at_price > 0) ? to_currency_no_money($item_info->compare_at_price) : ''
+                ]) ?>
             </div>
             <div class="col-xs-6" id="compare_at_preview" style="display:none;">
                 <label class="control-label">&nbsp;</label>
@@ -200,20 +205,46 @@ $quick_mode = $quick_mode ?? false;
                 var n = parseFloat(s);
                 return isNaN(n) ? 0 : n;
             }
+            function fmtBR(n) { return n.toFixed(2).replace('.', ','); }
+            var $promo = $('#promo_price'), $unit = $('#unit_price'), $cmp = $('#compare_at_price_hidden');
             function refresh() {
                 var $prev = $('#compare_at_preview');
                 if (!$prev.length) { return; }
-                var oldPrice = parseMoneyBR($('#compare_at_price').val());
-                var newPrice = parseMoneyBR($('#unit_price').val());
+                var oldPrice = parseMoneyBR($cmp.val());
+                var newPrice = parseMoneyBR($unit.val());
                 if (oldPrice > newPrice && newPrice > 0) {
                     $prev.show();
-                    $('#compare_at_old').text('De R$ ' + oldPrice.toFixed(2).replace('.', ','));
-                    $('#compare_at_new').text('Por R$ ' + newPrice.toFixed(2).replace('.', ','));
+                    $('#compare_at_old').text('De R$ ' + fmtBR(oldPrice));
+                    $('#compare_at_new').text('Por R$ ' + fmtBR(newPrice));
                 } else {
                     $prev.hide();
                 }
             }
-            $('#compare_at_price, #unit_price').off('input.compareAt').on('input.compareAt', refresh);
+            function applyPromo() {
+                var p = parseMoneyBR($promo.val());
+                var u = parseMoneyBR($unit.val());
+                var c = parseMoneyBR($cmp.val());
+                if (p > 0) {
+                    if (c > 0 && p < c) {
+                        // Já em promoção: novo preço promocional, mantém o "de"
+                        if (Math.abs(p - u) > 0.001) { $unit.val(fmtBR(p)); $unit.trigger('input'); }
+                    } else if (p < u) {
+                        // Preço atual vira o riscado; promo vira o preço de venda
+                        if (c <= 0) { $cmp.val(fmtBR(u)); }
+                        if (Math.abs(p - u) > 0.001) { $unit.val(fmtBR(p)); $unit.trigger('input'); }
+                    } else {
+                        // Promo >= preço: vira preço normal, sem riscado
+                        if (c > 0) { $cmp.val(''); }
+                        if (Math.abs(p - u) > 0.001) { $unit.val(fmtBR(p)); $unit.trigger('input'); }
+                    }
+                } else if (c > 0) {
+                    // Campo esvaziado: encerra a promoção e volta ao preço "de"
+                    $unit.val(fmtBR(c)); $unit.trigger('input');
+                    $cmp.val('');
+                }
+                refresh();
+            }
+            $promo.off('input.promo').on('input.promo', applyPromo);
             refresh();
         })();
         </script>

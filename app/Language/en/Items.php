@@ -147,6 +147,8 @@ return [
     "unit_price"                         => "Retail Price",
     "compare_at_price"                   => "Compare-at price (promotion)",
     "compare_at_hint"                    => "Optional. Only shown struck through when HIGHER than the selling price.",
+    "promo_price"                        => "Promo price",
+    "promo_price_hint"                   => "Optional. Enter the sale price — the current price becomes the struck-through one automatically. Clear to end the promo.",
     "on_promotion"                       => "ON SALE",
     "unit_price_number"                  => "Unit price must be a number.",
     "unit_price_required"                => "Retail Price is a required field.",
