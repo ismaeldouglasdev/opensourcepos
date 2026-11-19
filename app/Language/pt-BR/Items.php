@@ -149,6 +149,7 @@ return [
     "compare_at_hint"                    => "Opcional. Só aparece riscado quando for MAIOR que o preço de venda.",
     "promo_price"                        => "Preço Promocional",
     "promo_price_hint"                   => "Opcional. Digite o preço de promoção — o preço atual vira o riscado sozinho. Apague para encerrar a promoção.",
+    "promo_end_confirm"                  => "A promoção será encerrada e o preço voltará para R$ %s. Deseja continuar?",
     "on_promotion"                       => "EM PROMOÇÃO",
     "unit_price_number"                  => "Preço unitário deve ser um número.",
     "unit_price_required"                => "Preço de varejo é um campo obrigatório.",

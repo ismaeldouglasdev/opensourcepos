@@ -207,6 +207,7 @@ $quick_mode = $quick_mode ?? false;
             }
             function fmtBR(n) { return n.toFixed(2).replace('.', ','); }
             var $promo = $('#promo_price'), $unit = $('#unit_price'), $cmp = $('#compare_at_price_hidden');
+            var promoActive = parseMoneyBR($cmp.val()) > 0;
             function refresh() {
                 var $prev = $('#compare_at_preview');
                 if (!$prev.length) { return; }
@@ -224,6 +225,7 @@ $quick_mode = $quick_mode ?? false;
                 var p = parseMoneyBR($promo.val());
                 var u = parseMoneyBR($unit.val());
                 var c = parseMoneyBR($cmp.val());
+                if (c > 0) { promoActive = true; }
                 if (p > 0) {
                     if (c > 0 && p < c) {
                         // Já em promoção: novo preço promocional, mantém o "de"
@@ -241,9 +243,12 @@ $quick_mode = $quick_mode ?? false;
                     // Campo esvaziado: encerra a promoção e volta ao preço "de"
                     $unit.val(fmtBR(c)); $unit.trigger('input');
                     $cmp.val('');
+                    $promo.data('promoRestorePrice', fmtBR(c));
                 }
+                $promo.data('promoEnded', promoActive && parseMoneyBR($cmp.val()) <= 0 && parseMoneyBR($promo.val()) <= 0);
                 refresh();
             }
+            $promo.data('promoEnded', false);
             $promo.off('input.promo').on('input.promo', applyPromo);
             refresh();
         })();
@@ -981,6 +986,14 @@ $quick_mode = $quick_mode ?? false;
                 submitHandler: function(form, event) { // Event is not used as a parameter here
                     if (!dialog_support.intent()) {
                         return false;
+                    }
+                    var $promoEl = $('#promo_price');
+                    if ($promoEl.length && $promoEl.data('promoEnded')) {
+                        var restorePrice = $promoEl.data('promoRestorePrice') || '';
+                        var msg = '<?= lang('Items.promo_end_confirm') ?>'.replace('%s', restorePrice);
+                        if (!window.confirm(msg)) {
+                            return false;
+                        }
                     }
                     $(form).ajaxSubmit({
                         success: function(response) {
