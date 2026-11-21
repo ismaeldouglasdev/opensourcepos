@@ -71,6 +71,15 @@ window._tutorialSteps = [
             return '<span class="' + cls + '">' + value + '</span>';
         };
 
+        var picThumbBase = <?= json_encode(site_url('items/PicThumb/')) ?>;
+
+        var photoFormatter = function(value) {
+            if (!value) {
+                return '';
+            }
+            return '<img src="' + picThumbBase + encodeURIComponent(value) + '" alt="" loading="lazy">';
+        };
+
         var priceFormatter = function(value) {
             if (value === null || value === undefined || value === '') {
                 return '—';
@@ -80,6 +89,10 @@ window._tutorialSteps = [
 
         var headers = <?= $table_headers ?>;
         $.each(headers, function(i, col) {
+            if (col.field === 'photo') {
+                col.formatter = photoFormatter;
+                col.escape = false;
+            }
             if (col.field === 'ml_status' || col.field === 'loja_status' || col.field === 'shopee_status') {
                 col.formatter = statusFormatter;
                 col.escape = false;

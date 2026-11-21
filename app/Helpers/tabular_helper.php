@@ -470,6 +470,7 @@ function channel_headers(): array
         ['items.item_id' => lang('Common.id'), 'class' => 'items-col-id'],
         ['item_number'   => lang('Items.item_number'), 'class' => 'items-col-mono'],
         ['name'          => lang('Items.name'), 'class' => 'items-col-name items-col-wrap'],
+        ['photo'         => lang('Items.image'), 'escape' => false, 'sortable' => false, 'switchable' => true, 'class' => 'items-col-pic'],
         ['quantity'      => lang('Items.quantity_short'), 'class' => 'items-col-num items-col-qty', 'titleTooltip' => lang('Items.quantity')],
         ['ml_status'     => lang('Items.ml_status'), 'class' => 'channels-col-status', 'sortable' => false],
         ['ml_price'      => lang('Items.ml_price'), 'class' => 'channels-col-price', 'sortable' => false],

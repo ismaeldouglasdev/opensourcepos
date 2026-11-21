@@ -24,11 +24,15 @@
 
     // Páginas em que a censura não se aplica:
     //  - /sales/receipt: é o documento do cliente, precisa sair legível;
-    //  - /sales e /sales/add: é o caixa, o operador precisa ver os valores.
+    //  - /sales e /sales/add: é o caixa, o operador precisa ver os valores;
+    //  - /items e /channels: gestão de produtos/canais, valores são
+    //    referência de trabalho (preço de venda, markup, comissões).
     function isExcludedPage() {
         var path = window.location.pathname;
         var censoredSalesPage = /\/sales\/manage(\/|$)/.test(path) || /\/sales\/invoice(\/|$)/.test(path);
-        return (!censoredSalesPage && /\/sales(\/|$)/.test(path)) || /\/items(\/|$)/.test(path);
+        return (!censoredSalesPage && /\/sales(\/|$)/.test(path))
+            || /\/items(\/|$)/.test(path)
+            || /\/channels(\/|$)/.test(path);
     }
 
     if (isExcludedPage()) {
