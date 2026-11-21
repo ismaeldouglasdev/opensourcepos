@@ -402,6 +402,23 @@ class Items extends Secure_Controller
     }
 
     /**
+     * Channel listings detail for one item (modal "Canais" tabs).
+     * Proxies /v1/channels/item/{id} — read-only aggregation, fast.
+     */
+    public function getChannelDetails($item_id = null): void
+    {
+        $result = $this->inventoryRequest('GET', '/v1/channels/item/' . (int) $item_id);
+        $this->response->setContentType('application/json');
+        if ($result['status'] === 0) {
+            log_message('error', 'Items: channelDetails falhou: ' . $result['error']);
+            echo json_encode(['channels' => [], 'store' => ['exists' => false], 'error' => 'Canais: serviço indisponível']);
+            return;
+        }
+        $data = json_decode($result['body'], true);
+        echo json_encode(is_array($data) ? $data : ['channels' => [], 'store' => ['exists' => false]]);
+    }
+
+    /**
      * Sync item to Loja Online
      */
     private function syncToLoja(object $item): array

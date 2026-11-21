@@ -807,6 +807,99 @@ $quick_mode = $quick_mode ?? false;
             dialog_support.init('#duplicate_item_button');
         }
 
+        // Abas de canais de venda: o inventory-service agrega os anúncios
+        // (ML, Shopee, loja...) do item; renderiza uma aba por canal onde o
+        // produto aparece, sempre antes do histórico de preços.
+        var channelDetailsUrl = <?= json_encode($item_info->item_id > 0 ? site_url('items/channelDetails/' . (int) $item_info->item_id) : '') ?>;
+        if (channelDetailsUrl && $('#item_form_tabs').length) {
+            $.getJSON(channelDetailsUrl).done(function(data) {
+                var channels = (data && data.channels) || [];
+                if (!channels.length) {
+                    return;
+                }
+                var store = (data && data.store) || {};
+                var priceHistoryLi = $('#item_form_tabs li').last();
+                var esc = function(s) {
+                    return $('<div>').text(s === null || s === undefined ? '' : s).html();
+                };
+                var money = function(v) {
+                    if (v === null || v === undefined || v === '') {
+                        return '—';
+                    }
+                    return <?= json_encode($config['currency_symbol'] ?? 'R$') ?> + ' ' + Number(v).toFixed(2).replace('.', ',');
+                };
+                var tabLabel = {mercadolivre: <?= json_encode(lang('Items.channel_tab_ml')) ?>, shopee: <?= json_encode(lang('Items.channel_tab_shopee')) ?>, loja: <?= json_encode(lang('Items.channel_tab_loja')) ?>};
+                var fieldLabel = {
+                    status: <?= json_encode(lang('Items.channel_status')) ?>,
+                    listing: <?= json_encode(lang('Items.channel_listing')) ?>,
+                    price: <?= json_encode(lang('Items.channel_price')) ?>,
+                    sku: <?= json_encode(lang('Items.channel_sku')) ?>,
+                    sync: <?= json_encode(lang('Items.channel_last_sync')) ?>,
+                    view: <?= json_encode(lang('Items.channel_view')) ?>,
+                    stock: <?= json_encode(lang('Items.channel_store_stock')) ?>,
+                    photo: <?= json_encode(lang('Items.channel_store_photo')) ?>,
+                    photoOk: <?= json_encode(lang('Items.channel_store_photo_ok')) ?>,
+                    photoMissing: <?= json_encode(lang('Items.channel_store_photo_missing')) ?>,
+                    category: <?= json_encode(lang('Items.channel_store_category')) ?>,
+                    compare: <?= json_encode(lang('Items.channel_store_compare')) ?>
+                };
+                var statusClass = function(status) {
+                    if (status === 'active' || status === 'hidden') {
+                        return status === 'active' ? 'label-success' : 'label-warning';
+                    }
+                    if (status === 'paused') {
+                        return 'label-warning';
+                    }
+                    if (status === 'under_review') {
+                        return 'label-info';
+                    }
+                    return 'label-default';
+                };
+                var seenChannels = {};
+                $.each(channels, function(i, ch) {
+                    var safeChannel = String(ch.channel || '').replace(/[^a-z0-9_-]/gi, '');
+                    if (!safeChannel || seenChannels[safeChannel]) {
+                        return;
+                    }
+                    seenChannels[safeChannel] = true;
+                    var paneId = 'item_channel_' + safeChannel;
+                    var label = tabLabel[ch.channel] || ch.channel;
+                    var rows = '';
+                    var addRow = function(k, v) {
+                        if (v === null || v === undefined || v === '') {
+                            return;
+                        }
+                        rows += '<tr><th style="width: 40%;">' + esc(fieldLabel[k] || k) + '</th><td>' + v + '</td></tr>';
+                    };
+                    addRow('status', '<span class="label ' + statusClass(ch.status) + '">' + esc(ch.status_label || ch.status) + '</span>' + (ch.channel === 'loja' && store.visibility_manual ? ' <span class="label label-default">' + esc(<?= json_encode(lang('Items.channel_manual')) ?>) + '</span>' : ''));
+                    addRow('listing', esc(ch.external_id));
+                    if (ch.external_url) {
+                        addRow('view', '<a href="' + esc(ch.external_url) + '" target="_blank" rel="noopener">' + esc(fieldLabel.view) + ' <span class="glyphicon glyphicon-new-window"></span></a>');
+                    }
+                    addRow('price', esc(money(ch.price)));
+                    addRow('sku', esc(ch.sku));
+                    addRow('sync', esc(ch.synced_at));
+                    if (ch.channel === 'loja' && store.exists) {
+                        addRow('stock', esc(store.stock));
+                        addRow('photo', store.has_image ? '<span class="label label-success">' + esc(fieldLabel.photoOk) + '</span>' : '<span class="label label-warning">' + esc(fieldLabel.photoMissing) + '</span>');
+                        if (store.compare_at_price) {
+                            addRow('compare', esc(money(store.compare_at_price)));
+                        }
+                        addRow('category', esc(store.category));
+                    }
+                    var paneHtml = '<div class="tab-pane" id="' + paneId + '" style="padding: 10px 5px;">'
+                        + '<table class="table table-striped table-condensed" style="font-size: 12px; max-width: 640px;">'
+                        + '<tbody>' + rows + '</tbody></table></div>';
+                    priceHistoryLi.before('<li><a href="#' + paneId + '" data-toggle="tab">' + esc(label) + '</a></li>');
+                    if ($('#item_price_history').length) {
+                        $('#item_price_history').before(paneHtml);
+                    } else {
+                        $('.tab-content').append(paneHtml);
+                    }
+                });
+            });
+        }
+
         // Rotate the caret when the "Mais opções" section opens/closes
         $('#item_extra_fields').on('show.bs.collapse', function() {
             $('#item_extra_caret').removeClass('glyphicon-chevron-down').addClass('glyphicon-chevron-up');
