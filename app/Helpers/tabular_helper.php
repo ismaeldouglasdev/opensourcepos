@@ -467,6 +467,7 @@ function item_headers(): array
 function channel_headers(): array
 {
     return [
+        ['edit'          => '', 'escape' => false, 'sortable' => false, 'class' => 'items-col-edit'],
         ['items.item_id' => lang('Common.id'), 'class' => 'items-col-id'],
         ['item_number'   => lang('Items.item_number'), 'class' => 'items-col-mono'],
         ['name'          => lang('Items.name'), 'class' => 'items-col-name items-col-wrap'],

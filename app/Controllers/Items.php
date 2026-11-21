@@ -180,6 +180,31 @@ class Items extends Secure_Controller
             return;
         }
 
+        // Botão de edição por linha: abre o modal do item (items/view/{id})
+        // — o OSPOS é a fonte única; o CDC propaga preço/estoque e o
+        // details.updated propaga nome/descrição/foto aos canais.
+        $payload = json_decode((string) $result['body'], true);
+        if (is_array($payload) && isset($payload['rows']) && is_array($payload['rows'])) {
+            foreach ($payload['rows'] as &$row) {
+                $item_id = (int) ($row['item_id'] ?? 0);
+                if ($item_id <= 0) {
+                    continue;
+                }
+                $row['edit'] = anchor(
+                    "items/view/{$item_id}",
+                    '<span class="glyphicon glyphicon-edit"></span>',
+                    [
+                        'class'           => 'modal-dlg modal-dlg-1000',
+                        'data-btn-submit' => lang('Common.submit'),
+                        'title'           => lang('Items.update'),
+                    ]
+                );
+            }
+            unset($row);
+            echo json_encode($payload);
+            return;
+        }
+
         echo $result['body'];
     }
 
