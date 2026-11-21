@@ -513,6 +513,7 @@ window._tutorialSteps = [
     (function() {
         var mlMap = {};
         var mlPublishItem = null;
+        var mlPublishBlocked = 0;
         var ML_LABELS = {
             active: 'ATIVO', paused: 'PAUSADO', closed: 'ENCERRADO',
             inactive: 'INATIVO', under_review: 'EM ANÁLISE'
@@ -543,6 +544,14 @@ window._tutorialSteps = [
             var payload = xhr && xhr.responseJSON;
             if (payload && payload.error) { return payload.error; }
             if (payload && payload.message) { return payload.message; }
+            if (payload && payload.detail) {
+                if (typeof payload.detail === 'string') { return payload.detail; }
+                if ($.isArray(payload.detail) && payload.detail.length) {
+                    return payload.detail.map(function(d) {
+                        return (d && (d.msg || d.message)) || String(d);
+                    }).join(' ');
+                }
+            }
             return fallback;
         }
 
@@ -603,10 +612,20 @@ window._tutorialSteps = [
         function mlCollectAttributes() {
             var attributes = [];
             $('#ml_publish_body .ml-attr-input').each(function() {
-                var value = $.trim($(this).val());
-                if (value !== '') {
-                    attributes.push({ id: $(this).attr('data-attr-id'), value_name: value });
+                var $el = $(this);
+                var value = $.trim($el.val());
+                if (value === '') { return; }
+                var kind = $el.attr('data-attr-kind') || 'name';
+                var attr = { id: $el.attr('data-attr-id') };
+                if (kind === 'id') {
+                    attr.value_id = value;
+                } else {
+                    attr.value_name = value;
+                    if (kind === 'number_unit') {
+                        attr.unit = $el.closest('.form-group').find('.ml-attr-unit').val() || 'cm';
+                    }
                 }
+                attributes.push(attr);
             });
             return attributes;
         }
@@ -615,18 +634,31 @@ window._tutorialSteps = [
             var data = { item_id: mlPublishItem.item_id, dry_run: dryRun ? 1 : 0 };
             $.each(attributes, function(index, attribute) {
                 data['attributes[' + index + '][id]'] = attribute.id;
-                data['attributes[' + index + '][value_name]'] = attribute.value_name;
+                if (attribute.value_id) { data['attributes[' + index + '][value_id]'] = attribute.value_id; }
+                if (attribute.value_name) { data['attributes[' + index + '][value_name]'] = attribute.value_name; }
+                if (attribute.unit) { data['attributes[' + index + '][unit]'] = attribute.unit; }
             });
             return mlRequest('POST', 'mercadolivre/publish', data);
+        }
+
+        function mlSyncPublishConfirm() {
+            var emptyRequired = $('#ml_publish_body .ml-attr-required').filter(function() {
+                return $.trim($(this).val()) === '';
+            }).length;
+            $('#ml_publish_confirm').prop('disabled', mlPublishBlocked > 0 || emptyRequired > 0);
         }
 
         function mlRenderPublishPreview(response) {
             var body = (response && response.body) || {};
             var attributes = body.attributes || [];
-            var missing = body.missing_required_attributes || [];
-            var blocked = body.blocked_reasons || [];
+            var missing = response.missing_required_attributes || body.missing_required_attributes || [];
+            var blocked = response.blocked_reasons || body.blocked_reasons || [];
+            var categoryError = response.category_error || null;
             var html = '<dl class="dl-horizontal">'
-                + '<dt>Categoria</dt><dd>' + mlEscape(body.category_id || '-') + '</dd>'
+                + '<dt>Categoria</dt><dd>' + mlEscape(body.category_id || '-')
+                + (response.category_name ? ' — ' + mlEscape(response.category_name) : '')
+                + (response.category_path ? ' <small class="text-muted">' + mlEscape(response.category_path) + '</small>' : '')
+                + '</dd>'
                 + '<dt>Preço</dt><dd>' + (body.price !== undefined && body.price !== null ? 'R$ ' + Number(body.price).toFixed(2).replace('.', ',') : '-') + '</dd>'
                 + '<dt>Estoque</dt><dd>' + (body.available_quantity !== undefined && body.available_quantity !== null ? body.available_quantity : '-') + '</dd>'
                 + '<dt>Título</dt><dd>' + mlEscape(body.family_name || '') + '</dd>'
@@ -652,11 +684,32 @@ window._tutorialSteps = [
                 $.each(missing, function(index, attribute) {
                     var id = attribute.id || attribute;
                     var name = attribute.name || id;
+                    var vtype = attribute.value_type || '';
+                    var values = attribute.allowed_values || [];
+                    var field;
+                    if ((vtype === 'list' || vtype === 'boolean') && values.length) {
+                        field = '<select class="form-control input-sm ml-attr-input ml-attr-required" data-attr-id="' + mlEscape(id) + '" data-attr-kind="id"><option value=""></option>';
+                        $.each(values, function(i, v) {
+                            field += '<option value="' + mlEscape(v.id) + '">' + mlEscape(v.name) + '</option>';
+                        });
+                        field += '</select>';
+                    } else if (vtype === 'number_unit') {
+                        field = '<div class="input-group input-group-sm">'
+                            + '<input type="text" class="form-control input-sm ml-attr-input ml-attr-required" data-attr-id="' + mlEscape(id) + '" data-attr-kind="number_unit" placeholder="ex: 40">'
+                            + '<span class="input-group-addon" style="padding:0;"><select class="ml-attr-unit" style="border:0;background:transparent;height:100%;">'
+                            + '<option value="cm">cm</option><option value="mm">mm</option><option value="m">m</option><option value="in">pol</option>'
+                            + '</select></span></div>';
+                    } else {
+                        field = '<input type="text" class="form-control input-sm ml-attr-input ml-attr-required" data-attr-id="' + mlEscape(id) + '" data-attr-kind="name">';
+                    }
                     html += '<div class="form-group form-group-sm">'
                         + '<label style="display:block; font-weight:normal;">' + mlEscape(name) + ' <small class="text-muted">(' + mlEscape(id) + ')</small></label>'
-                        + '<input type="text" class="form-control input-sm ml-attr-input" data-attr-id="' + mlEscape(id) + '">'
+                        + field
                         + '</div>';
                 });
+            }
+            if (categoryError) {
+                html += '<p class="text-danger"><strong>' + mlEscape(categoryError) + '</strong></p>';
             }
             if (blocked.length) {
                 html += '<p class="text-danger"><strong>' + <?= json_encode(lang('Items.ml_blocked')) ?> + '</strong></p><ul style="margin:0 0 0 18px;">';
@@ -664,8 +717,11 @@ window._tutorialSteps = [
                 html += '</ul>';
             }
             $('#ml_publish_body').html(html);
-            $('#ml_publish_confirm').prop('disabled', blocked.length > 0);
+            mlPublishBlocked = blocked.length + (categoryError ? 1 : 0);
+            mlSyncPublishConfirm();
         }
+
+        $(document).on('input change', '#ml_publish_body .ml-attr-required', mlSyncPublishConfirm);
 
         $(document).on('load-success.bs.table', function() { mlDecorateRows(); });
 
@@ -703,7 +759,7 @@ window._tutorialSteps = [
                     message += ' <a href="' + mlEscape(payload.external_url) + '" target="_blank" rel="noopener">abrir anúncio</a>';
                 }
                 $('#ml_publish_body').prepend('<p class="text-danger">' + message + '</p>');
-                $button.prop('disabled', false);
+                mlSyncPublishConfirm();
             });
         });
 

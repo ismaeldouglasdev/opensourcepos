@@ -216,9 +216,28 @@ class MercadoLivre extends Secure_Controller
             }
 
             $id = strtoupper(trim((string) ($attribute['id'] ?? '')));
-            $value = trim((string) ($attribute['value_name'] ?? ''));
-            if (preg_match('/^[A-Z0-9_]{2,40}$/', $id) === 1 && $value !== '') {
-                $attributes[] = ['id' => $id, 'value_name' => $value];
+            $valueName = trim((string) ($attribute['value_name'] ?? ''));
+            $valueId = trim((string) ($attribute['value_id'] ?? ''));
+            $unit = trim((string) ($attribute['unit'] ?? ''));
+            if (preg_match('/^[A-Z0-9_]{2,40}$/', $id) !== 1) {
+                continue;
+            }
+
+            // ML attributes come in three shapes: free text (value_name),
+            // catalog/list/boolean picks (value_id) and measures
+            // (value_name + unit, e.g. WIDTH=40 cm).
+            $attr = ['id' => $id];
+            if ($valueId !== '') {
+                $attr['value_id'] = $valueId;
+            }
+            if ($valueName !== '') {
+                $attr['value_name'] = $valueName;
+            }
+            if ($unit !== '') {
+                $attr['unit'] = $unit;
+            }
+            if (count($attr) > 1) {
+                $attributes[] = $attr;
             }
         }
 
