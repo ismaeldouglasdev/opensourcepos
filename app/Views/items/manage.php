@@ -622,7 +622,10 @@ window._tutorialSteps = [
                 } else {
                     attr.value_name = value;
                     if (kind === 'number_unit') {
-                        attr.unit = $el.closest('.form-group').find('.ml-attr-unit').val() || 'cm';
+                        // ML rejeita value_name numérico + campo `unit`
+                        // separado (400 number_invalid_format) — o formato
+                        // aceito é "37 cm" dentro de value_name.
+                        attr.value_name = value + ' ' + ($el.closest('.form-group').find('.ml-attr-unit').val() || 'cm');
                     }
                 }
                 attributes.push(attr);

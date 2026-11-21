@@ -234,7 +234,13 @@ class MercadoLivre extends Secure_Controller
                 $attr['value_name'] = $valueName;
             }
             if ($unit !== '') {
-                $attr['unit'] = $unit;
+                // ML rejeita `unit` separado em atributos number_unit
+                // (400 number_invalid_format) — formato aceito é "37 cm".
+                if ($valueName !== '' && is_numeric($valueName)) {
+                    $attr['value_name'] = $valueName . ' ' . $unit;
+                } else {
+                    $attr['unit'] = $unit;
+                }
             }
             if (count($attr) > 1) {
                 $attributes[] = $attr;
