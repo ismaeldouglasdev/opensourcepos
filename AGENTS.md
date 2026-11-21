@@ -391,3 +391,127 @@ nos CSVs locais (`/home/ismael/relatorio-vendas-2026/`) e no celular do dono.
 **Envio ao celular:** `adb connect` no IP Tailscale do aparelho (porta de
 wireless debugging) + `adb push` dos 4 CSVs para `/sdcard/Download/`. Funciona com
 o celular na mesma tailnet.
+
+---
+
+## Session Context (2026-11-16)
+
+### Publicação manual das 11 variações de chinelo DAY FEM no ML
+
+Família `CHINELO IPANEMA DAY FEM` = 4 pais de variação (10646 BEGE/VERMELHO,
+10647 PRETO/LARANJA, 10648 BEGE/ROSA, 10649 PRETO/VERMELHO) × 21 filhos. Em
+14/nov de manhã: 8 anúncios ML existentes foram **linkados** via
+`POST /v1/mercadolivre/link` (seller_custom_field ← item_id) e CBP7B publicado
+via `/v1/mercadolivre/publish`. Restavam **11 filhos sem anúncio** — publicados
+manualmente nesta sessão com `dry_run=false` + PUT de preço:
+
+| sku | item | tamanho ML | anúncio |
+|---|---|---|---|
+| SVPJC | 10629 | Preto/vermelho 35 | MLB8004331982 |
+| W2XJR | 10631 | Preto/vermelho 34 | MLB8004332092 |
+| 5MQZ7 | 10632 | Bege/rosa 36 | MLB5568351697 |
+| VYGEQ | 10633 | Bege/rosa 35 | MLB5568351799 |
+| A2UBM | 10634 | Bege/rosa 34 | MLB8004364394 |
+| KAQ85 | 10638 | Preto/laranja 36 | MLB8004364506 |
+| Z5J8T | 10639 | Preto/laranja 35 | MLB8004332624 |
+| YBTE7 | 10640 | Preto/laranja 34 | MLB8004364710 |
+| VQZ72 | 10643 | Bege/vermelho 36 | MLB5568364081 |
+| N2RCK | 10644 | Bege/vermelho 35 | MLB8004332886 |
+| SBH2T | 10645 | Bege/vermelho 34 | MLB5568352535 |
+
+**Template que funciona (espelha o evento `product.created` do CBP7B):**
+`category_id=MLB273770`, `listing_type_id=gold_pro`, `condition=new`,
+`price=<base>`, pictures `[child, parent]` (paths absolutos do OSPOS),
+attributes: BRAND=Ipanema, MODEL=IPANEMA DAY FEM, COLOR=1ª cor capitalizada,
+FOOTWEAR_TYPE=Chinelo, GENDER=Sem gênero, ITEM_CONDITION=Novo,
+SIZE="{n} BR", SIZE_GRID_ID=**2568816**, SIZE_GRID_ROW_ID=**2568816:{row}**,
+SELLER_PACKAGE_* (29/6/21 cm, 410 g), WARRANTY_TYPE=Sem garantia.
+
+**ARMADILHAS desta entrega:**
+1. **`price` do request é a BASE, não o preço final** — o adapter aplica
+   `compute_ml_price` (base×1.4 → `.99`). Para preço final redondo foi preciso
+   `PUT /items/{id} {"price": 40}` depois do publish. Os 9 anúncios antigos
+   estão a R$40,00 exatos — os 11 novos também (39,99 → PUT 40,00).
+2. **SIZE_GRID_ROW_ID:** a grade `2568816` ("Tamanhos Havaianas",
+   `GET /catalog/charts/2568816`) cobre 33–45 BR: 33→:1, 34→:2, 35→:3, 36→:4,
+   37→:5, 38→:6, 39→:7, 40→:8. Tamanho OSPOS "33/34"→ML "34", "37/38"→"38",
+   "39/40"→"40" (limite superior). Sem esses atributos o ML responde 400
+   (SIZE_GRID_ID/SIZE_GRID_ROW_ID missing — erros das 13:46/13:48).
+3. **Título ML** segue o padrão da família: `Chinelo Ipanema Day Fem
+   {Cor1}/{cor2} {Cor1} {size} Br` — NÃO o nome cru do OSPOS.
+4. **Gate:** `ML_MIN_PUBLISH_STOCK` estava em 1 (baixado nesta sessão); os 422
+   de 14:03–14:04 foram publish com `stock_quantity=0`. Após publicar, gate
+   **restaurado para 2** + `inventory.service` reiniciado.
+5. **`Items::publishToML`/`channelSingleAction`/`channelBulkAction` são código
+   morto com bug latente:** enviam `{ospos_item_id, dry_run}` mas
+   `ChannelPublishRequest` exige `sku/title/price` → sempre 422. Nenhuma view
+   chama esses endpoints (o publish real é `.ml-publish-btn` em `/items` →
+   `MercadoLivre::postPublish`, que monta o payload completo). Não corrigido —
+   sem chamador na UI; se um dia ligar botão no `/channels`, reusar a lógica
+   do `MercadoLivre::postPublish`.
+
+### "Erro em /channels" — verificado: já estava corrigido
+
+- `js-errors.log` tinha `f is not a function`/`formatLoadingMessage` de
+  11–12/nov, todos via PJAX (`nav-cache.js` eval). O fix `7bc20628d`
+  (exclui `/channels` do swap PJAX, 14/nov 15:54) + os fixes de busca de
+  15/nov resolveram. Playwright hoje: `/channels` 200, 25 linhas, **0
+  pageerror/console error**, carga direta e via menu.
+- `/channels` é **somente leitura** (busca + filtros + grid); não tem botão de
+  publicar — publish é em `/items` (modal `ml_publish_modal`).
+
+---
+
+## Session Context (2026-11-16, parte 2) — Micro-animações do PDV + polish do recibo
+
+### PDV (`app/Views/sales/register.php` + `public/css/modern.css`)
+
+Micro-feedback visual no fluxo AJAX do carrinho (nada de reload — as classes
+são aplicadas DEPOIS de `posApplyCartFragments`/`posSubmitRow` re-renderizarem
+os fragmentos, senão morrem com o HTML antigo):
+
+- `posFlashCartRow(line, cls)` + `posPulseTotal()` — helpers no register.php.
+- **Add de item** (`posAjaxAdd` success, `res.success && res.added_line != null`):
+  linha ganha `pos-flash-add` → keyframe `posCartFlashAdd` (verde #bbf7d0 →
+  transparente, 1.1s) + `posCartPop` na `.cart-product-cell` + `posImgSettle`
+  na foto + pulso verde no `#sale_total`. Cobre item novo E merged (soma de
+  quantidade) — o `added_line` vem do `addAjax` nos dois casos.
+- **Edição de linha** (`posSubmitRow` success — qty +/-, preço, desconto):
+  `pos-flash-edit` (azul #dbeafe, 0.7s) + pulso no total.
+- Steppers `.qty-minus`/`.qty-plus`: `:active` com scale(0.88) + fundo verde.
+- `.payment-list button` (checkout): hover lift + `:active` scale(0.98).
+- `@media (prefers-reduced-motion: reduce)` desliga tudo.
+- Reflow (`void el.offsetWidth`) antes de re-adicionar a classe reinicia a
+  animação quando a mesma linha é adicionada/editada de novo.
+
+### Recibo (`/sales/receipt/{id}`) — "visual de cupom" na tela
+
+O recibo esticava 1366px de largura com fonte 22px — ilegível. Agora, **só em
+`@media screen`** (impressão intacta):
+
+- `#receipt_wrapper` vira "papel" centralizado: `max-width: 620px`, fundo
+  branco, borda, radius 6px, sombra, `font-family: Courier New`.
+- Banner de sucesso e `#control_buttons` alinhados à mesma coluna (620px);
+  botões com `border-radius: 20px`.
+- `#receipt_header`/`#receipt_general_info` com separadores `dashed`;
+  `#sale_receipt` em caps com letter-spacing.
+- `#receipt_items th` em caps pequeno; preço/qtd/total à direita **só em
+  linhas com 4 células** (`tr:has(> td:nth-child(4))` — não pega as linhas de
+  descrição/desconto com colspan).
+- Linha do total ganhou classe `receipt-total-row` em `receipt_default.php` e
+  `receipt_short.php` → bold 1.15em + border-top forte (só na tela).
+- `#sale_return_policy` com separador tracejado.
+
+### Verificação e deploy
+
+- `php -l` OK; JS extraído com `<?=`→placeholder passa `node --check`.
+- Playwright em teste (8080): add via autocomplete → `tr` com `pos-flash-add`,
+  animações `posCartFlashAdd`/`posCartPop` rodando, 0 pageerrors. Recibo:
+  wrapper 620px centralizado (x=373 em 1366), total-row bold, 0 erros.
+  Screenshots: `qa-evidence/receipt-{before,after}-20261116.png`,
+  `register-flash-20261116.png`. Script: `/tmp/opencode/verify_ux.py`.
+- Deploy: `sudo cp` dos 4 arquivos (register.php, receipt_default.php,
+  receipt_short.php, modern.css) para pos-test **e** pos + `chown
+  www-data:www-data` + `systemctl restart apache2` (opcache
+  `validate_timestamps=0`). md5 ×3 conferidos; smoke login/css 200.
+- **NÃO commitado** (commits só sob pedido do dono).

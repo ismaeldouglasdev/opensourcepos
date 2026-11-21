@@ -69,17 +69,18 @@ if (isset($error_message)) {
 
 <?= view('partial/print_receipt', ['print_after_sale' => $print_after_sale, 'selected_printer' => 'receipt_printer']) ?>
 
-<div class="print_hide receipt-success-banner" style="text-align:center; padding:16px 12px; background:linear-gradient(135deg,#e8f5e9,#f1f8e9); border:1px solid #a5d6a7; border-radius:10px; margin-bottom:14px;">
-    <div style="font-size:22px; color:#2e7d32; font-weight:700; margin-bottom:4px;">
+<div id="receipt_topbar" class="print_hide">
+<div class="receipt-success-banner">
+    <div class="rsb-title">
         <span class="glyphicon glyphicon-ok-circle"></span> Venda finalizada com sucesso
     </div>
-    <div style="font-size:14px; color:#558b2f;">
-        Redirecionando para nova venda em <strong id="redirect-counter">5</strong>s
-        <button id="cancel-redirect" class="btn btn-default btn-xs" style="margin-left:12px;">Cancelar</button>
+    <div class="rsb-sub">
+        Nova venda em <strong id="redirect-counter">5</strong>s
+        <button id="cancel-redirect" class="btn btn-default btn-xs">Cancelar</button>
     </div>
 </div>
 
-<div class="print_hide" id="control_buttons" style="text-align: center; margin-bottom:14px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+<div id="control_buttons">
     <?php
     // Mensagem do cupom pronta para WhatsApp: resumo da venda montado no
     // servidor (wa.me sem número deixa o operador escolher o contato —
@@ -100,8 +101,8 @@ if (isset($error_message)) {
         . 'Total: ' . to_currency($total) . "\n"
         . 'Obrigado pela preferência!';
     ?>
-    <a href="javascript:void(0);" id="send_whatsapp_button">
-        <button class="btn btn-success btn-sm print_hide"><span class="glyphicon glyphicon-phone">&nbsp;</span> Enviar cupom por WhatsApp</button>
+    <a href="javascript:void(0);" id="send_whatsapp_button" title="Enviar cupom por WhatsApp">
+        <button class="btn btn-success btn-sm print_hide"><span class="glyphicon glyphicon-phone">&nbsp;</span> Cupom WhatsApp</button>
     </a>
     <script>
         $(document).ready(function() {
@@ -140,6 +141,7 @@ if (isset($error_message)) {
     if ($employee->has_grant('reports_sales', session('person_id'))): ?>
         <?= anchor('sales/manage', '<span class="glyphicon glyphicon-list-alt">&nbsp;</span>' . lang('Sales.takings'), ['class' => 'btn btn-info btn-sm', 'id' => 'show_takings_button']) ?>
     <?php endif; ?>
+</div>
 </div>
 
 <?= view('sales/' . $config['receipt_template']) ?>

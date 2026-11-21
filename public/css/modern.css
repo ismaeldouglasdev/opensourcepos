@@ -3503,49 +3503,10 @@ body {
 }
 
   /* ===================================================================
-     Modo Simples de venda (tarefa 7 do plano simplificar-fluxo-venda-pdv)
-     Tudo aqui fica preso em .simple-mode. O wrapper #register_wrapper ganha
-     a classe simple-mode, e nenhuma regra deste bloco existe fora dela — e
-     por isso que o Modo Completo nao muda. Para conferir: em modo completo,
-     o getBoundingClientRect do campo de busca e o placeholder tem de ser
-     exatamente o baseline.
-     =================================================================== */
-
-  .simple-mode #item {
-      min-height: 56px;
-      font-size: 22px;
-      border-width: 2px;
-  }
-
-  .simple-mode .simple-mode-hint {
-      display: block;
-      margin: 4px 0 0;
-      color: #556;
-      font-size: 15px;
-      line-height: 1.3;
-  }
-
-  /* Alvos de toque maiores nas linhas do carrinho: quem opera noModo Simples
-     precisa acertar a linha sem mirar. Medido em px, nao em rem, para nao
-     depender da raiz escalada. */
-  .simple-mode #register tbody tr {
-      height: 44px;
-  }
-
-  .simple-mode #register tbody td {
-      padding-top: 6px;
-      padding-bottom: 6px;
-  }
-
-  .simple-mode #register tbody tr td .form-control {
-      min-height: 36px;
-  }
-
-  /* ===================================================================
      Desconto na area do carrinho (tarefa 8 do plano simplificar-fluxo-venda-pdv)
      A secao saiu do modal de pagamento e passou para baixo dos totais. Esta
-     CSS e GLOBAL de proposito: o plano exige que o desconto funcione nos DOIS
-     modos, entao nao pode ficar presa em .simple-mode.
+     CSS e global de proposito: o desconto vale para qualquer venda, nos dois
+     fluxos que existiram durante a migracao.
      =================================================================== */
 
   .cart-discount-section {
@@ -3576,109 +3537,6 @@ body {
       min-width: 200px;
       width: auto !important;
       font-size: 14px;
-  }
-
-  /* ===================================================================
-     Modal de pagamento enxuto no Modo Simples (tarefa 9 do plano
-     simplificar-fluxo-venda-pdv)
-     Tudo preso em .simple-mode: o plano exige que o Modo Completo fique
-     byte-a-byte igual, entao nenhuma regra daqui pode escapar.
-     =================================================================== */
-
-  /* (d) O modal ja se chama FINALIZAR no botao do rodape; repetir "FINALIZAR
-     VENDA" no cabecaco e redundancia. Some so o titulo — o X de fechar
-     continua, senao nao ha como sair sem finalizar. */
-  .simple-mode #checkoutModal .modal-header .modal-title {
-      display: none;
-  }
-
-  .simple-mode #checkoutModal .modal-header {
-      padding: 4px 15px !important;
-      min-height: 0;
-  }
-
-  /* (b) Dinheiro e PIX em primeira linha, grandes. Os outros ficam abaixo,
-     com um rotulo que explica o que sao, em vez de so tres botoes soltos. */
-  .simple-mode #checkoutModal .payment-list.simple-primary {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
-  }
-
-  .simple-mode #checkoutModal .payment-list.simple-primary .payment-btn {
-      flex: 1 1 0;
-      min-height: 68px;
-      font-size: 22px;
-      font-weight: 600;
-      border-radius: 8px;
-      margin: 0;
-  }
-
-  .simple-mode #checkoutModal .simple-secondary-label {
-      margin: 4px 0 6px;
-      text-align: center;
-      font-size: 14px;
-      color: #666;
-  }
-
-  .simple-mode #checkoutModal .payment-list.simple-secondary {
-      display: flex;
-      gap: 8px;
-  }
-
-  .simple-mode #checkoutModal .payment-list.simple-secondary .payment-btn {
-      flex: 1 1 0;
-      min-height: 52px;
-      font-size: 17px;
-      border-radius: 6px;
-      margin: 0;
-  }
-
-  /* ===================================================================
-     Venda de outro dia na barra do carrinho (tarefa 10 do plano
-     simplificar-fluxo-venda-pdv)
-     Este e o par da regra que a tarefa 9 deixou sem uso: antes a data do
-     modal era escondida por CSS no Modo Simples; agora ela e renderizada
-     condicionalmente em PHP, entao aquela regra virou codigo morto e sai
-     junto (abaixo).
-     =================================================================== */
-
-  .simple-mode .cart-sale-date {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin: 8px 0;
-      padding: 8px 10px;
-      background: #f5f5f5;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-  }
-
-  .simple-mode .cart-sale-date label {
-      margin: 0;
-      font-weight: 600;
-      font-size: 15px;
-      white-space: nowrap;
-  }
-
-  .simple-mode .cart-sale-date input {
-      width: auto;
-      min-width: 160px;
-      min-height: 44px;
-      font-size: 16px;
-      text-align: center;
-  }
-
-  /* ===================================================================
-     Botao de troco do Modo Simples
-     Fica fora do caminho de um toque de proposito: a maioria das vendas nao
-     tem troco. So aparece no Modo Simples e so ocupa o modal.
-     =================================================================== */
-
-  .simple-mode #checkoutModal .simple-troco-btn {
-      margin-top: 10px;
-      min-height: 44px;
-      font-size: 16px;
   }
 
   /* ===================================================================
@@ -4204,3 +4062,74 @@ body#receipt #barcode img {
           padding: 4px 8px;
       }
   }
+
+/* ============================================
+   PRIVACIDADE DE VALORES (botão de olho no topo)
+   ============================================ */
+#fin_privacy_toggle {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0 10px 0 0;
+    padding: 1px 9px;
+    font-size: 17px;
+    line-height: 1.35;
+    color: var(--os-topbar-text);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color var(--os-transition), color var(--os-transition);
+}
+
+#fin_privacy_toggle:hover,
+#fin_privacy_toggle:focus {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.2);
+    outline: none;
+}
+
+#fin_privacy_toggle:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 1px;
+}
+
+#fin_privacy_toggle.is-on {
+    color: var(--os-topbar-bg);
+    background: #fff;
+    border-color: #fff;
+}
+
+/* O recibo é documento do cliente: nunca censura. */
+body#receipt #fin_privacy_toggle {
+    display: none;
+}
+
+html.fin-privacy .fin-censored {
+    filter: blur(9px);
+    -webkit-filter: blur(9px);
+    user-select: none;
+    -webkit-user-select: none;
+    pointer-events: none;
+}
+
+.fin-censored {
+    display: inline-block;
+    vertical-align: baseline;
+    transition: filter 0.12s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fin-censored {
+        transition: none;
+    }
+}
+
+/* Conteúdo fica invisível até o scanner embrulhar os valores: sem isso o
+   número aparece sem blur por um frame ao entrar/sair da página. */
+html.fin-privacy.fin-privacy-pending .wrapper {
+    visibility: hidden;
+}
+
+html.fin-privacy-skip #fin_privacy_toggle {
+    display: none;
+}

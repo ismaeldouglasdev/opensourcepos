@@ -37,90 +37,54 @@ class Home extends Secure_Controller
         // dashboard totals consistent with sales/manage even when a sale is underpaid.
         $pay_amount = "IFNULL({$p}sales_payments.payment_amount, 0) - IFNULL({$p}sales_payments.cash_refund, 0)";
 
-        // 1. Today's sales total
+        $today = date('Y-m-d');
+        $tomorrow = date('Y-m-d', strtotime('+1 day'));
+        $yesterday = date('Y-m-d', strtotime('-1 day'));
+        $week_start = date('Y-m-d', strtotime('monday this week'));
+        $month_start = date('Y-m-01');
+        $agg_start = min($month_start, $week_start, $yesterday) . ' 00:00:00';
+
+        // 1..4. Today, returns, yesterday, week and month in a single scan.
+        // Ranges on sale_time use the index; DATE()/YEARWEEK()/MONTH() do not.
         $builder = $this->db->table('sales_payments');
-        $builder->select("ROUND(SUM($pay_amount), $decimals) AS total");
+        $builder->select("ROUND(SUM(CASE WHEN {$p}sales.sale_time >= '$today' THEN $pay_amount ELSE 0 END), $decimals) AS today_total,
+            ROUND(SUM(CASE WHEN {$p}sales.sale_time >= '$today' AND {$p}sales_payments.payment_amount < 0 THEN $pay_amount ELSE 0 END), $decimals) AS today_returns,
+            ROUND(SUM(CASE WHEN {$p}sales.sale_time >= '$yesterday' AND {$p}sales.sale_time < '$today' THEN $pay_amount ELSE 0 END), $decimals) AS yesterday_total,
+            ROUND(SUM(CASE WHEN {$p}sales.sale_time >= '$week_start' THEN $pay_amount ELSE 0 END), $decimals) AS week_total,
+            ROUND(SUM(CASE WHEN {$p}sales.sale_time >= '$month_start' THEN $pay_amount ELSE 0 END), $decimals) AS month_total", false);
         $builder->join('sales', 'sales.sale_id = sales_payments.sale_id');
         $builder->where('sales.sale_status', COMPLETED);
         $builder->where('sales_payments.payment_amount !=', 0);
-        $builder->where("DATE({$p}sales.sale_time)", date('Y-m-d'));
+        $builder->where('sales.sale_time >=', $agg_start);
         $row = $builder->get()->getRow();
-        $data['today_sales'] = (float)($row->total ?? 0);
+        $data['today_sales'] = (float)($row->today_total ?? 0);
+        $data['today_returns'] = abs((float)($row->today_returns ?? 0));
+        $data['yesterday_sales'] = (float)($row->yesterday_total ?? 0);
+        $data['week_sales'] = (float)($row->week_total ?? 0);
+        $data['month_sales'] = (float)($row->month_total ?? 0);
 
-        // 1b. Returns/refunds registered today. The totals above already net
-        // them out (payment_amount < 0 subtracts), but the operator needs to
-        // see HOW MUCH came back — a day of R$ 0 in sales may mean "nothing
-        // sold" or "everything was returned", and those are different days.
-        $builder = $this->db->table('sales_payments');
-        $builder->select("ROUND(SUM($pay_amount), $decimals) AS total");
-        $builder->join('sales', 'sales.sale_id = sales_payments.sale_id');
-        $builder->where('sales.sale_status', COMPLETED);
-        $builder->where('sales_payments.payment_amount <', 0);
-        $builder->where("DATE({$p}sales.sale_time)", date('Y-m-d'));
-        $row = $builder->get()->getRow();
-        $data['today_returns'] = abs((float)($row->total ?? 0));
 
         // 1c. Number of sales (transactions) today — count of COMPLETED sales.
-        // The "Vendas Hoje" card shows the R$ total; the operator also wants
-        // to know HOW MANY sales made up that total.
         $builder = $this->db->table('sales');
         $builder->select("COUNT({$p}sales.sale_id) AS count");
         $builder->where('sales.sale_status', COMPLETED);
-        $builder->where("DATE({$p}sales.sale_time)", date('Y-m-d'));
+        $builder->where('sales.sale_time >=', $today . ' 00:00:00');
+        $builder->where('sales.sale_time <', $tomorrow . ' 00:00:00');
         $row = $builder->get()->getRow();
         $data['sales_count_today'] = (int)($row->count ?? 0);
 
-        // 2. Yesterday's sales total
-        $builder = $this->db->table('sales_payments');
-        $builder->select("ROUND(SUM($pay_amount), $decimals) AS total");
-        $builder->join('sales', 'sales.sale_id = sales_payments.sale_id');
-        $builder->where('sales.sale_status', COMPLETED);
-        $builder->where('sales_payments.payment_amount !=', 0);
-        $builder->where("DATE({$p}sales.sale_time)", date('Y-m-d', strtotime('-1 day')));
-        $row = $builder->get()->getRow();
-        $data['yesterday_sales'] = (float)($row->total ?? 0);
 
-        // 3. This week's sales total
-        $builder = $this->db->table('sales_payments');
-        $builder->select("ROUND(SUM($pay_amount), $decimals) AS total");
-        $builder->join('sales', 'sales.sale_id = sales_payments.sale_id');
-        $builder->where('sales.sale_status', COMPLETED);
-        $builder->where('sales_payments.payment_amount !=', 0);
-        $builder->where("YEARWEEK({$p}sales.sale_time, 1)", 'YEARWEEK(CURDATE(), 1)', false);
-        $row = $builder->get()->getRow();
-        $data['week_sales'] = (float)($row->total ?? 0);
 
-        // 4. This month's sales total
-        $builder = $this->db->table('sales_payments');
-        $builder->select("ROUND(SUM($pay_amount), $decimals) AS total");
-        $builder->join('sales', 'sales.sale_id = sales_payments.sale_id');
-        $builder->where('sales.sale_status', COMPLETED);
-        $builder->where('sales_payments.payment_amount !=', 0);
-        $builder->where("MONTH({$p}sales.sale_time)", date('m'));
-        $builder->where("YEAR({$p}sales.sale_time)", date('Y'));
-        $row = $builder->get()->getRow();
-        $data['month_sales'] = (float)($row->total ?? 0);
 
-        // 5. Items sold today (distinct items count)
+        // 5. Items sold today + estimated profit in a single pass.
         $builder = $this->db->table('sales_items');
-        $builder->select("COUNT(DISTINCT {$p}sales_items.item_id) AS count");
+        $builder->select("COUNT(DISTINCT {$p}sales_items.item_id) AS count, ROUND(SUM($sale_price) - SUM({$p}sales_items.quantity_purchased * {$p}sales_items.item_cost_price), $decimals) AS profit", false);
         $builder->join('sales', 'sales.sale_id = sales_items.sale_id');
         $builder->where('sales.sale_status', COMPLETED);
-        $builder->where("DATE({$p}sales.sale_time)", date('Y-m-d'));
+        $builder->where('sales.sale_time >=', $today . ' 00:00:00');
+        $builder->where('sales.sale_time <', $tomorrow . ' 00:00:00');
         $row = $builder->get()->getRow();
         $data['items_sold_today'] = (int)($row->count ?? 0);
-
-        // 5b. Lucro estimado do dia: receita por item (mesma expressão do top
-        // items, que respeita discount_type) menos o custo SNAPSHOT gravado na
-        // venda (sales_items.item_cost_price). Base por item, não por
-        // pagamento: devoluções (pagamentos negativos) NÃO são descontadas
-        // aqui — por isso o card se rotula "estimado".
-        $builder = $this->db->table('sales_items');
-        $builder->select("ROUND(SUM($sale_price) - SUM({$p}sales_items.quantity_purchased * {$p}sales_items.item_cost_price), $decimals) AS profit");
-        $builder->join('sales', 'sales.sale_id = sales_items.sale_id');
-        $builder->where('sales.sale_status', COMPLETED);
-        $builder->where("DATE({$p}sales.sale_time)", date('Y-m-d'));
-        $row = $builder->get()->getRow();
         $data['today_profit'] = (float)($row->profit ?? 0);
 
         // 6. Top 5 items this week
@@ -129,7 +93,7 @@ class Home extends Secure_Controller
         $builder->join('sales', 'sales.sale_id = sales_items.sale_id');
         $builder->join('items', 'items.item_id = sales_items.item_id');
         $builder->where('sales.sale_status', COMPLETED);
-        $builder->where("YEARWEEK({$p}sales.sale_time, 1)", 'YEARWEEK(CURDATE(), 1)', false);
+        $builder->where('sales.sale_time >=', $week_start . ' 00:00:00');
         $builder->groupBy('sales_items.item_id');
         $builder->orderBy('qty', 'DESC');
         $builder->limit(5);
@@ -153,18 +117,15 @@ class Home extends Secure_Controller
         $row = $builder->get()->getRow();
         $data['pending_receivables'] = (float)($row->total ?? 0);
 
-        // Stock alert count for badge in header
-        $item_quantity = model(Item_quantity::class);
-        $data['stock_alert_count'] = $item_quantity->get_stock_alert_count();
-
-        // 8b. Inventory value at cost — how much money is sitting on the shelves.
+        // 8b. Inventory value at cost + stock alert count in a single pass.
         $builder = $this->db->table('item_quantities');
-        $builder->select("ROUND(SUM({$p}item_quantities.quantity * {$p}items.cost_price), 2) AS total");
+        $builder->select("ROUND(SUM({$p}item_quantities.quantity * {$p}items.cost_price), 2) AS total, SUM(CASE WHEN {$p}item_quantities.stock_status IN (" . Item_quantity::STOCK_ZERADO . ', ' . Item_quantity::STOCK_IRREGULAR . ') THEN 1 ELSE 0 END) AS alerts', false);
         $builder->join('items', 'items.item_id = item_quantities.item_id');
         $builder->where('items.deleted', 0);
         $builder->where('items.stock_type', HAS_STOCK);
         $row = $builder->get()->getRow();
         $data['stock_value'] = (float)($row->total ?? 0);
+        $data['stock_alert_count'] = (int)($row->alerts ?? 0);
 
         // 8c. Items priced below cost — every sale of these is a loss until repriced.
         // Same conditions as the below_cost filter in Item::search().
@@ -186,10 +147,11 @@ class Home extends Secure_Controller
         $builder->whereIn('items.item_type', [ITEM, ITEM_KIT, ITEM_AMOUNT_ENTRY]);
         $builder->where('EXISTS (SELECT 1 FROM ' . $this->db->prefixTable('item_quantities') . ' iq2'
             . " WHERE iq2.item_id = {$p}items.item_id AND iq2.quantity > 0)", null, false);
-        $builder->where('NOT EXISTS (SELECT 1 FROM ' . $this->db->prefixTable('sales_items') . ' si'
+        $builder->join('(SELECT DISTINCT si.item_id FROM ' . $this->db->prefixTable('sales_items') . ' si'
             . ' JOIN ' . $this->db->prefixTable('sales') . ' s ON s.sale_id = si.sale_id'
-            . " WHERE si.item_id = {$p}items.item_id AND s.sale_status = " . COMPLETED
-            . ' AND s.sale_time >= DATE_SUB(NOW(), INTERVAL 90 DAY))', null, false);
+            . ' WHERE s.sale_status = ' . COMPLETED
+            . ' AND s.sale_time >= DATE_SUB(NOW(), INTERVAL 90 DAY)) mv', "mv.item_id = {$p}items.item_id", 'left');
+        $builder->where('mv.item_id IS NULL', null, false);
         $row = $builder->get()->getRow();
         $data['no_movement_count'] = (int)($row->count ?? 0);
 
@@ -206,7 +168,8 @@ class Home extends Secure_Controller
         $builder->join('sales', 'sales.sale_id = sales_payments.sale_id');
         $builder->where('sales.sale_status', COMPLETED);
         $builder->where('sales_payments.payment_amount !=', 0);
-        $builder->where("DATE({$p}sales.sale_time)", date('Y-m-d'));
+        $builder->where('sales.sale_time >=', $today . ' 00:00:00');
+        $builder->where('sales.sale_time <', $tomorrow . ' 00:00:00');
         $builder->groupBy("HOUR({$p}sales.sale_time)");
         $builder->orderBy('hour', 'ASC');
         $hourly_result = $builder->get()->getResult();
@@ -352,8 +315,8 @@ class Home extends Secure_Controller
         $handle = curl_init($baseUrl . '/v1/channels/today-counts');
         curl_setopt_array($handle, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CONNECTTIMEOUT => 3,
-            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_CONNECTTIMEOUT => 1,
+            CURLOPT_TIMEOUT        => 3,
             CURLOPT_HTTPHEADER     => ['X-API-Key: ' . $apiKey, 'Accept: application/json'],
         ]);
         $body = curl_exec($handle);

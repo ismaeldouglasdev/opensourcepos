@@ -125,7 +125,7 @@
         <tr></tr>
 
         <?php $border = (!$config['receipt_show_taxes'] && !($config['receipt_show_total_discount'] && $discount > 0)); ?>
-        <tr>
+        <tr class="receipt-total-row">
             <td colspan="3" style="text-align: right;<?= $border ? ' border-top: 2px solid black;' : '' ?>"><?= lang('Sales.total') ?></td>
             <td style="text-align: right;<?= $border ? ' border-top: 2px solid black;' : '' ?>"><?= to_currency($total) ?></td>
         </tr>
@@ -141,9 +141,10 @@
             $only_sale_check |= $payment['payment_type'] == lang('Sales.check');
             $splitpayment = explode(':', $payment['payment_type']);    // TODO: The variable splitpayment does not follow naming conventions for this project
             $show_giftcard_remainder |= $splitpayment[0] == lang('Sales.giftcard');
+            $installments_label = (($payment['installments'] ?? 1) > 1) ? ' (' . (int)$payment['installments'] . 'x)' : '';
         ?>
             <tr>
-                <td colspan="3" style="text-align: right;"><?= esc($splitpayment[0], 'html') ?> </td>
+                <td colspan="3" style="text-align: right;"><?= esc($splitpayment[0], 'html') . $installments_label ?> </td>
                 <td class="total-value"><?= to_currency($payment['payment_amount'] * -1) ?></td>
             </tr>
         <?php } ?>

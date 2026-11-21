@@ -13,10 +13,7 @@
 
     // Selectors for main navigation links (catch-all; exclusion is done below
     // by path so a catch-all selector can never re-include an excluded page)
-    var navSelectors = [
-        '.nav.navbar-nav a[href]',
-        '.simple-mode-toggle a[href]'
-    ].join(', ');
+    var navSelectors = '.nav.navbar-nav a[href]';
 
     // Pages that must ALWAYS do a full browser reload: they use bootstrap-table
     // / complex inline JS whose initialization does not survive a nav-cache

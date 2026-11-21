@@ -214,6 +214,83 @@ button[disabled]#btn_finalizar_venda { opacity: 0.55; }
     color: var(--os-text-light, #9ca3af) !important;
     font-size: 14px !important;
 }
+
+/* ---- Micro-animacoes do carrinho ---- */
+/* Linha recem-adicionada: flash verde que esmaece (feedback de "caiu no carrinho"). */
+@keyframes posCartFlashAdd {
+    0%   { background-color: #bbf7d0; }
+    60%  { background-color: #dcfce7; }
+    100% { background-color: transparent; }
+}
+#cart_contents tr.pos-flash-add > td {
+    animation: posCartFlashAdd 1.1s ease-out;
+}
+/* Edicao de linha (qtd/preco/desconto): flash azul bem sutil. */
+@keyframes posCartFlashEdit {
+    0%   { background-color: #dbeafe; }
+    100% { background-color: transparent; }
+}
+#cart_contents tr.pos-flash-edit > td {
+    animation: posCartFlashEdit 0.7s ease-out;
+}
+/* Pop na entrada da linha (scale sutil na celula do produto). */
+@keyframes posCartPop {
+    0%   { transform: scale(0.985); }
+    50%  { transform: scale(1.005); }
+    100% { transform: scale(1); }
+}
+#cart_contents tr.pos-flash-add > td.cart-product-cell {
+    animation: posCartPop 0.35s ease-out, posCartFlashAdd 1.1s ease-out;
+}
+/* Foto do produto "assenta" com um zoom suave ao entrar. */
+@keyframes posImgSettle {
+    0%   { transform: scale(0.92); opacity: 0.6; }
+    100% { transform: scale(1);    opacity: 1; }
+}
+#cart_contents tr.pos-flash-add .cart-item-img-big img {
+    animation: posImgSettle 0.3s ease-out;
+}
+/* Steppers de quantidade: press feedback imediato. */
+.qty-stepper .qty-minus:active,
+.qty-stepper .qty-plus:active {
+    transform: scale(0.88);
+    background: #16a34a;
+    color: #fff;
+    border-color: #16a34a;
+}
+.qty-stepper .qty-minus,
+.qty-stepper .qty-plus {
+    transition: transform 0.08s ease, background 0.12s ease, color 0.12s ease;
+}
+/* Total pisca de leve quando muda apos add/edicao. */
+@keyframes posTotalPulse {
+    0%   { color: #16a34a; transform: scale(1.06); }
+    100% { color: inherit;       transform: scale(1); }
+}
+#sale_total.pos-total-pulse,
+.payment_total.pos-total-pulse {
+    animation: posTotalPulse 0.5s ease-out;
+    display: inline-block;
+}
+/* Hover lift nos botoes de pagamento do checkout (micro-interacao). */
+.payment-list button { transition: transform 0.08s ease, box-shadow 0.12s ease; }
+.payment-list button:hover { transform: translateY(-1px); box-shadow: 0 2px 5px rgba(0,0,0,0.18); }
+.payment-list button:active { transform: translateY(0) scale(0.98); }
+
+@media (prefers-reduced-motion: reduce) {
+    #cart_contents tr.pos-flash-add > td,
+    #cart_contents tr.pos-flash-edit > td,
+    #cart_contents tr.pos-flash-add .cart-item-img-big img,
+    #sale_total.pos-total-pulse,
+    .payment_total.pos-total-pulse {
+        animation: none !important;
+    }
+    .qty-stepper .qty-minus,
+    .qty-stepper .qty-plus,
+    .payment-list button {
+        transition: none !important;
+    }
+}
 </style>
 
 <style>
@@ -237,10 +314,7 @@ if (isset($success)) {
 }
 ?>
 
-<!-- Tarefa 7 do plano simplificar-fluxo-venda-pdv. A classe 'simple-mode' e o
-     unico gancho que o CSS e o JS consultam: TODA regra do Modo Simples fica
-     presa nela, entao o Modo Completo nao tem como mudar por acidente. -->
-<div id="register_wrapper" class="<?= ! empty($simpleMode) ? 'simple-mode' : '' ?>">
+<div id="register_wrapper">
 
     <!-- Top register controls -->
     <?= form_open("$controller_name/changeMode", ['id' => 'mode_form', 'class' => 'form-horizontal panel panel-default']) ?>
@@ -326,12 +400,6 @@ if (isset($success)) {
                     <button type="button" id="item_redo" class="btn btn-default btn-sm print_hide" title="Refazer: adiciona o item de volta" style="margin-left:4px; display:none;">
                         <span class="glyphicon glyphicon-share-alt"></span> Refazer
                     </button>
-                    <?php /* Tarefa 7: no Modo Simples o campo precisa explicar o que
-                             fazer, porque quem opera esta aqui nao conhece o
-                             sistema. Fora do Modo Simples o texto nao existe. */ ?>
-                    <?php if (! empty($simpleMode)) { ?>
-                        <span class="simple-mode-hint">Escaneie o produto ou digite o nome e aperte Enter</span>
-                    <?php } ?>
                 </li>
             </ul>
         </div>
@@ -528,11 +596,7 @@ if (isset($success)) {
                 <div style="margin: 6px 0;">
                     <button type="button" class="btn btn-success btn-lg btn-block" id="btn_finalizar_venda" onclick="openCheckoutModal()"<?php if (count($cart) === 0) echo ' disabled'; ?>>
                         <span class="glyphicon glyphicon-shopping-cart"></span>
-                        <?php /* Tarefa 11 do plano simplificar-fluxo-venda-pdv: no
-                                 Modo Simples o rótulo é a frase exata "Finalizar
-                                 venda" e o atalho F2 some do texto. No Modo
-                                 Completo o rótulo antigo, com o F2, permanece. */ ?>
-                        <?= ! empty($simpleMode) ? 'Finalizar venda' : 'FINALIZAR VENDA (F2)' ?>
+                        FINALIZAR VENDA (F2)
                     </button>
                 </div>
 
@@ -652,18 +716,6 @@ if (isset($success)) {
             </tr>
         </table>
 
-        <?php /* Tarefa 10: no Modo Simples a data da venda vive aqui, na barra do
-                 carrinho, e nao dentro do checkout. O id e o campo sao os mesmos
-                 do modal (sale_date) de proposito — quem le o valor em
-                 finishCheckout() nao muda, e o controller nao sabe da diferenca. */ ?>
-        <?php if (! empty($simpleMode)) { ?>
-        <div class="cart-sale-date">
-            <label for="sale_date"><span class="glyphicon glyphicon-calendar"></span> Venda de outro dia</label>
-            <input type="date" id="sale_date" class="form-control"
-                   value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>"
-                   title="Deixe como está para registrar a venda de hoje">
-        </div>
-        <?php } ?>
 
         <?php /* Tarefa 8 do plano simplificar-fluxo-venda-pdv: o desconto saiu do
                  modal de pagamento e passou para a area do carrinho, logo abaixo
@@ -1053,6 +1105,29 @@ if (isset($success)) {
             $.notifyDefaults({ placement: { from: 'bottom', align: 'right' } });
         }
 
+        // posToast: mostra aviso SEM empilhar. O $.notify cru p/ embaixo cria
+        // uma pilha nova a cada evento (ex.: escanear o mesmo item sem estoque
+        // repetidas vezes) e cada toast vive ~10s — a pilha cresce sem fim.
+        // Aqui: dedupe de mensagem idêntica, teto de 3 toasts ativos e delay
+        // curto via a opção `delay` (a opção `timer` do plugin é a animação).
+        function posToast(message, type, delayMs) {
+            if (!message || !window.jQuery || !jQuery.notify) return;
+            var $plugin = $('.alert[data-notify="container"]');
+            // O .text() do container inclui o "x" do botao de fechar, entao a
+            // comparacao tem que ser contra o span de mensagem do plugin.
+            $plugin.filter(function() {
+                var $msg = $(this).find('[data-notify="message"]');
+                return ($msg.length ? $msg.text() : $(this).text()).trim() === String(message).trim();
+            }).remove();
+            if ($plugin.length >= 3) $plugin.first().remove();
+            jQuery.notify({ message: String(message) }, {
+                type: type,
+                delay: delayMs || 3500,
+                timer: 500,
+                mouse_over: 'pause'
+            });
+        }
+
         // Row edit (qty/price/discount) via AJAX: POSTs the row fields to
         // sales/editItem/{line} and swaps only the cart fragments — no full
         // page reload (a reload per +/− click felt unresponsive and slow).
@@ -1093,6 +1168,8 @@ if (isset($success)) {
                     $('#btn_finalizar_venda').prop('disabled', false);
                 }
                 posMountSaleActions($h.find('#buttons_form'));
+                posFlashCartRow(line, 'pos-flash-edit');
+                posPulseTotal();
             }, 'html').fail(function() {
                 posAjaxPending = false;
                 window.location.reload();
@@ -1164,6 +1241,28 @@ if (isset($success)) {
                 $.notify({ message: 'Produto encontrado (' + res.source + '): "' + full + '". Confira os dados e salve.' }, { type: 'success', timer: 6000 });
             });
         }
+        // Micro-feedback visual: pisca a linha do carrinho (verde no add,
+        // azul na edicao) e pulsa o total. Chamado DEPOIS de os fragmentos
+        // serem re-renderizados, senao a classe morre com o HTML antigo.
+        function posFlashCartRow(line, cls) {
+            if (line === undefined || line === null) return;
+            var $tr = $('#cart_contents').find('tr[data-line="' + line + '"]');
+            if (!$tr.length) return;
+            $tr.removeClass('pos-flash-add pos-flash-edit');
+            // reflow para reiniciar a animacao se a mesma linha for re-adicionada
+            void $tr[0].offsetWidth;
+            $tr.addClass(cls);
+            setTimeout(function() { $tr.removeClass(cls); }, 1400);
+        }
+        function posPulseTotal() {
+            var $el = $('#sale_total, .payment_total').first();
+            if (!$el.length) return;
+            $el.removeClass('pos-total-pulse');
+            void $el[0].offsetWidth;
+            $el.addClass('pos-total-pulse');
+            setTimeout(function() { $el.removeClass('pos-total-pulse'); }, 600);
+        }
+
         function posApplyCartFragments(res) {
             if (!res || res.cart_html === undefined) return;
             $('#cart_contents').html(res.cart_html);
@@ -1215,12 +1314,16 @@ if (isset($success)) {
                         return;
                     }
                     if (res.error) {
-                        $.notify({ message: res.error }, { type: 'danger', timer: 2000 });
+                        posToast(res.error, 'danger');
                     }
                     if (res.warning) {
-                        $.notify({ message: res.warning }, { type: 'warning', timer: 3000 });
+                        posToast(res.warning, 'warning', 4000);
                     }
                     posApplyCartFragments(res);
+                    if (res.success && res.added_line != null) {
+                        posFlashCartRow(res.added_line, 'pos-flash-add');
+                        posPulseTotal();
+                    }
                     // Desfazer: só faz sentido para item novo em linha própria.
                     // Se o add apenas somou quantidade a uma linha existente (merged),
                     // remover a linha inteira seria destrutivo — então não registra.
@@ -1463,18 +1566,6 @@ if (isset($success)) {
             return $('<li></li>').data('item.autocomplete', item).append(html).appendTo(ul);
         };
 
-        // Tarefa 7 do plano simplificar-fluxo-venda-pdv: no Modo Simples a
-        // primeira coisa que o operador faz e escanear, entao o campo de
-        // busca ja entra focado. Colocado DEPOIS do init do autocomplete de
-        // proposito — focar antes do widget existir pode ser engolido pelo
-        // plugin. Fora do Modo Simples estas linhas nao existem.
-        <?php if (! empty($simpleMode)) { ?>
-        setTimeout(function() {
-            var $f = $('#item');
-            if ($f.length && !$f.is(':disabled')) $f.focus();
-        }, 0);
-        <?php } ?>
-
         // After an item is added the field is cleared and kept focused; a late
         // itemSearch response can reopen the menu — force-close during the
         // suppression window, but ONLY while the field is still empty so that
@@ -1660,7 +1751,7 @@ if (isset($success)) {
         function posSubmitSaleForm(action) {
             var $form = $('#buttons_form');
             if (!$form.length) {
-                $.notify({ message: 'Não foi possível abrir a ação. Recarregue a página (F5) e tente de novo.' }, { type: 'danger' });
+                posToast('Não foi possível abrir a ação. Recarregue a página (F5) e tente de novo.', 'danger', 8000);
                 return;
             }
             $form.attr('action', action);
@@ -1912,6 +2003,7 @@ if (isset($success)) {
 .checkout-modal .modal-content { border-radius: 12px; max-height: 92vh; overflow: hidden; display: flex; flex-direction: column; }
 .checkout-modal .modal-body { padding: 12px 16px !important; overflow-y: auto; flex: 1 1 auto; }
 .checkout-modal .modal-footer { padding: 8px 16px; border-top: 1px solid var(--os-border, #e2e6ea); flex-shrink: 0; }
+#checkout_amount::placeholder { font-size: 13px; color: #95a5a6; }
 .checkout-modal .payment-list {
     display: flex;
     flex-wrap: nowrap;
@@ -1981,11 +2073,10 @@ if (isset($success)) {
 #refund_actions { display: none; }
 #checkoutModal.is-refund #refund_actions { display: block; }
 #checkoutModal.is-refund .payment-list,
+#checkoutModal.is-refund #payment_method_hint,
 #checkoutModal.is-refund #amount_group,
 #checkoutModal.is-refund #payment_summary_list,
 #checkoutModal.is-refund .checkout-restante,
-#checkoutModal.is-refund .simple-secondary-label,
-#checkoutModal.is-refund .simple-troco-btn,
 #checkoutModal.is-refund #finish_checkout_btn { display: none !important; }
 #checkoutModal.is-refund .checkout-total { background: #ffebee; }
 #checkoutModal.is-refund #checkout_total { color: #c62828; }
@@ -2005,8 +2096,8 @@ if (isset($success)) {
                     <div class="checkout-total" style="flex: 1; min-width: 0; min-height: 64px; background: #e8f5e9; padding: 8px 10px; border-radius: 6px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
                         <strong>TOTAL:</strong><br><span id="checkout_total" style="font-size: 24px; color: #2e7d32; font-weight: bold;">R$ 0,00</span>
                     </div>
-                    <div class="checkout-restante" style="flex: 1; min-width: 0; min-height: 64px; background: #ffebee; padding: 8px 10px; border-radius: 6px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
-                        <strong>RESTANTE:</strong><br><span id="checkout_restante" style="font-size: 24px; color: #c62828; font-weight: bold;">R$ 0,00</span>
+                    <div class="checkout-restante" id="checkout_restante_card" style="flex: 1; min-width: 0; min-height: 64px; background: #ffebee; padding: 8px 10px; border-radius: 6px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+                        <strong id="checkout_restante_label">RESTANTE:</strong><br><span id="checkout_restante" style="font-size: 24px; color: #c62828; font-weight: bold;">R$ 0,00</span>
                     </div>
                 </div>
 
@@ -2029,16 +2120,6 @@ if (isset($success)) {
                     </button>
                 </div>
 
-                <?php /* Tarefa 10 do plano simplificar-fluxo-venda-pdv: a data da
-                         venda sai do modal. No Modo Simples ela vira um controle
-                         na barra do carrinho (abaixo dos totais), porque quem
-                         registra venda de outro dia nao deveria precisar abrir o
-                         checkout para isso. Renderizada condicionalmente, e nao
-                         escondida por CSS, para nao existirem dois #sale_date na
-                         mesma pagina — id duplicado faria getElementById
-                         devolver sempre o primeiro. No Modo Completo ela fica
-                         aqui dentro, exatamente como antes. */ ?>
-                <?php if (empty($simpleMode)) { ?>
                 <?php
                 /* Data da venda original, quando o carrinho veio de uma
                    devolucao/troca. E a data que o reembolso deve registrar:
@@ -2063,31 +2144,10 @@ if (isset($success)) {
                     </button>
                     <?php } ?>
                 </div>
-                <?php } ?>
                 
                 <div id="payment_summary_list" style="margin: 4px 0;"></div>
                 
-                <?php /* Tarefa 9 do plano simplificar-fluxo-venda-pdv: no Modo Simples
-                         o dinheiro e o PIX ganham prominence real, porque sao o
-                         caminho do dia a dia; as outras tres formas ficam num
-                         bloco secundario, mas NENHUMA e removida. Os ids
-                         payment_btn_* sao os mesmos dos dois lados porque
-                         selectPayment() os procura por id. */ ?>
-                <?php if (! empty($simpleMode)) { ?>
-                    <div class="payment-list simple-primary">
-                        <button type="button" class="btn payment-btn cash" id="payment_btn_cash" onclick="simplePay('cash', '<?= lang("Sales.cash") ?>')"><span class="glyphicon glyphicon-usd"></span> Dinheiro</button>
-                        <button type="button" class="btn payment-btn pix" id="payment_btn_pix" onclick="simplePay('pix', '<?= lang("Sales.pix") ?>')"><span class="glyphicon glyphicon-phone"></span> PIX</button>
-                    </div>
-                    <div class="simple-secondary-label">Outra forma de pagamento</div>
-                    <div class="payment-list simple-secondary">
-                        <button type="button" class="btn payment-btn debit" id="payment_btn_debit" onclick="selectPayment('debit', '<?= lang("Sales.debit") ?>')"><span class="glyphicon glyphicon-credit-card"></span> Débito</button>
-                        <button type="button" class="btn payment-btn credit" id="payment_btn_credit" onclick="selectPayment('credit', '<?= lang("Sales.credit") ?>')"><span class="glyphicon glyphicon-credit-card"></span> Crédito</button>
-                        <button type="button" class="btn payment-btn fiado" id="payment_btn_fiado" onclick="selectPayment('fiado', '<?= credit_payment_type_name() ?>')"><span class="glyphicon glyphicon-book"></span> Fiado</button>
-                    </div>
-                    <button type="button" class="btn btn-block btn-default simple-troco-btn" onclick="simpleTroco()">
-                        <span class="glyphicon glyphicon-random"></span> O cliente entregou mais? Dar troco
-                    </button>
-                <?php } else { ?>
+                <div id="payment_method_hint" style="text-align: center; font-size: 14px; color: var(--os-text-muted, #7f8c8d); margin: 8px 0 6px; font-weight: 600;">Escolha a forma de pagamento:</div>
                     <div class="payment-list">
                         <button type="button" class="btn payment-btn cash" id="payment_btn_cash" onclick="selectPayment('cash', '<?= lang("Sales.cash") ?>')">💵 Dinheiro</button>
                         <button type="button" class="btn payment-btn debit" id="payment_btn_debit" onclick="selectPayment('debit', '<?= lang("Sales.debit") ?>')">💳 Débito</button>
@@ -2095,11 +2155,30 @@ if (isset($success)) {
                         <button type="button" class="btn payment-btn pix" id="payment_btn_pix" onclick="selectPayment('pix', '<?= lang("Sales.pix") ?>')">📱 PIX</button>
                         <button type="button" class="btn payment-btn fiado" id="payment_btn_fiado" onclick="selectPayment('fiado', '<?= credit_payment_type_name() ?>')">📝 Fiado</button>
                     </div>
-                <?php } ?>
+                
+                <div class="form-group" id="installments_group" style="margin: 6px 0; display: none;">
+                    <div class="input-group">
+                        <span class="input-group-addon">Parcelas</span>
+                        <select id="installments_select" class="form-control" style="text-align: center;">
+                            <option value="1">1x (à vista)</option>
+                            <option value="2">2x</option>
+                            <option value="3">3x</option>
+                            <option value="4">4x</option>
+                            <option value="5">5x</option>
+                            <option value="6">6x</option>
+                            <option value="7">7x</option>
+                            <option value="8">8x</option>
+                            <option value="9">9x</option>
+                            <option value="10">10x</option>
+                            <option value="11">11x</option>
+                            <option value="12">12x</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="form-group" id="amount_group" style="margin: 6px 0; display: none;">
                     <div class="input-group">
                         <span class="input-group-addon" id="payment_type_label">R$</span>
-                        <input type="text" class="form-control" id="checkout_amount" inputmode="decimal" placeholder="0,00" style="text-align: center;">
+                        <input type="text" class="form-control" id="checkout_amount" inputmode="decimal" placeholder="Primeiro escreva aqui o valor pago!" style="text-align: center;">
                         <span class="input-group-btn">
                             <button type="button" class="btn btn-primary" id="add_payment_btn" onclick="addPayment()">+</button>
                         </span>
@@ -2108,6 +2187,7 @@ if (isset($success)) {
 
             </div>
             <div class="modal-footer">
+                <div id="enter_finish_hint" style="font-size: 14px; color: var(--os-text-muted, #7f8c8d); text-align: center; margin-bottom: 4px;">Aperte Enter para finalizar a venda!</div>
                 <button type="button" class="btn btn-success btn-block" id="finish_checkout_btn" onclick="finishCheckout()" disabled>
                     FINALIZAR
                 </button>
@@ -2277,7 +2357,6 @@ function refreshDiscountedTotal() {
 
     document.getElementById('checkout_total').textContent = 'R$ ' + fmtMoney(total_venda);
     document.getElementById('checkout_restante').textContent = 'R$ ' + fmtMoney(total_venda);
-    document.getElementById('checkout_amount').placeholder = fmtMoney(total_venda);
 
     var dd = document.getElementById('discount_value_display');
     if (dd) dd.textContent = sale_discount_pct > 0 ? ('-R$ ' + fmtMoney(total_venda_original - total_venda)) : '';
@@ -2501,24 +2580,17 @@ function openCheckoutModal() {
     // tela. O reset so acontece quando a pagina recarrega (venda finalizada ou
     // cancelada). Antes, este bloco apagava tudo a cada abertura.
     document.getElementById('checkout_total').textContent = 'R$ ' + fmtMoney(total_venda);
-    document.getElementById('checkout_amount').placeholder = fmtMoney(getRestante());
     document.getElementById('amount_group').style.display = payment_type_selected ? 'block' : 'none';
+    var instGroupReopen = document.getElementById('installments_group');
+    if (instGroupReopen) instGroupReopen.style.display = (payment_type_selected === '<?= lang("Sales.credit") ?>') ? 'block' : 'none';
     updatePaymentSummary();
     checkIfCanFinish();
     applyRefundMode();
 
-    <?php /* Tarefa 10: no Modo Completo o reset continua valendo — a data mora
-             no modal, e a de uma venda anterior nao deve vazar para a proxima.
-             No Modo Simples o campo esta na barra do carrinho e o operador
-             escolheu a data de proposito; resetar aqui apagaria a venda
-             retroativa na mao dele, que e exatamente o que a tarefa 10
-             precisa viabilizar. */ ?>
-    <?php if (empty($simpleMode)) { ?>
     // Reset the sale date to today each time the checkout modal opens,
     // so a backdated sale from a previous close does not carry over.
     var sd = document.getElementById('sale_date');
     if (sd) sd.value = '<?= date('Y-m-d') ?>';
-    <?php } ?>
     
     // Close the product autocomplete and block a late itemSearch response
     // from reopening it over the checkout modal (z-index is already below
@@ -2532,46 +2604,6 @@ function openCheckoutModal() {
     jQuery('#checkoutModal').modal('show');
 }
 
-    function simplePay(type, lang_key) {
-        // Tarefa 4 do pedido do dono: no Modo Simples, escolher a forma de
-        // pagamento JA e dar baixa na venda. Um toque, sem segunda confirmacao.
-        //
-        // O total exato vai preenchido porque e o que a venda vale. Se o cliente
-        // entregou mais, o troco e uma questao de dar o dinheiro de volta, nao
-        // de mudar o valor da venda — por isso o caminho do troco e separado
-        // (simpleTroco) e nao contamina este.
-        selectPayment(type, lang_key);
-
-        var amt = document.getElementById('checkout_amount');
-        if (amt) amt.value = String(total_venda.toFixed(2)).replace('.', ',');
-
-        addPayment();
-
-        // Em debito/credito/fiado addPayment() ja chama finishCheckout() e
-        // retorna. Em dinheiro/PIX ele so registra e mostra o troco. Chamar
-        // finishCheckout() de novo e seguro: o guard `if (finishingCheckout)
-        // return` no topo dele absorve o segundo chamado, entao nao ha risco de
-        // venda duplicada.
-        finishCheckout();
-    }
-
-    /* Caminho do troco: o cliente entregou uma nota maior que o total. Aqui o
-       operador digita o que recebeu, ve o troco e confirma. Fica fora do caminho
-       de um toque de proposito — a maioria das vezes nao ha troco. */
-    function simpleTroco() {
-        var g = document.getElementById('amount_group');
-        if (!g) return;
-        g.style.display = 'block';
-        var lbl = document.getElementById('payment_type_label');
-        if (lbl) lbl.textContent = 'R$';
-        var amt = document.getElementById('checkout_amount');
-        if (amt) {
-            amt.value = '';
-            amt.placeholder = fmtMoney(total_venda);
-            amt.focus();
-        }
-    }
-
 function selectPayment(type, lang_key) {
     payment_type_selected = lang_key;
     document.querySelectorAll('.payment-btn').forEach(function(btn) { btn.classList.remove('active'); });
@@ -2581,13 +2613,16 @@ function selectPayment(type, lang_key) {
     if (type === 'cash') {
         document.getElementById('amount_group').style.display = 'block';
         document.getElementById('payment_type_label').textContent = 'R$';
-        document.getElementById('checkout_amount').placeholder = fmtMoney(total_venda);
     } else {
         document.getElementById('amount_group').style.display = 'block';
         document.getElementById('payment_type_label').textContent = lang_key + ':';
-        document.getElementById('checkout_amount').placeholder = fmtMoney(getRestante());
     }
-    
+
+    // Parcelas (cartão de crédito): o seletor só aparece no crédito.
+    var instGroup = document.getElementById('installments_group');
+    if (instGroup) instGroup.style.display = (type === 'credit') ? 'block' : 'none';
+    updateRestanteCardLive();
+
     setTimeout(function() {
         var amountInput = document.getElementById('checkout_amount');
         if (amountInput) {
@@ -2602,6 +2637,44 @@ function getRestante() {
     return Math.max(0, total_venda - pago);
 }
 
+// Troco em tempo real (16/nov/2026): enquanto digita o valor em Dinheiro, o
+// card RESTANTE vira TROCO (azul) e mostra o troco a ser dado. Fora do
+// dinheiro (ou sem troco no valor digitado), volta ao estado RESTANTE.
+// O valor digitado desconta do RESTANTE em QUALQUER forma (18/nov/2026): antes
+// o numero so mexia depois do "+", entao o operador digitava as cegas. Nas
+// formas sem troco o excedente nao existe (addPayment limita ao restante),
+// logo o restante apenas zera.
+function updateRestanteCardLive() {
+    var card = document.getElementById('checkout_restante_card');
+    var label = document.getElementById('checkout_restante_label');
+    var span = document.getElementById('checkout_restante');
+    if (!card || !label || !span) return;
+    var restante = getRestante();
+    var amountInput = document.getElementById('checkout_amount');
+    var typed = parseCurrency(amountInput ? amountInput.value : '0');
+    var temValorDigitado = payment_type_selected && amountInput
+        && amountInput.value.trim() !== '';
+    if (temValorDigitado && payment_type_selected === '<?= lang("Sales.cash") ?>'
+        && typed - restante > 0.009) {
+        label.textContent = 'TROCO:';
+        span.textContent = 'R$ ' + fmtMoney(typed - restante);
+        label.style.color = '#1565c0';
+        span.style.color = '#1565c0';
+        card.style.setProperty('background', '#e3f2fd', 'important');
+        card.style.setProperty('border-color', 'rgba(21, 101, 192, 0.2)', 'important');
+        return;
+    }
+    if (temValorDigitado) {
+        restante = Math.max(0, restante - typed);
+    }
+    label.textContent = 'RESTANTE:';
+    span.textContent = 'R$ ' + fmtMoney(Math.max(0, restante));
+    label.style.color = '';
+    span.style.color = restante > 0 ? '#f44336' : '#4caf50';
+    card.style.setProperty('background', '#ffebee', 'important');
+    card.style.setProperty('border-color', 'rgba(220, 38, 38, 0.1)', 'important');
+}
+
 function addPayment() {
     var amountInput = document.getElementById('checkout_amount');
     var amount = parseCurrency(amountInput ? amountInput.value : '0');
@@ -2614,19 +2687,29 @@ function addPayment() {
     if (payment_type_selected !== '<?= lang("Sales.cash") ?>' && amount > restante) {
         amount = restante;
     }
-    
+
+    // Parcelas: só o crédito carrega o metadado; demais formas vão com 1
+    // (default da coluna ospos_sales_payments.installments).
+    var installments = 1;
+    if (payment_type_selected === '<?= lang("Sales.credit") ?>') {
+        var instSel = document.getElementById('installments_select');
+        if (instSel) installments = parseInt(instSel.value, 10) || 1;
+    }
+
     payments_list.push({
         type: payment_type_selected,
-        amount: amount
+        amount: amount,
+        installments: installments
     });
-    
-    updatePaymentSummary();
-    
+
     document.getElementById('checkout_amount').value = '';
     payment_type_selected = '';
     document.querySelectorAll('.payment-btn').forEach(function(btn) { btn.classList.remove('active'); });
     document.getElementById('amount_group').style.display = 'none';
-    
+    var instGroupAfterAdd = document.getElementById('installments_group');
+    if (instGroupAfterAdd) instGroupAfterAdd.style.display = 'none';
+
+    updatePaymentSummary();
     checkIfCanFinish();
     
     // Se o pagamento cobriu o total
@@ -2662,7 +2745,7 @@ function updatePaymentSummary() {
     payments_list.forEach(function(p, index) {
         totalPago += p.amount;
         html += '<div class="payment-item" style="display:flex; justify-content:space-between; padding: 5px; background:#e8f5e9; margin-bottom:4px; border-radius:4px;">';
-        html += '<span style="flex:1;">' + p.type + ': <strong>R$ ' + fmtMoney(p.amount) + '</strong></span>';
+        html += '<span style="flex:1;">' + p.type + (p.installments > 1 ? ' (' + p.installments + 'x)' : '') + ': <strong>R$ ' + fmtMoney(p.amount) + '</strong></span>';
         html += '<button type="button" class="btn btn-xs btn-danger" onclick="removePayment(' + index + ')" style="padding:2px 8px;">×</button>';
         html += '</div>';
     });
@@ -2684,6 +2767,7 @@ function updatePaymentSummary() {
         trocoDisplay.textContent = ' ';
         trocoNotes.innerHTML = '';
     }
+    updateRestanteCardLive();
 }
 
 function renderChange(amount, container) {
@@ -2904,16 +2988,26 @@ document.addEventListener('DOMContentLoaded', function() {
         if (firstBtn) firstBtn.focus();
     });
 
+    // Troco em tempo real ao digitar o valor (card RESTANTE vira TROCO no dinheiro)
+    var amountInputLive = document.getElementById('checkout_amount');
+    if (amountInputLive) {
+        amountInputLive.addEventListener('input', updateRestanteCardLive);
+    }
+
     // Escape in amount input goes back to payment buttons
     if (amountInput) {
         amountInput.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 e.preventDefault();
+                e.stopPropagation();
                 var firstBtn = document.querySelector('.payment-btn');
                 if (firstBtn) firstBtn.focus();
                 payment_type_selected = '';
                 document.querySelectorAll('.payment-btn').forEach(function(b) { b.classList.remove('active'); });
                 document.getElementById('amount_group').style.display = 'none';
+                var instGroupEsc = document.getElementById('installments_group');
+                if (instGroupEsc) instGroupEsc.style.display = 'none';
+                updateRestanteCardLive();
             }
         });
     }

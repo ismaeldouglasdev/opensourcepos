@@ -111,7 +111,7 @@
         </tr>
 
         <?php $border = (!$config['receipt_show_taxes'] && !($config['receipt_show_total_discount'] && $discount > 0)); ?>
-        <tr>
+        <tr class="receipt-total-row">
             <td colspan="2" style="text-align: right;<?= $border ? ' border-top: 2px solid black;' : '' ?>"><?= lang('Sales.total') ?></td>
             <td style="text-align: right;<?= $border ? ' border-top: 2px solid black;' : '' ?>"><?= to_currency($total) ?></td>
         </tr>

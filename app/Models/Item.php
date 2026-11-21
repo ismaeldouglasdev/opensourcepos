@@ -105,7 +105,8 @@ class Item extends Model
     {
         $builder = $this->db->table('items');
         $builder->where('deleted', 0);
-        $builder->where('DATE(created_at)', date('Y-m-d'));
+        $builder->where('created_at >=', date('Y-m-d') . ' 00:00:00');
+        $builder->where('created_at <', date('Y-m-d', strtotime('+1 day')) . ' 00:00:00');
 
         return $builder->countAllResults();
     }
@@ -114,10 +115,12 @@ class Item extends Model
     {
         $builder = $this->db->table('items');
         $builder->where('deleted', 0);
-        $builder->where('DATE(last_modified)', date('Y-m-d'));
+        $builder->where('last_modified >=', date('Y-m-d') . ' 00:00:00');
+        $builder->where('last_modified <', date('Y-m-d', strtotime('+1 day')) . ' 00:00:00');
         $builder->groupStart();
         $builder->where('created_at IS NULL');
-        $builder->orWhere('DATE(created_at) !=', date('Y-m-d'));
+        $builder->orWhere('created_at <', date('Y-m-d') . ' 00:00:00');
+        $builder->orWhere('created_at >=', date('Y-m-d', strtotime('+1 day')) . ' 00:00:00');
         $builder->groupEnd();
 
         return $builder->countAllResults();

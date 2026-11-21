@@ -1283,13 +1283,6 @@ class Sales extends Secure_Controller
             $data['customer_required'] = lang('Sales.customer_optional');
         }
 
-        // Tarefa 6 do plano simplificar-fluxo-venda-pdv. Este e o caminho do
-        // CARREGAMENTO INICIAL da pagina do caixa, e ele monta o $data por conta
-        // propria — nao passa por _build_reload_data(), que so serve o fragmento
-        // de AJAX. Sem injetar aqui o modo chegava vazio na primeira carga e so
-        // passaria a valer depois da primeira leitura.
-        $data['simpleMode'] = $this->isSimpleMode();
-
         echo view("sales/register", $data);
     }
 
@@ -2141,7 +2134,7 @@ class Sales extends Secure_Controller
             if (is_array($payments_data) && count($payments_data) > 0) {
                 foreach ($payments_data as $payment) {
                     if (isset($payment['type']) && isset($payment['amount'])) {
-                        $this->sale_lib->add_payment($payment['type'], $payment['amount']);
+                        $this->sale_lib->add_payment($payment['type'], $payment['amount'], CASH_ADJUSTMENT_FALSE, (int)($payment['installments'] ?? 1));
                     }
                 }
             } elseif (!$is_refund_intent) {
@@ -2733,12 +2726,6 @@ class Sales extends Secure_Controller
 
         $data = $extra;
         $data['cash_rounding'] = $cash_rounding;
-        // Tarefa 6 do plano simplificar-fluxo-venda-pdv. Este e o unico ponto
-        // que monta o register, tanto na carga da pagina quanto nos fragmentos
-        // que voltam por AJAX depois de escanear. Injetar aqui evita o
-        // sintoma de o botao do topo alternar o modo mas o fragmento recarregado
-        // continuar no modo antigo.
-        $data['simpleMode'] = $this->isSimpleMode();
         $data['cart'] = $this->sale_lib->get_cart();
         $customer_info = $this->_load_customer_data($this->sale_lib->get_customer(), $data, true);
 

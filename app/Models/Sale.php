@@ -634,7 +634,8 @@ class Sale extends Model
                 'payment_amount'  => $payment['payment_amount'],
                 'cash_refund'     => $payment['cash_refund'],
                 'cash_adjustment' => $payment['cash_adjustment'],
-                'employee_id'     => $employee_id
+                'employee_id'     => $employee_id,
+                'installments'    => (int)($payment['installments'] ?? 1)
             ];
 
             $builder = $this->db->table('sales_payments');

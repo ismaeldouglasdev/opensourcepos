@@ -516,8 +516,9 @@ class Sale_lib
      * @param string $payment_id
      * @param string $payment_amount
      * @param int $cash_adjustment
+     * @param int $installments
      */
-    public function add_payment(string $payment_id, string $payment_amount, int $cash_adjustment = CASH_ADJUSTMENT_FALSE): void
+    public function add_payment(string $payment_id, string $payment_amount, int $cash_adjustment = CASH_ADJUSTMENT_FALSE, int $installments = 1): void
     {
         $payment_amount = $this->to_bcmath_number($payment_amount);
 
@@ -525,6 +526,9 @@ class Sale_lib
         if (isset($payments[$payment_id])) {
             // payment_method already exists, add to payment_amount
             $payments[$payment_id]['payment_amount'] = bcadd($this->to_bcmath_number($payments[$payment_id]['payment_amount']), $payment_amount);
+            if ($installments > 1) {
+                $payments[$payment_id]['installments'] = $installments;
+            }
         } else {
             // Add to existing array
             $payment = [
@@ -532,7 +536,8 @@ class Sale_lib
                     'payment_type'    => $payment_id,
                     'payment_amount'  => $payment_amount,
                     'cash_refund'     => 0,
-                    'cash_adjustment' => $cash_adjustment
+                    'cash_adjustment' => $cash_adjustment,
+                    'installments'    => $installments
                 ]
             ];
 
@@ -1388,7 +1393,7 @@ class Sale_lib
 
         // Now load payments
         foreach ($this->sale->get_sale_payments($sale_id)->getResult() as $row) {
-            $this->add_payment($row->payment_type, $row->payment_amount, $row->cash_adjustment);
+            $this->add_payment($row->payment_type, $row->payment_amount, $row->cash_adjustment, (int)($row->installments ?? 1));
         }
 
         $this->set_customer($this->sale->get_customer($sale_id)->person_id);

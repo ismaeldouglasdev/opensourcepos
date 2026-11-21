@@ -392,7 +392,7 @@ window._tutorialSteps = [
     </div>
 </div>
 
-<div id="table_holder" class="sales-manage">
+<div id="table_holder" class="sales-manage" data-fin-privacy-skip>
     <table id="table"></table>
 </div>
 

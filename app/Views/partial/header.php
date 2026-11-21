@@ -115,6 +115,29 @@ try {
     <!-- CSS Moderno OSPOS -->
     <link rel="stylesheet" href="<?= base_url('css/modern.css?v=' . filemtime(FCPATH . 'css/modern.css')) ?>">
 
+    <?php $fin_privacy_js = FCPATH . 'js/finance-privacy.js'; ?>
+    <script>
+        (function () {
+            try {
+                var html = document.documentElement;
+                var path = window.location.pathname;
+                var censoredSalesPage = /\/sales\/manage(\/|$)/.test(path) || /\/sales\/invoice(\/|$)/.test(path);
+                var excluded = (!censoredSalesPage && /\/sales(\/|$)/.test(path))
+                    || /\/items(\/|$)/.test(path);
+
+                if (excluded) {
+                    html.classList.add('fin-privacy-skip');
+                } else if (window.localStorage.getItem('ospos_fin_privacy') !== '0') {
+                    html.classList.add('fin-privacy', 'fin-privacy-pending');
+                    window.setTimeout(function () {
+                        html.classList.remove('fin-privacy-pending');
+                    }, 1500);
+                }
+            } catch (e) {}
+        })();
+    </script>
+    <script defer src="<?= base_url('js/finance-privacy.js?v=' . (is_file($fin_privacy_js) ? filemtime($fin_privacy_js) : 1)) ?>"></script>
+
     <!-- CSS Acessível para Idosos -->
     <?php if (service('uri')->getSegment(1) !== 'sales'): ?>
     <link rel="stylesheet" href="<?= base_url('css/accessible.css') ?>">
@@ -135,6 +158,13 @@ try {
                 </div>
 
                 <div class="navbar-right" style="margin: 0;">
+                    <button type="button" id="fin_privacy_toggle" aria-pressed="false"
+                            title="<?= esc(lang('Common.hide_values')) ?>"
+                            aria-label="<?= esc(lang('Common.hide_values')) ?>"
+                            data-label-hide="<?= esc(lang('Common.hide_values')) ?>"
+                            data-label-show="<?= esc(lang('Common.show_values')) ?>">
+                        <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
+                    </button>
                     <?= anchor("home/changePassword/$user_info->person_id", "$user_info->first_name $user_info->last_name", ['class' => 'modal-dlg', 'data-btn-submit' => lang('Common.submit'), 'title' => lang('Employees.change_password')]) ?>
                     <span>&nbsp;|&nbsp;</span>
                     <?= anchor('home/logout', lang('Login.logout')) ?>
@@ -202,53 +232,6 @@ try {
                     </li>
                 </ul>
 
-                    <!-- Botao de troca rapida do Modo de venda (tarefa 5 do plano
-                         simplificar-fluxo-venda-pdv). Fica no topo porque e o
-                         unico lugar visivel de toda pagina, e o dono precisa
-                         trocar rapido sem entrar em Configuracoes. No Modo Simples
-                         ele usa btn-danger-outline: sair do modo simplificado e
-                         uma acao, nao uma acao de venda. -->
-                    <div class="simple-mode-toggle pull-right" style="margin: 6px 8px 0 0;">
-                        <?php $__sm = ! empty($simple_mode); ?>
-                        <button type="button"
-                                id="simple_mode_toggle"
-                                class="btn btn-sm <?= $__sm ? 'btn-danger-outline' : 'btn-default' ?>"
-                                title="<?= $__sm
-                                    ? 'Você está no Modo Simples. Clique para voltar ao Modo Completo.'
-                                    : 'Você está no Modo Completo. Clique para ativar o Modo Simples.' ?>"
-                                data-on="<?= $__sm ? '1' : '0' ?>">
-                            <span class="glyphicon glyphicon-adjust" aria-hidden="true"></span>
-                            <span class="simple-mode-toggle-label"><?= $__sm ? 'Modo Simples: LIGADO' : 'Modo Completo' ?></span>
-                        </button>
-                    </div>
-
-                    <script type="text/javascript">
-                    // Tarefa 5 do plano simplificar-fluxo-venda-pdv: troca rapida
-                    // de modo. Faz POST no mesmo endpoint da aba de Configuracoes,
-                    // entao os dois lugares usam a mesma fonte da verdade (a coluna
-                    // do employee). Recarrega porque o modo muda o layout do caixa.
-                    $(function() {
-                        var $btn = $('#simple_mode_toggle');
-                        if (!$btn.length) return;
-
-                        $btn.on('click', function() {
-                            // .attr() e nao .data(): o jQuery converte data-on="1"
-                            // para o NUMERO 1, e 1 !== '1' e verdadeiro (numero
-                            // contra string). Com .data() o botao ficava sempre
-                            // em "ligar" e nunca voltava para o Modo Completo.
-                            var querLigar = String($(this).attr('data-on')) !== '1';
-                            // trava o botao durante o POST: clique duplo enviaria
-                            // duas vezes e o estado final ficaria indeterminate
-                            $btn.prop('disabled', true);
-
-                            $.post('<?= site_url('config/saveSimpleMode') ?>', {
-                                simple_mode: querLigar ? 1 : 0
-                            }).always(function() {
-                                window.location.reload();
-                            });
-                        });
-                    });
-                    </script>
 
                     <!-- Menu Hamburger -->
                     <ul class="nav navbar-nav navbar-right">
