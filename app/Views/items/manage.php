@@ -825,6 +825,74 @@ window._tutorialSteps = [
 
         $(function() { mlLoadMappings(); });
     })();
+
+    // ── Badges de canais publicados na grade ──
+    // ML/Shopee/Loja: marca na célula do nome os produtos que já têm
+    // anúncio ativo/pausado/em análise. Flags vêm do inventory-service
+    // (proxy items/getPublishedChannels, cache de 60s).
+    (function() {
+        var flagsPromise = null;
+        function chanFlags() {
+            if (!flagsPromise) {
+                flagsPromise = $.getJSON('<?= $controller_name ?>/getPublishedChannels').then(
+                    function(d) { return d || {}; },
+                    function() { return { ml: {}, shopee: {}, loja: [] }; }
+                );
+            }
+            return flagsPromise;
+        }
+        var ML_LABEL = { active: 'Ativo', paused: 'Pausado', under_review: 'Em análise' };
+        var SH_LABEL = { active: 'Ativo', paused: 'Pausado' };
+
+        function chanDecorateRows() {
+            chanFlags().then(function(flags) {
+                var ml = flags.ml || {}, shopee = flags.shopee || {}, loja = {};
+                $.each(flags.loja || [], function(i, id) { loja[String(id)] = true; });
+                $('#table_holder.items-manage tbody tr').each(function() {
+                    var $tr = $(this);
+                    var $name = $tr.find('td.items-col-name').first();
+                    if (!$name.length) { return; }
+                    $name.find('.chan-badge').remove();
+                    var sku = ($tr.find('.ml-publish-btn').attr('data-ml-sku') || '').toString();
+                    var iid = ($tr.find('.loja-publish-btn').attr('data-loja-item') || $tr.attr('data-uniqueid') || '').toString();
+                    var html = '';
+                    if (ml[sku]) {
+                        html += '<span class="chan-badge chan-ml chan-' + ml[sku] + '" title="Mercado Livre: ' + (ML_LABEL[ml[sku]] || ml[sku]) + '">ML</span>';
+                    }
+                    if (shopee[sku]) {
+                        html += '<span class="chan-badge chan-shopee chan-' + shopee[sku] + '" title="Shopee: ' + (SH_LABEL[shopee[sku]] || shopee[sku]) + '">SH</span>';
+                    }
+                    if (loja[iid]) {
+                        html += '<span class="chan-badge chan-loja" title="Publicado na loja online">LOJA</span>';
+                    }
+                    if (html) { $name.append(' ' + html); }
+                });
+            });
+        }
+
+        $(document).on('load-success.bs.table', chanDecorateRows);
+        chanDecorateRows();
+    })();
 </script>
+
+<style>
+.chan-badge {
+    display: inline-block;
+    margin-left: 4px;
+    padding: 1px 5px;
+    border-radius: 8px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    line-height: 14px;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+.chan-ml { background: #ffe600; color: #333; }
+.chan-ml.chan-paused, .chan-shopee.chan-paused { background: #ececec; color: #777; }
+.chan-ml.chan-under_review { background: #ff9800; color: #fff; }
+.chan-shopee { background: #ee4d2d; color: #fff; }
+.chan-loja { background: #0f8f63; color: #fff; }
+</style>
 
 <?= view('partial/footer') ?>

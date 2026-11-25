@@ -215,6 +215,23 @@ class Items extends Secure_Controller
     }
 
     /**
+     * Flags de publicacao por canal para decorar a grade /items
+     * (badges ML/Shopee/Loja). Proxy do /v1/channels/published do
+     * inventory-service — cache de 60s la dentro.
+     * @noinspection PhpUnused
+     **/
+    public function getPublishedChannels(): void
+    {
+        $this->response->setContentType('application/json');
+        $result = $this->inventoryRequest('GET', '/v1/channels/published');
+        if ($result['status'] === 200 && $result['body'] !== '') {
+            echo $result['body'];
+            return;
+        }
+        echo json_encode(['ml' => new stdClass(), 'shopee' => new stdClass(), 'loja' => []]);
+    }
+
+    /**
      * Bulk action for channels (publish all, pause all, sync selected)
      * @return void
      */
