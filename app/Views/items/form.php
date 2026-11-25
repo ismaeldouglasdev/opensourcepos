@@ -1058,11 +1058,8 @@ $quick_mode = $quick_mode ?? false;
             focus: fill_low_sell_value
         });
 
-        $('#category').autocomplete({
-            source: "<?= 'items/suggestCategory' ?>",
-            delay: 10,
-            appendTo: '.modal-content'
-        });
+        // #category agora é um select oculto — a escolha é feita pelo modal
+        // jsCatPickModal (picker com busca + nova categoria).
 
         $('a.fileinput-exists').click(function() {
             $.ajax({
