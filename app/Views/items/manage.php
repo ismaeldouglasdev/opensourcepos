@@ -436,7 +436,7 @@ window._tutorialSteps = [
             <span class="glyphicon glyphicon-send">&nbsp;</span><?= lang('Items.ml_manage') ?>
         </a>
         <?= form_input(['name' => 'daterangepicker', 'class' => 'form-control input-sm', 'id' => 'daterangepicker']) ?>
-        <?= form_multiselect('filters[]', $filters, [''], [
+        <?= form_multiselect('filters[]', $filters, $selected_filters ?? [], [
             'id'                        => 'filters',
             'class'                     => 'selectpicker show-menu-arrow',
             'data-none-selected-text'   => lang('Common.none_selected_text'),

@@ -811,6 +811,7 @@ $quick_mode = $quick_mode ?? false;
         // (ML, Shopee, loja...) do item; renderiza uma aba por canal onde o
         // produto aparece, sempre antes do histórico de preços.
         var channelDetailsUrl = <?= json_encode($item_info->item_id > 0 ? site_url('items/channelDetails/' . (int) $item_info->item_id) : '') ?>;
+        var channelPhotoUrl = <?= json_encode($image_path ?? '') ?>;
         if (channelDetailsUrl && $('#item_form_tabs').length) {
             $.getJSON(channelDetailsUrl).done(function(data) {
                 var channels = (data && data.channels) || [];
@@ -887,7 +888,13 @@ $quick_mode = $quick_mode ?? false;
                         }
                         addRow('category', esc(store.category));
                     }
+                    var photoHtml = channelPhotoUrl
+                        ? '<a href="#" data-img-view="' + esc(channelPhotoUrl) + '" data-img-title="' + esc(label) + '">'
+                            + '<img src="' + esc(channelPhotoUrl) + '" alt="" style="width: 72px; height: 72px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; margin-bottom: 8px; display: block;">'
+                            + '</a>'
+                        : '';
                     var paneHtml = '<div class="tab-pane" id="' + paneId + '" style="padding: 10px 5px;">'
+                        + photoHtml
                         + '<table class="table table-striped table-condensed" style="font-size: 12px; max-width: 640px;">'
                         + '<tbody>' + rows + '</tbody></table></div>';
                     priceHistoryLi.before('<li><a href="#' + paneId + '" data-toggle="tab">' + esc(label) + '</a></li>');

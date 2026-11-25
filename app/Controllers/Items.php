@@ -99,6 +99,12 @@ class Items extends Secure_Controller
             'no_movement'    => lang('Items.no_movement_items')
         ];
 
+        $requested_filters = (array) ($this->request->getGet('filters', FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?? []);
+        $data['selected_filters'] = array_values(array_filter(
+            $requested_filters,
+            static fn ($filter): bool => is_scalar($filter) && array_key_exists((string) $filter, $data['filters'])
+        ));
+
         echo view('items/manage', $data);
     }
 

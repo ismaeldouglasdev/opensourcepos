@@ -496,7 +496,7 @@ a.dash-kpi:hover {
             </span>
             <span class="dash-channel-time"><?= date('d/m H:i', strtotime((string)$cs->sale_time)) ?></span>
             <span class="dash-channel-amt"><?= to_currency((float)$cs->payment_amount) ?></span>
-            <a class="dash-channel-link" href="<?= base_url('sales/view/' . (int)$cs->sale_id) ?>">ver</a>
+            <a class="dash-channel-link" href="<?= base_url('sales/receipt/' . (int)$cs->sale_id) ?>">ver</a>
         </div>
         <?php endforeach; ?>
     </div>
@@ -589,7 +589,7 @@ a.dash-kpi:hover {
             <div class="dash-kpi-label">Preço Abaixo do Custo</div>
         </a>
 
-        <a class="dash-kpi" href="items" title="Abra a lista e filtre por Sem giro">
+        <a class="dash-kpi" href="<?= base_url('items?filters[]=no_movement') ?>" title="Abra a lista e filtre por Sem giro">
             <div class="dash-kpi-icon bg-warning"><span class="glyphicon glyphicon-time"></span></div>
             <div class="dash-kpi-value"><?= esc((string)($no_movement_count ?? 0)) ?></div>
             <div class="dash-kpi-label">Sem Giro (90 dias)</div>
