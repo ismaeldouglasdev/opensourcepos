@@ -131,6 +131,7 @@ $routes->post('items/channelSingleAction', 'Items::channelSingleAction');
 $routes->get('items/lojaStatus/(:num)', 'Items::getLojaStatus/$1');
 $routes->get('items/channelDetails/(:num)', 'Items::getChannelDetails/$1');
 $routes->get('items/search', 'Items::getSearch');
+$routes->get('items/getPublishedChannels', 'Items::getPublishedChannels');
 $routes->get('items/row/(:segment)', 'Items::getRow/$1');
 $routes->get('items/view', 'Items::getView');
 $routes->get('items/view/(:num)', 'Items::getView/$1');

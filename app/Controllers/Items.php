@@ -228,7 +228,7 @@ class Items extends Secure_Controller
             echo $result['body'];
             return;
         }
-        echo json_encode(['ml' => new stdClass(), 'shopee' => new stdClass(), 'loja' => []]);
+        echo json_encode(['ml' => new \stdClass(), 'shopee' => new \stdClass(), 'loja' => []]);
     }
 
     /**
