@@ -74,9 +74,19 @@ $quick_mode = $quick_mode ?? false;
                     <span class="input-group-addon input-sm"><span class="glyphicon glyphicon-tag"></span></span>
                     <?php
                     // Category is always a dropdown populated from the categories in use
-                    // (ospos_items.category) — see Items::getView().
-                    echo form_dropdown('category', $categories, $selected_category, ['id' => 'category', 'class' => 'form-control']);
+                    // (ospos_items.category) — see Items::getView(). O select fica oculto:
+                    // o campo visível é somente-leitura e o botão abre um modal com
+                    // busca + opção de categoria nova (o select recebe <option> novo).
+                    echo form_dropdown('category', $categories, $selected_category, ['id' => 'category', 'class' => 'form-control', 'style' => 'display:none']);
                     ?>
+                    <input type="text" id="category_display" class="form-control" readonly
+                           value="<?= esc($selected_category) ?>" placeholder="<?= esc(lang('Items.none')) ?>">
+                    <span class="input-group-btn">
+                        <button type="button" id="category_pick_btn" class="btn btn-default btn-sm"
+                                style="height: 30px;" title="Escolher categoria">
+                            <span class="glyphicon glyphicon-search"></span>
+                        </button>
+                    </span>
                 </div>
             </div>
             <?php endif; ?>
@@ -787,6 +797,104 @@ $quick_mode = $quick_mode ?? false;
     <?php endif; ?>
     </div><!-- /.tab-content -->
 <?= form_close() ?>
+
+<script type="text/javascript">
+    // Picker de categoria: modal com busca sobre as categorias em uso
+    // (ospos_items.category). Digitar um nome novo cria a categoria —
+    // ela entra como <option> no select oculto e segue no submit.
+    (function () {
+        var $sel = $('#category');
+        var $disp = $('#category_display');
+        var $btn = $('#category_pick_btn');
+        if (!$sel.length || !$btn.length) { return; }
+
+        var CATS = <?= json_encode(array_values(array_filter(array_keys($categories), function ($c) { return $c !== ''; }))) ?>;
+
+        function syncDisplay() {
+            var v = $sel.val() || '';
+            $disp.val(v);
+        }
+        $sel.on('change', syncDisplay);
+        syncDisplay();
+
+        function esc(s) {
+            return $('<div>').text(s).html();
+        }
+
+        function renderList(q) {
+            q = (q || '').trim();
+            var ql = q.toLowerCase();
+            var html = '';
+            var exists = CATS.some(function (c) { return c.toLowerCase() === ql; });
+            if (q !== '' && !exists) {
+                html += '<div class="cat-opt cat-opt-new" data-v="' + esc(q) + '">' +
+                    '<span class="glyphicon glyphicon-plus"></span> Usar “' + esc(q) + '” como nova categoria</div>';
+            }
+            CATS.forEach(function (c) {
+                if (ql === '' || c.toLowerCase().indexOf(ql) !== -1) {
+                    html += '<div class="cat-opt" data-v="' + esc(c) + '">' + esc(c) + '</div>';
+                }
+            });
+            var $list = $('#jsCatPickList');
+            $list.html(html || '<div style="padding:14px;color:#8a93a6;font-size:13px;">Nenhuma categoria encontrada.</div>');
+            $list.find('.cat-opt').on('click', function () {
+                pick($(this).data('v'));
+            });
+        }
+
+        function pick(v) {
+            if ($sel.find('option[value="' + v.replace(/"/g, '\\"') + '"]').length === 0) {
+                $sel.append($('<option>', { value: v, text: v }));
+            }
+            $sel.val(v).trigger('change');
+            $('#jsCatPickModal').modal('hide');
+        }
+
+        $btn.on('click', function () {
+            var $existing = $('#jsCatPickModal');
+            if ($existing.length) { $existing.remove(); }
+            var $m = $(
+                '<div class="modal fade" id="jsCatPickModal" tabindex="-1" role="dialog" aria-hidden="true">' +
+                '  <div class="modal-dialog" style="width: 460px; max-width: 94vw;">' +
+                '    <div class="modal-content">' +
+                '      <div class="modal-header"><button type="button" class="close" data-dismiss="modal">&times;</button>' +
+                '        <h4 class="modal-title">Categoria</h4></div>' +
+                '      <div class="modal-body">' +
+                '        <input type="text" id="jsCatPickSearch" class="form-control input-sm" placeholder="Buscar ou digitar nova…" autocomplete="off">' +
+                '        <div id="jsCatPickList" style="max-height: 50vh; overflow-y: auto; margin-top: 8px;"></div>' +
+                '      </div>' +
+                '    </div>' +
+                '  </div>' +
+                '</div>'
+            );
+            $('body').append($m);
+            $m.find('#jsCatPickSearch').on('input', function () { renderList(this.value); });
+            $m.on('shown.bs.modal', function () {
+                var $s = $m.find('#jsCatPickSearch');
+                $s.val($sel.val() || '');
+                renderList($s.val());
+                $s.trigger('focus');
+            });
+            // Bootstrap 3 não empilha modais: z-index acima do dialog pai.
+            $m.css('z-index', 1700);
+            $m.on('show.bs.modal', function () {
+                setTimeout(function () {
+                    var $bd = $('.modal-backdrop').last();
+                    if ($bd.length) { $bd.css('z-index', 1690); }
+                }, 0);
+            });
+            $m.modal('show');
+            $m.on('hidden.bs.modal', function () { $m.remove(); });
+        });
+
+        // Estilo mínimo das linhas (modal é criado dinamicamente).
+        $('<style>').text(
+            '#jsCatPickList .cat-opt{padding:9px 12px;border-radius:6px;cursor:pointer;font-size:14px;color:#333;}' +
+            '#jsCatPickList .cat-opt:active,#jsCatPickList .cat-opt:hover{background:#eef2f8;}' +
+            '#jsCatPickList .cat-opt-new{color:#3d6dd8;font-weight:600;}'
+        ).appendTo('head');
+    })();
+</script>
 
 <script type="text/javascript">
     // Validation and submit handling
