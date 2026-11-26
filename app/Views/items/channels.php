@@ -87,10 +87,38 @@ window._tutorialSteps = [
             return currency_symbol + ' ' + Number(value).toFixed(2).replace('.', ',');
         };
 
+        var escHtml = function(s) {
+            return String(s).replace(/[&<>"']/g, function(c) {
+                return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+            });
+        };
+
+        var qualityFormatter = function(value) {
+            if (!value || value.score === null || value.score === undefined) {
+                return '<span class="label label-default">—</span>';
+            }
+            var score = Number(value.score);
+            var cls = 'label label-success';
+            if (value.level === 'bad' || score < 50) {
+                cls = 'label label-danger';
+            } else if (value.level === 'medium' || score < 80) {
+                cls = 'label label-warning';
+            }
+            var pending = (value.pending || []).slice(0, 4);
+            var tip = pending.length
+                ? pending.map(function(t) { return '• ' + t; }).join('\n') + (value.pending.length > 4 ? '\n…' : '')
+                : 'Sem pendências';
+            return '<span class="' + cls + '" title="' + escHtml(tip) + '" style="cursor:help;">' + score + '</span>';
+        };
+
         var headers = <?= $table_headers ?>;
         $.each(headers, function(i, col) {
             if (col.field === 'photo') {
                 col.formatter = photoFormatter;
+                col.escape = false;
+            }
+            if (col.field === 'ml_quality') {
+                col.formatter = qualityFormatter;
                 col.escape = false;
             }
             if (col.field === 'ml_status' || col.field === 'loja_status' || col.field === 'shopee_status') {

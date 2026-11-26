@@ -475,6 +475,7 @@ function channel_headers(): array
         ['quantity'      => lang('Items.quantity_short'), 'class' => 'items-col-num items-col-qty', 'titleTooltip' => lang('Items.quantity')],
         ['ml_status'     => lang('Items.ml_status'), 'class' => 'channels-col-status', 'sortable' => false],
         ['ml_price'      => lang('Items.ml_price'), 'class' => 'channels-col-price', 'sortable' => false],
+        ['ml_quality'    => lang('Items.ml_quality'), 'class' => 'channels-col-status', 'sortable' => false, 'switchable' => true],
         ['loja_status'   => lang('Items.loja_status'), 'class' => 'channels-col-status', 'sortable' => false],
         ['loja_price'    => lang('Items.loja_price'), 'class' => 'channels-col-price', 'sortable' => false],
         ['shopee_status' => lang('Items.shopee_status'), 'class' => 'channels-col-status', 'sortable' => false],

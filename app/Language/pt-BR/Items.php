@@ -197,6 +197,8 @@ return [
     "ml_under_review"                  => "ML Em Análise",
     "ml_status"                        => "Status ML",
     "ml_price"                         => "Preço ML",
+    "ml_quality"                       => "Qualidade ML",
+    "ml_quality_pending"               => "ML c/ pendências de qualidade",
     "loja_status"                      => "Status Loja",
     "loja_price"                       => "Preço Loja",
     "shopee_status"                    => "Status Shopee",

@@ -130,6 +130,7 @@ class Items extends Secure_Controller
             'out_of_sync'    => lang('Items.out_of_sync'),
             'ml_paused'      => lang('Items.ml_paused'),
             'ml_under_review'=> lang('Items.ml_under_review'),
+            'ml_quality_pending' => lang('Items.ml_quality_pending'),
         ];
 
         echo view('items/channels', $data);
@@ -164,7 +165,7 @@ class Items extends Secure_Controller
         }
 
         $filters = implode(',', array_keys(array_intersect_key($request_filters, array_flip([
-            'only_active', 'only_ml', 'only_loja', 'needs_sync', 'out_of_sync', 'ml_paused', 'ml_under_review',
+            'only_active', 'only_ml', 'only_loja', 'needs_sync', 'out_of_sync', 'ml_paused', 'ml_under_review', 'ml_quality_pending',
         ]))));
 
         // Os dados de canal (anúncios ML, produtos da loja) vivem no
