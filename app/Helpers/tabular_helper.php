@@ -479,6 +479,9 @@ function channel_headers(): array
         ['loja_price'    => lang('Items.loja_price'), 'class' => 'channels-col-price', 'sortable' => false],
         ['shopee_status' => lang('Items.shopee_status'), 'class' => 'channels-col-status', 'sortable' => false],
         ['last_sync'     => lang('Items.last_sync'), 'class' => 'channels-col-dt', 'sortable' => false],
+        // Coluna oculta: habilita sort=last_modified no grid (default = mais
+        // recentes primeiro) sem poluir a tabela visível.
+        ['last_modified' => lang('Items.last_modified'), 'class' => 'channels-col-dt', 'visible' => false],
     ];
 }
 

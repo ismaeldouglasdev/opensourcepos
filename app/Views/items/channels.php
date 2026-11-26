@@ -109,8 +109,8 @@ window._tutorialSteps = [
             headers: headers,
             pageSize: <?= $config['lines_per_page'] ?? 25 ?>,
             uniqueId: 'items.item_id',
-            sortName: 'name',
-            sortOrder: 'asc',
+            sortName: 'last_modified',
+            sortOrder: 'desc',
             queryParams: function() {
                 var params = arguments[0];
                 var custom = $("#search").val() || '';
