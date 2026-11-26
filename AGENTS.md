@@ -515,3 +515,34 @@ O recibo esticava 1366px de largura com fonte 22px — ilegível. Agora, **só e
   www-data:www-data` + `systemctl restart apache2` (opcache
   `validate_timestamps=0`). md5 ×3 conferidos; smoke login/css 200.
 - **NÃO commitado** (commits só sob pedido do dono).
+
+## Session Context (2026-11-26)
+
+### Deploy PROD não pegava views/helper: opcache.file_cache persiste entre restarts
+
+**Sintoma:** channels.php + tabular_helper.php deployados (md5 idêntico, `php -l` OK,
+Apache reiniciado) e `/channels` continuava ordenando por nome — `channels/search?sort=last_modified`
+caía no fallback `item_id` do `sanitizeSortColumn`, ou seja, `channel_headers()` em execução
+era a versão ANTIGA.
+
+**Causa:** `/etc/php/8.3/apache2/conf.d/99-opcache-tune.ini` define
+`opcache.file_cache="/var/www/html/pos/writable/opcache"` + `validate_timestamps=0`.
+O file_cache guarda bytecode compilado em DISCO — `systemctl restart apache2` limpa o SHM
+opcache mas **não** o file_cache, que continua servindo código velho.
+
+**Fix deploy:** após copiar arquivos para `/var/www/html/pos`:
+```bash
+sudo rm -rf /var/www/html/pos/writable/opcache/*
+sudo systemctl restart apache2
+```
+Sem o `rm`, mudanças em helpers/views podem ficar invisíveis indefinidamente.
+
+### Channels grid: sort default = últimos modificados
+
+`channel_headers()` ganhou coluna oculta `last_modified` (`'visible' => false`) —
+`sanitizeSortColumn` exige o field nas headers para aceitar o sort.
+`channels.php`: `sortName: 'last_modified', sortOrder: 'desc'`.
+Backend: `inventory-service/app/api/v1/channels.py` — `_SORTABLE["last_modified"]`,
+row emite ISO string; sort usa `r[k] or ""` para null ir pro fim no desc
+(o sort genérico `(is None, val)` com reverse=True colocava nulls no TOPO).
+Commits: fork `7fbcab58d`, inventory `2e68fd4`.
